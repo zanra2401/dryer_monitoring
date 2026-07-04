@@ -30,8 +30,21 @@ model User {
   fullName String @map("full_name")
   role     String
   lots     Lot[]  @relation("CreatedLots")
+  canAccess Daccess[]
 
   @@map("users")
+}
+
+
+model Daccess {
+  userId Int @map("user_id")
+  areaId Int @map("area_id")
+
+  user  User  @relation(fields: [userId], references: [userId])
+  dryer DryerArea @relation(fields: [areaId], references: [areaId])
+
+  @@id([areaId, userId])
+  @@map("dryer_access")
 }
 
 model DryerArea {
@@ -40,13 +53,18 @@ model DryerArea {
   bins     Bin[]
   channels Channel[]
 
+  accessibleFor  Daccess[]
+
   @@map("dryer_areas")
 }
+
+
 
 model Channel {
   channelId     String       @id @map("channel_id")
   areaId        Int       @map("area_id")
   apiKey        String    @map("api_key")
+  nummberOfBin  Int       @map("number_of_bin")
 
   dryerArea     DryerArea @relation(fields: [areaId], references: [areaId])
   bins          Bin[]

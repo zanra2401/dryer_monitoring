@@ -1,0 +1,43 @@
+datasource db {
+  provider = "sqlite"
+}
+
+enum FlagType {
+    NUMBER
+    STRING
+    BOOLEAN
+}
+
+enum StatusJob {
+    ACTIVE
+    INACTIVE
+}
+
+generator client {
+  provider = "prisma-client"
+  output   = "../app/generated/sqlite"
+}
+
+// Tabel untuk menyimpan Flag Key-Value (Konfigurasi Global)
+model SystemFlag {
+  key   String @id
+  value String @unique
+  type  FlagType
+}
+
+// Tabel untuk menyimpan data Job Tracker dengan presisi
+model JobTracker {
+  JobId    String   @id @map("job_id")
+  LotId    Int      @map("lot_id")
+  BinId    Int      @map("bin_id")
+  ExecuteTime DateTime  @map("Executed Time")
+  status       StatusJob @default(ACTIVE)
+}
+
+
+model MustExecutedJob {
+    JobId   Int    @id @map("job_id")
+    ExcutedTime DateTime @map("executed_time")
+    LotId   Int @map("lot_id")
+    BinId   Int @map("bin_id")
+}

@@ -1,4 +1,4 @@
-
+import sqliteUtils from "~~/server/utils/sqlite";
 
 export default defineEventHandler(async (event) => {
     try {
@@ -11,13 +11,14 @@ export default defineEventHandler(async (event) => {
             skip: offset,
             take: limit,
         });
+        const totalCount = await sqliteUtils.getSystemFlag("dryCount");
 
         if (!result) {
             setResponseStatus(event, 404);
             return { error: "Dryer area not found" };
         }
 
-        return { success: true, data: result };
+        return { success: true, data: result, totalCount: totalCount ? parseInt(totalCount as string) : 0 };
 
     } catch (error) {
         console.log(error);
