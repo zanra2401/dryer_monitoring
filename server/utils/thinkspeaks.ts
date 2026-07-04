@@ -24,7 +24,54 @@ const thinkspeaks = {
             console.error("Error fetching feeds:", error);
             throw error; 
         }
-    } 
+    },
+
+    parse_bin: async function (bins: Record<string, any>, channel: any, area_id: number, channel_id: string) {
+        try {
+            Object.keys(channel)
+                    .filter(key => key.startsWith("field") && channel[key]) // Pastikan field tidak kosong
+                    .forEach((key) => {
+                        const field_label = channel[key] as string;
+                        const field_data = field_label.split('-'); 
+                        if (field_data.length != 2) {
+                            return;
+                        }
+                        const bin_group_key = field_data[0]!.trim(); 
+                        const metadata = field_data[1] ? field_data[1].trim() : key;
+    
+                        if (!bins[bin_group_key]) {
+                            bins[bin_group_key] = {
+                                "binNumber": parseInt(bin_group_key),
+                                "areaId": area_id,
+                                "channelId": channel_id,
+                            }
+                        }
+    
+                        bins[bin_group_key]["field" + field_data[1]?.split("_").map(data => {
+                            return data.charAt(0).toUpperCase() + data.slice(1).toLowerCase();
+                        }).join("")] = key;
+                    });
+        } catch (error) {
+            console.error("Error fetching bin data:", error);
+            throw error; 
+        }
+    },
+
+    fetch_channels: async function (channels: string[], api_keys: string[]) {
+        try {
+            const channelPromises = channels.map((channel_id: string, i: number) => 
+                thinkspeaks.get_channel(channel_id, api_keys[i]!).catch(error => {
+                    console.error(`Failed to fetch channel ${channel_id}:`, error);
+                    return null; // Return null agar tidak menggagalkan seluruh Promise.all
+                })
+            );
+            
+            return await Promise.all(channelPromises);
+        } catch (error) {
+            console.error("Error fetching client data:", error);
+            throw error; 
+        }
+    }
 
 }
 

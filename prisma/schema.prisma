@@ -12,6 +12,17 @@ datasource db {
   provider = "mysql" // atau "mysql" sesuai database Anda
 }
 
+enum BinStatus {
+  EMPTY
+  UPAIR
+  DOWNAIR
+  DRIED
+}
+
+enum LotStatus {
+  UPAIR
+  DOWNAIR
+}
 
 model User {
   userId   Int    @id @default(autoincrement()) @map("user_id")
@@ -51,10 +62,11 @@ model Bin {
   fieldRhTop      String    @map("field_rh_top")
   fieldTempBottom String    @map("field_temp_bottom")
   fieldRhBottom   String    @map("field_rh_bottom")
+  binStatus       BinStatus @default(EMPTY) @map("bin_status")
+  occupiedBy      Int?      @map("occupied_by")
   
-  dryerArea       DryerArea @relation(fields: [areaId], references: [areaId])
-  lots            Lot[]
-  channel         Channel @relation(fields: [channelId], references: [channelId])
+  dryerArea       DryerArea @relation(fields: [areaId], references: [areaId]) 
+  channel         Channel @relation(fields: [channelId], references: [channelId], onDelete: Cascade)
 
   @@id([binNumber, areaId])
   @@map("bins")
@@ -67,7 +79,7 @@ model Lot {
   quality      String?
   netToBin     Decimal?  @map("net_to_bin")
   initialMc    Decimal?  @map("initial_mc")
-  status       String    // 'upair', 'downair', 'completed'
+  status       LotStatus @default(UPAIR)
   createdBy    Int       @map("create_by")
   binNumber    Int       @map("bin_number")
   areaId       Int       @map("area_id")
@@ -75,7 +87,6 @@ model Lot {
   endTime      DateTime? @map("end_time")
 
   user         User      @relation("CreatedLots", fields: [createdBy], references: [userId])
-  bin          Bin       @relation(fields: [binNumber, areaId], references: [binNumber, areaId])
   logs         Log[]
 
   @@map("lots")
