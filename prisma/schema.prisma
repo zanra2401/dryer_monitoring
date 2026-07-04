@@ -1,0 +1,99 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client"
+  output   = "../app/generated/prisma"
+}
+
+datasource db {
+  provider = "mysql" // atau "mysql" sesuai database Anda
+}
+
+
+model User {
+  userId   Int    @id @default(autoincrement()) @map("user_id")
+  username String @unique
+  fullName String @map("full_name")
+  role     String
+  lots     Lot[]  @relation("CreatedLots")
+
+  @@map("users")
+}
+
+model DryerArea {
+  areaId   Int       @id @default(autoincrement()) @map("area_id")
+  name     String
+  bins     Bin[]
+  channels Channel[]
+
+  @@map("dryer_areas")
+}
+
+model Channel {
+  channelId     String       @id @map("channel_id")
+  areaId        Int       @map("area_id")
+  apiKey        String    @map("api_key")
+
+  dryerArea     DryerArea @relation(fields: [areaId], references: [areaId])
+  bins          Bin[]
+
+  @@map("channels")
+}
+
+model Bin {
+  binNumber       Int       @map("bin_number")
+  areaId          Int       @map("area_id")
+  channelId       String    @map("channel_id")
+  fieldTempTop    String    @map("field_temp_top")
+  fieldRhTop      String    @map("field_rh_top")
+  fieldTempBottom String    @map("field_temp_bottom")
+  fieldRhBottom   String    @map("field_rh_bottom")
+  
+  dryerArea       DryerArea @relation(fields: [areaId], references: [areaId])
+  lots            Lot[]
+  channel         Channel @relation(fields: [channelId], references: [channelId])
+
+  @@id([binNumber, areaId])
+  @@map("bins")
+}
+
+model Lot {
+  lotId        Int       @id @default(autoincrement()) @map("lot_id")
+  lotNumber    String    @map("lot_number")
+  hybrid       String?
+  quality      String?
+  netToBin     Decimal?  @map("net_to_bin")
+  initialMc    Decimal?  @map("initial_mc")
+  status       String    // 'upair', 'downair', 'completed'
+  createdBy    Int       @map("create_by")
+  binNumber    Int       @map("bin_number")
+  areaId       Int       @map("area_id")
+  startTime    DateTime  @default(now()) @map("start_time")
+  endTime      DateTime? @map("end_time")
+
+  user         User      @relation("CreatedLots", fields: [createdBy], references: [userId])
+  bin          Bin       @relation(fields: [binNumber, areaId], references: [binNumber, areaId])
+  logs         Log[]
+
+  @@map("lots")
+}
+
+model Log {
+  logId               Int      @id @default(autoincrement()) @map("log_id")
+  lotId               Int      @map("lot_id")
+  timestampThingspeak DateTime @map("timestamp_thingspeak")
+  statusBin           String   @map("status_bin")
+  tempTop             Decimal? @map("temp_top")
+  rhTop               Decimal? @map("rh_top")
+  tempBottom          Decimal? @map("temp_bottom")
+  rhBottom            Decimal? @map("rh_bottom")
+  mc                  Decimal?
+  checkerName         String?  @map("checker_name")
+
+  lot                 Lot      @relation(fields: [lotId], references: [lotId])
+
+  @@map("logs")
+}
