@@ -16,8 +16,10 @@ export default defineEventHandler(async (event) => {
         });
 
         if (!channel) {
-            setResponseStatus(event, 404);
-            return { error: "Channel tidak ditemukan" };
+            throw createError({
+                statusCode: 404,
+                statusMessage: "Channel not found",
+            });
         }
 
         const bins = (await prisma.bin.findMany({
@@ -31,9 +33,12 @@ export default defineEventHandler(async (event) => {
         })).map(bin => bin.binNumber);
 
         const fetchedChannel = await thinkspeaks.get_channel(channel_id, channel.apiKey);
+        
         if (!fetchedChannel) {
-            setResponseStatus(event, 404);
-            return { error: "Failed to fetch channel data from ThingSpeak" };
+            throw createError({
+                statusCode: 404,
+                statusMessage: "Channel not found in Thinkspeaks",
+            });
         }
 
         let fetched_bins: Record<string, any> = {};
@@ -76,8 +81,7 @@ export default defineEventHandler(async (event) => {
         await sqliteUtils.setSystemFlag("binCount", binCount.toString(), FlagType.NUMBER);
 
         return { success: true, data: [will_be_deleted_bins, will_be_created_bins] };
-    } catch (error) {
-        setResponseStatus(event, 500);
-        return { error: "Internal Server Error" };
+    } catch (error: unknown) {
+        return error;
     }
 });

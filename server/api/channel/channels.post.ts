@@ -8,12 +8,13 @@ export default defineEventHandler(async (event) => {
         const body = await readBody(event);
         const { channels, api_keys, area_id } = body;
         if (!channels || !api_keys || channels.length !== api_keys.length) {
-            setResponseStatus(event, 400);
-            return { error: "Invalid request body" };
+            throw createError({
+                statusCode: 400,
+                statusMessage: "Channels and API keys must be provided and have the same length",
+            });
         }
 
         const result = await prisma.$transaction(async (prisma) => {
-            
             const fetchedChannels = await thinkspeaks.fetch_channels(channels, api_keys);
 
 
@@ -38,8 +39,10 @@ export default defineEventHandler(async (event) => {
 
 
                 if (!channel) {
-                    setResponseStatus(event, 404);
-                    return { error: `Channel not found or API Key invalid for channel_id: ${channel_id}` };
+                    throw createError({
+                        statusCode: 404,
+                        statusMessage: `Channel ${channel_id} not found in Thinkspeaks`,
+                    });
                 } 
             }
     
@@ -57,8 +60,7 @@ export default defineEventHandler(async (event) => {
 
         return { success: true, data: `${result} bins successfully saved to database` };
 
-    } catch (error) {
-        setResponseStatus(event, 500);
-        return { error: "Internal Server Error" };
+    } catch (error: unknown) {
+        return error;
     }
 });

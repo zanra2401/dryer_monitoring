@@ -4,6 +4,7 @@ export default defineEventHandler(async (event) => {
     try {
         const body = await readBody(event);
         const { api_key, channel_id, area_id } = body;
+        console.log(body);
 
         const result = await prisma.channel.update({
             where: { 

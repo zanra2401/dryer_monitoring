@@ -1,22 +1,19 @@
 export default defineEventHandler(async (event) => {
     try {
         const area_id = parseInt(getQuery(event).area_id as string);
-        const result = await prisma.channel.findMany({
+        const result = await prisma.bin.findMany({
             where: { areaId: area_id },
         });
 
         if (result.length < 1) {
             throw createError({
                 statusCode: 404,
-                statusMessage: "Channel not found",
+                statusMessage: "Bin not found",
             });
         }
 
         return { success: true, data: result };
-
-    } catch (err) {
-        console.log(err);
-        setResponseStatus(event, 500);
-        throw err;
+    } catch (error: unknown) {
+        return error;
     }
 });
