@@ -23,8 +23,12 @@ export default defineEventHandler(async (event) => {
             });
 
             if (bins.length > 0) {
-                throw new Error("Cannot delete channel with non-empty bins");
+                throw createError({
+                    statusCode: 400,
+                    statusMessage: "Tidak bisa menghapus channel yang masih memiliki bin dengan status tidak kosong.",
+                });
             }
+
             const binsCount = await prisma.bin.count({
                 where: {
                     channelId: channel_id,
@@ -50,10 +54,8 @@ export default defineEventHandler(async (event) => {
         await sqliteUtils.setSystemFlag("binCount", binCount.toString(), FlagType.NUMBER);
 
         return { success: true, data: result };
-    } catch (error) {
-        console.log(error);
-        setResponseStatus(event, 500);
-        return { error: "Internal Server Error" };
+    } catch (error: unknown) {
+        return error;
     }
 });
 

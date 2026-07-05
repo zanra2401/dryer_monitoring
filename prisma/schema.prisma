@@ -27,6 +27,7 @@ enum LotStatus {
 model User {
   userId   Int    @id @default(autoincrement()) @map("user_id")
   username String @unique
+  password String 
   fullName String @map("full_name")
   role     String
   lots     Lot[]  @relation("CreatedLots")
@@ -49,7 +50,7 @@ model Daccess {
 
 model DryerArea {
   areaId   Int       @id @default(autoincrement()) @map("area_id")
-  name     String
+  name     String    @unique
   bins     Bin[]
   channels Channel[]
 
@@ -57,8 +58,6 @@ model DryerArea {
 
   @@map("dryer_areas")
 }
-
-
 
 model Channel {
   channelId     String       @id @map("channel_id")
@@ -92,7 +91,7 @@ model Bin {
 
 model Lot {
   lotId        Int       @id @default(autoincrement()) @map("lot_id")
-  lotNumber    String    @map("lot_number")
+  lotNumber    String    @unique @map("lot_number")
   hybrid       String?
   quality      String?
   netToBin     Decimal?  @map("net_to_bin")
