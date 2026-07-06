@@ -11,7 +11,7 @@
     </div>  
     <div v-else>
         <div v-for="bin in bins.data" :key="bin.id">
-            <NuxtLink :to="`/dryercfg/dryer/${areaId}/bin/${bin.binNumber}`">
+            <NuxtLink :to="`/dryer/${areaId}/bin/${bin.binNumber}`">
                 {{ bin.binNumber }}
                 </br>
                 </br>

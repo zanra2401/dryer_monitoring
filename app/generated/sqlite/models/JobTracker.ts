@@ -29,11 +29,15 @@ export type AggregateJobTracker = {
 export type JobTrackerAvgAggregateOutputType = {
   LotId: number | null
   BinId: number | null
+  IntervalMinutes: number | null
+  attemptCount: number | null
 }
 
 export type JobTrackerSumAggregateOutputType = {
   LotId: number | null
   BinId: number | null
+  IntervalMinutes: number | null
+  attemptCount: number | null
 }
 
 export type JobTrackerMinAggregateOutputType = {
@@ -41,7 +45,13 @@ export type JobTrackerMinAggregateOutputType = {
   LotId: number | null
   BinId: number | null
   ExecuteTime: Date | null
+  IntervalMinutes: number | null
   status: $Enums.StatusJob | null
+  attemptCount: number | null
+  lastError: string | null
+  lockedAt: Date | null
+  createdAt: Date | null
+  updatedAt: Date | null
 }
 
 export type JobTrackerMaxAggregateOutputType = {
@@ -49,7 +59,13 @@ export type JobTrackerMaxAggregateOutputType = {
   LotId: number | null
   BinId: number | null
   ExecuteTime: Date | null
+  IntervalMinutes: number | null
   status: $Enums.StatusJob | null
+  attemptCount: number | null
+  lastError: string | null
+  lockedAt: Date | null
+  createdAt: Date | null
+  updatedAt: Date | null
 }
 
 export type JobTrackerCountAggregateOutputType = {
@@ -57,7 +73,13 @@ export type JobTrackerCountAggregateOutputType = {
   LotId: number
   BinId: number
   ExecuteTime: number
+  IntervalMinutes: number
   status: number
+  attemptCount: number
+  lastError: number
+  lockedAt: number
+  createdAt: number
+  updatedAt: number
   _all: number
 }
 
@@ -65,11 +87,15 @@ export type JobTrackerCountAggregateOutputType = {
 export type JobTrackerAvgAggregateInputType = {
   LotId?: true
   BinId?: true
+  IntervalMinutes?: true
+  attemptCount?: true
 }
 
 export type JobTrackerSumAggregateInputType = {
   LotId?: true
   BinId?: true
+  IntervalMinutes?: true
+  attemptCount?: true
 }
 
 export type JobTrackerMinAggregateInputType = {
@@ -77,7 +103,13 @@ export type JobTrackerMinAggregateInputType = {
   LotId?: true
   BinId?: true
   ExecuteTime?: true
+  IntervalMinutes?: true
   status?: true
+  attemptCount?: true
+  lastError?: true
+  lockedAt?: true
+  createdAt?: true
+  updatedAt?: true
 }
 
 export type JobTrackerMaxAggregateInputType = {
@@ -85,7 +117,13 @@ export type JobTrackerMaxAggregateInputType = {
   LotId?: true
   BinId?: true
   ExecuteTime?: true
+  IntervalMinutes?: true
   status?: true
+  attemptCount?: true
+  lastError?: true
+  lockedAt?: true
+  createdAt?: true
+  updatedAt?: true
 }
 
 export type JobTrackerCountAggregateInputType = {
@@ -93,7 +131,13 @@ export type JobTrackerCountAggregateInputType = {
   LotId?: true
   BinId?: true
   ExecuteTime?: true
+  IntervalMinutes?: true
   status?: true
+  attemptCount?: true
+  lastError?: true
+  lockedAt?: true
+  createdAt?: true
+  updatedAt?: true
   _all?: true
 }
 
@@ -188,7 +232,13 @@ export type JobTrackerGroupByOutputType = {
   LotId: number
   BinId: number
   ExecuteTime: Date
+  IntervalMinutes: number
   status: $Enums.StatusJob
+  attemptCount: number
+  lastError: string | null
+  lockedAt: Date | null
+  createdAt: Date
+  updatedAt: Date
   _count: JobTrackerCountAggregateOutputType | null
   _avg: JobTrackerAvgAggregateOutputType | null
   _sum: JobTrackerSumAggregateOutputType | null
@@ -219,7 +269,13 @@ export type JobTrackerWhereInput = {
   LotId?: Prisma.IntFilter<"JobTracker"> | number
   BinId?: Prisma.IntFilter<"JobTracker"> | number
   ExecuteTime?: Prisma.DateTimeFilter<"JobTracker"> | Date | string
+  IntervalMinutes?: Prisma.IntFilter<"JobTracker"> | number
   status?: Prisma.EnumStatusJobFilter<"JobTracker"> | $Enums.StatusJob
+  attemptCount?: Prisma.IntFilter<"JobTracker"> | number
+  lastError?: Prisma.StringNullableFilter<"JobTracker"> | string | null
+  lockedAt?: Prisma.DateTimeNullableFilter<"JobTracker"> | Date | string | null
+  createdAt?: Prisma.DateTimeFilter<"JobTracker"> | Date | string
+  updatedAt?: Prisma.DateTimeFilter<"JobTracker"> | Date | string
 }
 
 export type JobTrackerOrderByWithRelationInput = {
@@ -227,7 +283,13 @@ export type JobTrackerOrderByWithRelationInput = {
   LotId?: Prisma.SortOrder
   BinId?: Prisma.SortOrder
   ExecuteTime?: Prisma.SortOrder
+  IntervalMinutes?: Prisma.SortOrder
   status?: Prisma.SortOrder
+  attemptCount?: Prisma.SortOrder
+  lastError?: Prisma.SortOrderInput | Prisma.SortOrder
+  lockedAt?: Prisma.SortOrderInput | Prisma.SortOrder
+  createdAt?: Prisma.SortOrder
+  updatedAt?: Prisma.SortOrder
 }
 
 export type JobTrackerWhereUniqueInput = Prisma.AtLeast<{
@@ -238,7 +300,13 @@ export type JobTrackerWhereUniqueInput = Prisma.AtLeast<{
   LotId?: Prisma.IntFilter<"JobTracker"> | number
   BinId?: Prisma.IntFilter<"JobTracker"> | number
   ExecuteTime?: Prisma.DateTimeFilter<"JobTracker"> | Date | string
+  IntervalMinutes?: Prisma.IntFilter<"JobTracker"> | number
   status?: Prisma.EnumStatusJobFilter<"JobTracker"> | $Enums.StatusJob
+  attemptCount?: Prisma.IntFilter<"JobTracker"> | number
+  lastError?: Prisma.StringNullableFilter<"JobTracker"> | string | null
+  lockedAt?: Prisma.DateTimeNullableFilter<"JobTracker"> | Date | string | null
+  createdAt?: Prisma.DateTimeFilter<"JobTracker"> | Date | string
+  updatedAt?: Prisma.DateTimeFilter<"JobTracker"> | Date | string
 }, "JobId">
 
 export type JobTrackerOrderByWithAggregationInput = {
@@ -246,7 +314,13 @@ export type JobTrackerOrderByWithAggregationInput = {
   LotId?: Prisma.SortOrder
   BinId?: Prisma.SortOrder
   ExecuteTime?: Prisma.SortOrder
+  IntervalMinutes?: Prisma.SortOrder
   status?: Prisma.SortOrder
+  attemptCount?: Prisma.SortOrder
+  lastError?: Prisma.SortOrderInput | Prisma.SortOrder
+  lockedAt?: Prisma.SortOrderInput | Prisma.SortOrder
+  createdAt?: Prisma.SortOrder
+  updatedAt?: Prisma.SortOrder
   _count?: Prisma.JobTrackerCountOrderByAggregateInput
   _avg?: Prisma.JobTrackerAvgOrderByAggregateInput
   _max?: Prisma.JobTrackerMaxOrderByAggregateInput
@@ -262,7 +336,13 @@ export type JobTrackerScalarWhereWithAggregatesInput = {
   LotId?: Prisma.IntWithAggregatesFilter<"JobTracker"> | number
   BinId?: Prisma.IntWithAggregatesFilter<"JobTracker"> | number
   ExecuteTime?: Prisma.DateTimeWithAggregatesFilter<"JobTracker"> | Date | string
+  IntervalMinutes?: Prisma.IntWithAggregatesFilter<"JobTracker"> | number
   status?: Prisma.EnumStatusJobWithAggregatesFilter<"JobTracker"> | $Enums.StatusJob
+  attemptCount?: Prisma.IntWithAggregatesFilter<"JobTracker"> | number
+  lastError?: Prisma.StringNullableWithAggregatesFilter<"JobTracker"> | string | null
+  lockedAt?: Prisma.DateTimeNullableWithAggregatesFilter<"JobTracker"> | Date | string | null
+  createdAt?: Prisma.DateTimeWithAggregatesFilter<"JobTracker"> | Date | string
+  updatedAt?: Prisma.DateTimeWithAggregatesFilter<"JobTracker"> | Date | string
 }
 
 export type JobTrackerCreateInput = {
@@ -270,7 +350,13 @@ export type JobTrackerCreateInput = {
   LotId: number
   BinId: number
   ExecuteTime: Date | string
+  IntervalMinutes?: number
   status?: $Enums.StatusJob
+  attemptCount?: number
+  lastError?: string | null
+  lockedAt?: Date | string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
 }
 
 export type JobTrackerUncheckedCreateInput = {
@@ -278,7 +364,13 @@ export type JobTrackerUncheckedCreateInput = {
   LotId: number
   BinId: number
   ExecuteTime: Date | string
+  IntervalMinutes?: number
   status?: $Enums.StatusJob
+  attemptCount?: number
+  lastError?: string | null
+  lockedAt?: Date | string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
 }
 
 export type JobTrackerUpdateInput = {
@@ -286,7 +378,13 @@ export type JobTrackerUpdateInput = {
   LotId?: Prisma.IntFieldUpdateOperationsInput | number
   BinId?: Prisma.IntFieldUpdateOperationsInput | number
   ExecuteTime?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  IntervalMinutes?: Prisma.IntFieldUpdateOperationsInput | number
   status?: Prisma.EnumStatusJobFieldUpdateOperationsInput | $Enums.StatusJob
+  attemptCount?: Prisma.IntFieldUpdateOperationsInput | number
+  lastError?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  lockedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
 export type JobTrackerUncheckedUpdateInput = {
@@ -294,7 +392,13 @@ export type JobTrackerUncheckedUpdateInput = {
   LotId?: Prisma.IntFieldUpdateOperationsInput | number
   BinId?: Prisma.IntFieldUpdateOperationsInput | number
   ExecuteTime?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  IntervalMinutes?: Prisma.IntFieldUpdateOperationsInput | number
   status?: Prisma.EnumStatusJobFieldUpdateOperationsInput | $Enums.StatusJob
+  attemptCount?: Prisma.IntFieldUpdateOperationsInput | number
+  lastError?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  lockedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
 export type JobTrackerCreateManyInput = {
@@ -302,7 +406,13 @@ export type JobTrackerCreateManyInput = {
   LotId: number
   BinId: number
   ExecuteTime: Date | string
+  IntervalMinutes?: number
   status?: $Enums.StatusJob
+  attemptCount?: number
+  lastError?: string | null
+  lockedAt?: Date | string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
 }
 
 export type JobTrackerUpdateManyMutationInput = {
@@ -310,7 +420,13 @@ export type JobTrackerUpdateManyMutationInput = {
   LotId?: Prisma.IntFieldUpdateOperationsInput | number
   BinId?: Prisma.IntFieldUpdateOperationsInput | number
   ExecuteTime?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  IntervalMinutes?: Prisma.IntFieldUpdateOperationsInput | number
   status?: Prisma.EnumStatusJobFieldUpdateOperationsInput | $Enums.StatusJob
+  attemptCount?: Prisma.IntFieldUpdateOperationsInput | number
+  lastError?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  lockedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
 export type JobTrackerUncheckedUpdateManyInput = {
@@ -318,7 +434,13 @@ export type JobTrackerUncheckedUpdateManyInput = {
   LotId?: Prisma.IntFieldUpdateOperationsInput | number
   BinId?: Prisma.IntFieldUpdateOperationsInput | number
   ExecuteTime?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  IntervalMinutes?: Prisma.IntFieldUpdateOperationsInput | number
   status?: Prisma.EnumStatusJobFieldUpdateOperationsInput | $Enums.StatusJob
+  attemptCount?: Prisma.IntFieldUpdateOperationsInput | number
+  lastError?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  lockedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
 export type JobTrackerCountOrderByAggregateInput = {
@@ -326,12 +448,20 @@ export type JobTrackerCountOrderByAggregateInput = {
   LotId?: Prisma.SortOrder
   BinId?: Prisma.SortOrder
   ExecuteTime?: Prisma.SortOrder
+  IntervalMinutes?: Prisma.SortOrder
   status?: Prisma.SortOrder
+  attemptCount?: Prisma.SortOrder
+  lastError?: Prisma.SortOrder
+  lockedAt?: Prisma.SortOrder
+  createdAt?: Prisma.SortOrder
+  updatedAt?: Prisma.SortOrder
 }
 
 export type JobTrackerAvgOrderByAggregateInput = {
   LotId?: Prisma.SortOrder
   BinId?: Prisma.SortOrder
+  IntervalMinutes?: Prisma.SortOrder
+  attemptCount?: Prisma.SortOrder
 }
 
 export type JobTrackerMaxOrderByAggregateInput = {
@@ -339,7 +469,13 @@ export type JobTrackerMaxOrderByAggregateInput = {
   LotId?: Prisma.SortOrder
   BinId?: Prisma.SortOrder
   ExecuteTime?: Prisma.SortOrder
+  IntervalMinutes?: Prisma.SortOrder
   status?: Prisma.SortOrder
+  attemptCount?: Prisma.SortOrder
+  lastError?: Prisma.SortOrder
+  lockedAt?: Prisma.SortOrder
+  createdAt?: Prisma.SortOrder
+  updatedAt?: Prisma.SortOrder
 }
 
 export type JobTrackerMinOrderByAggregateInput = {
@@ -347,12 +483,20 @@ export type JobTrackerMinOrderByAggregateInput = {
   LotId?: Prisma.SortOrder
   BinId?: Prisma.SortOrder
   ExecuteTime?: Prisma.SortOrder
+  IntervalMinutes?: Prisma.SortOrder
   status?: Prisma.SortOrder
+  attemptCount?: Prisma.SortOrder
+  lastError?: Prisma.SortOrder
+  lockedAt?: Prisma.SortOrder
+  createdAt?: Prisma.SortOrder
+  updatedAt?: Prisma.SortOrder
 }
 
 export type JobTrackerSumOrderByAggregateInput = {
   LotId?: Prisma.SortOrder
   BinId?: Prisma.SortOrder
+  IntervalMinutes?: Prisma.SortOrder
+  attemptCount?: Prisma.SortOrder
 }
 
 export type IntFieldUpdateOperationsInput = {
@@ -371,6 +515,14 @@ export type EnumStatusJobFieldUpdateOperationsInput = {
   set?: $Enums.StatusJob
 }
 
+export type NullableStringFieldUpdateOperationsInput = {
+  set?: string | null
+}
+
+export type NullableDateTimeFieldUpdateOperationsInput = {
+  set?: Date | string | null
+}
+
 
 
 export type JobTrackerSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
@@ -378,7 +530,13 @@ export type JobTrackerSelect<ExtArgs extends runtime.Types.Extensions.InternalAr
   LotId?: boolean
   BinId?: boolean
   ExecuteTime?: boolean
+  IntervalMinutes?: boolean
   status?: boolean
+  attemptCount?: boolean
+  lastError?: boolean
+  lockedAt?: boolean
+  createdAt?: boolean
+  updatedAt?: boolean
 }, ExtArgs["result"]["jobTracker"]>
 
 export type JobTrackerSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
@@ -386,7 +544,13 @@ export type JobTrackerSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Ex
   LotId?: boolean
   BinId?: boolean
   ExecuteTime?: boolean
+  IntervalMinutes?: boolean
   status?: boolean
+  attemptCount?: boolean
+  lastError?: boolean
+  lockedAt?: boolean
+  createdAt?: boolean
+  updatedAt?: boolean
 }, ExtArgs["result"]["jobTracker"]>
 
 export type JobTrackerSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
@@ -394,7 +558,13 @@ export type JobTrackerSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Ex
   LotId?: boolean
   BinId?: boolean
   ExecuteTime?: boolean
+  IntervalMinutes?: boolean
   status?: boolean
+  attemptCount?: boolean
+  lastError?: boolean
+  lockedAt?: boolean
+  createdAt?: boolean
+  updatedAt?: boolean
 }, ExtArgs["result"]["jobTracker"]>
 
 export type JobTrackerSelectScalar = {
@@ -402,10 +572,16 @@ export type JobTrackerSelectScalar = {
   LotId?: boolean
   BinId?: boolean
   ExecuteTime?: boolean
+  IntervalMinutes?: boolean
   status?: boolean
+  attemptCount?: boolean
+  lastError?: boolean
+  lockedAt?: boolean
+  createdAt?: boolean
+  updatedAt?: boolean
 }
 
-export type JobTrackerOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"JobId" | "LotId" | "BinId" | "ExecuteTime" | "status", ExtArgs["result"]["jobTracker"]>
+export type JobTrackerOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"JobId" | "LotId" | "BinId" | "ExecuteTime" | "IntervalMinutes" | "status" | "attemptCount" | "lastError" | "lockedAt" | "createdAt" | "updatedAt", ExtArgs["result"]["jobTracker"]>
 
 export type $JobTrackerPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   name: "JobTracker"
@@ -415,7 +591,13 @@ export type $JobTrackerPayload<ExtArgs extends runtime.Types.Extensions.Internal
     LotId: number
     BinId: number
     ExecuteTime: Date
+    IntervalMinutes: number
     status: $Enums.StatusJob
+    attemptCount: number
+    lastError: string | null
+    lockedAt: Date | null
+    createdAt: Date
+    updatedAt: Date
   }, ExtArgs["result"]["jobTracker"]>
   composites: {}
 }
@@ -843,7 +1025,13 @@ export interface JobTrackerFieldRefs {
   readonly LotId: Prisma.FieldRef<"JobTracker", 'Int'>
   readonly BinId: Prisma.FieldRef<"JobTracker", 'Int'>
   readonly ExecuteTime: Prisma.FieldRef<"JobTracker", 'DateTime'>
+  readonly IntervalMinutes: Prisma.FieldRef<"JobTracker", 'Int'>
   readonly status: Prisma.FieldRef<"JobTracker", 'StatusJob'>
+  readonly attemptCount: Prisma.FieldRef<"JobTracker", 'Int'>
+  readonly lastError: Prisma.FieldRef<"JobTracker", 'String'>
+  readonly lockedAt: Prisma.FieldRef<"JobTracker", 'DateTime'>
+  readonly createdAt: Prisma.FieldRef<"JobTracker", 'DateTime'>
+  readonly updatedAt: Prisma.FieldRef<"JobTracker", 'DateTime'>
 }
     
 

@@ -27,17 +27,27 @@ model SystemFlag {
 
 // Tabel untuk menyimpan data Job Tracker dengan presisi
 model JobTracker {
-  JobId    String   @id @map("job_id")
-  LotId    Int      @map("lot_id")
-  BinId    Int      @map("bin_id")
-  ExecuteTime DateTime  @map("Executed Time")
-  status       StatusJob @default(ACTIVE)
+  JobId           String    @id @map("job_id")
+  LotId           Int       @map("lot_id")
+  BinId           Int       @map("bin_id")
+  ExecuteTime     DateTime  @map("execute_time")
+  IntervalMinutes Int       @default(30) @map("interval_minutes")
+  status          StatusJob @default(ACTIVE)
+  attemptCount    Int       @default(0) @map("attempt_count")
+  lastError       String?   @map("last_error")
+  lockedAt        DateTime? @map("locked_at")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
 }
 
 
 model MustExecutedJob {
-    JobId   Int    @id @map("job_id")
-    ExcutedTime DateTime @map("executed_time")
-    LotId   Int @map("lot_id")
-    BinId   Int @map("bin_id")
+    JobId         Int       @id @default(autoincrement()) @map("job_id")
+    ExecutedTime  DateTime  @default(now()) @map("executed_time")
+    LotId         Int       @map("lot_id")
+    BinId         Int       @map("bin_id")
+    TrackerJobId  String?   @map("tracker_job_id")
+    status        StatusJob @default(ACTIVE)
+    errorMessage  String?   @map("error_message")
+    createdAt     DateTime  @default(now()) @map("created_at")
 }

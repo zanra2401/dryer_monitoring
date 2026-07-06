@@ -1,5 +1,5 @@
 // server/utils/db.ts
-import { PrismaClient as SqliteClient, FlagType } from '~/generated/sqlite/client'
+import { PrismaClient as SqliteClient, FlagType, StatusJob } from '~/generated/sqlite/client'
 import { PrismaBetterSqlite3 } from '@prisma/adapter-better-sqlite3';
 
 // Klien untuk SQLite (Akses Cepat: Job Tracker, System Flag)
@@ -10,6 +10,8 @@ const adapter = new PrismaBetterSqlite3({
 const fastDb = new SqliteClient({
     adapter: adapter,    
 });
+
+let executedJobSequence = 0;
 
 const parseValue = (value: string, type: FlagType) => {
     switch (type) {
@@ -69,6 +71,134 @@ const sqliteUtils = {
             return flag;
         } catch (error) {
             console.error(`Error deleting system flag for key "${key}":`, error);
+            throw error;
+        }
+    },
+
+    createJobTracker: async (data: {
+        JobId: string;
+        LotId: number;
+        BinId: number;
+        ExecuteTime: Date;
+        IntervalMinutes?: number;
+        status?: StatusJob;
+    }) => {
+        try {
+            return await fastDb.jobTracker.create({
+                data: {
+                    JobId: data.JobId,
+                    LotId: data.LotId,
+                    BinId: data.BinId,
+                    ExecuteTime: data.ExecuteTime,
+                    IntervalMinutes: data.IntervalMinutes ?? 1,
+                    status: data.status ?? StatusJob.ACTIVE,
+                },
+            });
+        } catch (error) {
+            console.error("Error creating job tracker:", error);
+            throw error;
+        }
+    },
+
+    getDueJobTrackers: async (now: Date) => {
+        try {
+            return await fastDb.jobTracker.findMany({
+                where: {
+                    status: StatusJob.ACTIVE,
+                    ExecuteTime: {
+                        lte: now,
+                    },
+                },
+                orderBy: {
+                    ExecuteTime: "asc",
+                },
+            });
+        } catch (error) {
+            console.error("Error fetching due job trackers:", error);
+            throw error;
+        }
+    },
+
+    rescheduleJobTracker: async (jobId: string, currentExecuteTime: Date, nextExecuteTime: Date) => {
+        try {
+            return await fastDb.jobTracker.updateMany({
+                where: {
+                    JobId: jobId,
+                    status: StatusJob.ACTIVE,
+                    ExecuteTime: currentExecuteTime,
+                },
+                data: {
+                    ExecuteTime: nextExecuteTime,
+                    lockedAt: null,
+                    lastError: null,
+                },
+            });
+        } catch (error) {
+            console.error(`Error rescheduling job tracker ${jobId}:`, error);
+            throw error;
+        }
+    },
+
+    lockJobTracker: async (jobId: string, executeTime: Date) => {
+        try {
+            return await fastDb.jobTracker.updateMany({
+                where: {
+                    JobId: jobId,
+                    status: StatusJob.ACTIVE,
+                    ExecuteTime: executeTime,
+                },
+                data: {
+                    lockedAt: new Date(),
+                    attemptCount: {
+                        increment: 1,
+                    },
+                },
+            });
+        } catch (error) {
+            console.error(`Error locking job tracker ${jobId}:`, error);
+            throw error;
+        }
+    },
+
+    updateJobTrackerError: async (jobId: string, errorMessage: string) => {
+        try {
+            return await fastDb.jobTracker.updateMany({
+                where: {
+                    JobId: jobId,
+                    status: StatusJob.ACTIVE,
+                },
+                data: {
+                    lastError: errorMessage,
+                    lockedAt: null,
+                },
+            });
+        } catch (error) {
+            console.error(`Error updating job tracker error for ${jobId}:`, error);
+            throw error;
+        }
+    },
+
+    createExecutedJob: async (data: {
+        LotId: number;
+        BinId: number;
+        ExecutedTime: Date;
+        TrackerJobId?: string;
+        status?: StatusJob;
+        errorMessage?: string | null;
+    }) => {
+        try {
+            return await fastDb.mustExecutedJob.create({
+                data: {
+                    LotId: data.LotId,
+                    BinId: data.BinId,
+                    ExecutedTime: data.ExecutedTime,
+                    TrackerJobId: data.TrackerJobId,
+                    status: data.status ?? StatusJob.ACTIVE,
+                    errorMessage: data.errorMessage ?? null,
+                },
+            });
+        } catch (error) {
+            console.error("Error creating executed job history:", error);
             throw error;
         }
     }
