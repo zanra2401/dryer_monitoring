@@ -14,15 +14,14 @@ export default defineEventHandler(async (event) => {
         const totalCount = await sqliteUtils.getSystemFlag("dryCount");
 
         if (!result) {
-            setResponseStatus(event, 404);
-            return { error: "Dryer area not found" };
+            throw createError({
+                statusCode: 404,
+                statusMessage: "Dry areas not found",
+            });
         }
 
         return { success: true, data: result, totalCount: totalCount ? parseInt(totalCount as string) : 0 };
-
     } catch (error) {
-        console.log(error);
-        setResponseStatus(event, 500);
-        return { error: "Internal Server Error" };
+        return error;
     }
 });

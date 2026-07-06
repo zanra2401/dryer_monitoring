@@ -1,0 +1,2 @@
+-- AlterTable
+ALTER TABLE `lots` MODIFY `status` ENUM('UPAIR', 'DOWNAIR', 'DRIED') NOT NULL DEFAULT 'UPAIR';

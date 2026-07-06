@@ -22,6 +22,7 @@ enum BinStatus {
 enum LotStatus {
   UPAIR
   DOWNAIR
+  DRIED
 }
 
 model User {
@@ -80,7 +81,7 @@ model Bin {
   fieldTempBottom String    @map("field_temp_bottom")
   fieldRhBottom   String    @map("field_rh_bottom")
   binStatus       BinStatus @default(EMPTY) @map("bin_status")
-  occupiedBy      Int?      @map("occupied_by")
+  occupiedBy      String?      @map("occupied_by")
   
   dryerArea       DryerArea @relation(fields: [areaId], references: [areaId]) 
   channel         Channel @relation(fields: [channelId], references: [channelId], onDelete: Cascade)
@@ -97,13 +98,13 @@ model Lot {
   netToBin     Decimal?  @map("net_to_bin")
   initialMc    Decimal?  @map("initial_mc")
   status       LotStatus @default(UPAIR)
-  createdBy    Int       @map("create_by")
+  createdBy    Int?       @map("create_by")
   binNumber    Int       @map("bin_number")
   areaId       Int       @map("area_id")
   startTime    DateTime  @default(now()) @map("start_time")
   endTime      DateTime? @map("end_time")
 
-  user         User      @relation("CreatedLots", fields: [createdBy], references: [userId])
+  user         User?     @relation("CreatedLots", fields: [createdBy], references: [userId])
   logs         Log[]
 
   @@map("lots")

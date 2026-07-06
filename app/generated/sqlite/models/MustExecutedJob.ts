@@ -40,23 +40,35 @@ export type MustExecutedJobSumAggregateOutputType = {
 
 export type MustExecutedJobMinAggregateOutputType = {
   JobId: number | null
-  ExcutedTime: Date | null
+  ExecutedTime: Date | null
   LotId: number | null
   BinId: number | null
+  TrackerJobId: string | null
+  status: $Enums.StatusJob | null
+  errorMessage: string | null
+  createdAt: Date | null
 }
 
 export type MustExecutedJobMaxAggregateOutputType = {
   JobId: number | null
-  ExcutedTime: Date | null
+  ExecutedTime: Date | null
   LotId: number | null
   BinId: number | null
+  TrackerJobId: string | null
+  status: $Enums.StatusJob | null
+  errorMessage: string | null
+  createdAt: Date | null
 }
 
 export type MustExecutedJobCountAggregateOutputType = {
   JobId: number
-  ExcutedTime: number
+  ExecutedTime: number
   LotId: number
   BinId: number
+  TrackerJobId: number
+  status: number
+  errorMessage: number
+  createdAt: number
   _all: number
 }
 
@@ -75,23 +87,35 @@ export type MustExecutedJobSumAggregateInputType = {
 
 export type MustExecutedJobMinAggregateInputType = {
   JobId?: true
-  ExcutedTime?: true
+  ExecutedTime?: true
   LotId?: true
   BinId?: true
+  TrackerJobId?: true
+  status?: true
+  errorMessage?: true
+  createdAt?: true
 }
 
 export type MustExecutedJobMaxAggregateInputType = {
   JobId?: true
-  ExcutedTime?: true
+  ExecutedTime?: true
   LotId?: true
   BinId?: true
+  TrackerJobId?: true
+  status?: true
+  errorMessage?: true
+  createdAt?: true
 }
 
 export type MustExecutedJobCountAggregateInputType = {
   JobId?: true
-  ExcutedTime?: true
+  ExecutedTime?: true
   LotId?: true
   BinId?: true
+  TrackerJobId?: true
+  status?: true
+  errorMessage?: true
+  createdAt?: true
   _all?: true
 }
 
@@ -183,9 +207,13 @@ export type MustExecutedJobGroupByArgs<ExtArgs extends runtime.Types.Extensions.
 
 export type MustExecutedJobGroupByOutputType = {
   JobId: number
-  ExcutedTime: Date
+  ExecutedTime: Date
   LotId: number
   BinId: number
+  TrackerJobId: string | null
+  status: $Enums.StatusJob
+  errorMessage: string | null
+  createdAt: Date
   _count: MustExecutedJobCountAggregateOutputType | null
   _avg: MustExecutedJobAvgAggregateOutputType | null
   _sum: MustExecutedJobSumAggregateOutputType | null
@@ -213,16 +241,24 @@ export type MustExecutedJobWhereInput = {
   OR?: Prisma.MustExecutedJobWhereInput[]
   NOT?: Prisma.MustExecutedJobWhereInput | Prisma.MustExecutedJobWhereInput[]
   JobId?: Prisma.IntFilter<"MustExecutedJob"> | number
-  ExcutedTime?: Prisma.DateTimeFilter<"MustExecutedJob"> | Date | string
+  ExecutedTime?: Prisma.DateTimeFilter<"MustExecutedJob"> | Date | string
   LotId?: Prisma.IntFilter<"MustExecutedJob"> | number
   BinId?: Prisma.IntFilter<"MustExecutedJob"> | number
+  TrackerJobId?: Prisma.StringNullableFilter<"MustExecutedJob"> | string | null
+  status?: Prisma.EnumStatusJobFilter<"MustExecutedJob"> | $Enums.StatusJob
+  errorMessage?: Prisma.StringNullableFilter<"MustExecutedJob"> | string | null
+  createdAt?: Prisma.DateTimeFilter<"MustExecutedJob"> | Date | string
 }
 
 export type MustExecutedJobOrderByWithRelationInput = {
   JobId?: Prisma.SortOrder
-  ExcutedTime?: Prisma.SortOrder
+  ExecutedTime?: Prisma.SortOrder
   LotId?: Prisma.SortOrder
   BinId?: Prisma.SortOrder
+  TrackerJobId?: Prisma.SortOrderInput | Prisma.SortOrder
+  status?: Prisma.SortOrder
+  errorMessage?: Prisma.SortOrderInput | Prisma.SortOrder
+  createdAt?: Prisma.SortOrder
 }
 
 export type MustExecutedJobWhereUniqueInput = Prisma.AtLeast<{
@@ -230,16 +266,24 @@ export type MustExecutedJobWhereUniqueInput = Prisma.AtLeast<{
   AND?: Prisma.MustExecutedJobWhereInput | Prisma.MustExecutedJobWhereInput[]
   OR?: Prisma.MustExecutedJobWhereInput[]
   NOT?: Prisma.MustExecutedJobWhereInput | Prisma.MustExecutedJobWhereInput[]
-  ExcutedTime?: Prisma.DateTimeFilter<"MustExecutedJob"> | Date | string
+  ExecutedTime?: Prisma.DateTimeFilter<"MustExecutedJob"> | Date | string
   LotId?: Prisma.IntFilter<"MustExecutedJob"> | number
   BinId?: Prisma.IntFilter<"MustExecutedJob"> | number
+  TrackerJobId?: Prisma.StringNullableFilter<"MustExecutedJob"> | string | null
+  status?: Prisma.EnumStatusJobFilter<"MustExecutedJob"> | $Enums.StatusJob
+  errorMessage?: Prisma.StringNullableFilter<"MustExecutedJob"> | string | null
+  createdAt?: Prisma.DateTimeFilter<"MustExecutedJob"> | Date | string
 }, "JobId">
 
 export type MustExecutedJobOrderByWithAggregationInput = {
   JobId?: Prisma.SortOrder
-  ExcutedTime?: Prisma.SortOrder
+  ExecutedTime?: Prisma.SortOrder
   LotId?: Prisma.SortOrder
   BinId?: Prisma.SortOrder
+  TrackerJobId?: Prisma.SortOrderInput | Prisma.SortOrder
+  status?: Prisma.SortOrder
+  errorMessage?: Prisma.SortOrderInput | Prisma.SortOrder
+  createdAt?: Prisma.SortOrder
   _count?: Prisma.MustExecutedJobCountOrderByAggregateInput
   _avg?: Prisma.MustExecutedJobAvgOrderByAggregateInput
   _max?: Prisma.MustExecutedJobMaxOrderByAggregateInput
@@ -252,65 +296,98 @@ export type MustExecutedJobScalarWhereWithAggregatesInput = {
   OR?: Prisma.MustExecutedJobScalarWhereWithAggregatesInput[]
   NOT?: Prisma.MustExecutedJobScalarWhereWithAggregatesInput | Prisma.MustExecutedJobScalarWhereWithAggregatesInput[]
   JobId?: Prisma.IntWithAggregatesFilter<"MustExecutedJob"> | number
-  ExcutedTime?: Prisma.DateTimeWithAggregatesFilter<"MustExecutedJob"> | Date | string
+  ExecutedTime?: Prisma.DateTimeWithAggregatesFilter<"MustExecutedJob"> | Date | string
   LotId?: Prisma.IntWithAggregatesFilter<"MustExecutedJob"> | number
   BinId?: Prisma.IntWithAggregatesFilter<"MustExecutedJob"> | number
+  TrackerJobId?: Prisma.StringNullableWithAggregatesFilter<"MustExecutedJob"> | string | null
+  status?: Prisma.EnumStatusJobWithAggregatesFilter<"MustExecutedJob"> | $Enums.StatusJob
+  errorMessage?: Prisma.StringNullableWithAggregatesFilter<"MustExecutedJob"> | string | null
+  createdAt?: Prisma.DateTimeWithAggregatesFilter<"MustExecutedJob"> | Date | string
 }
 
 export type MustExecutedJobCreateInput = {
-  JobId: number
-  ExcutedTime: Date | string
+  ExecutedTime?: Date | string
   LotId: number
   BinId: number
+  TrackerJobId?: string | null
+  status?: $Enums.StatusJob
+  errorMessage?: string | null
+  createdAt?: Date | string
 }
 
 export type MustExecutedJobUncheckedCreateInput = {
-  JobId: number
-  ExcutedTime: Date | string
+  JobId?: number
+  ExecutedTime?: Date | string
   LotId: number
   BinId: number
+  TrackerJobId?: string | null
+  status?: $Enums.StatusJob
+  errorMessage?: string | null
+  createdAt?: Date | string
 }
 
 export type MustExecutedJobUpdateInput = {
-  JobId?: Prisma.IntFieldUpdateOperationsInput | number
-  ExcutedTime?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  ExecutedTime?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   LotId?: Prisma.IntFieldUpdateOperationsInput | number
   BinId?: Prisma.IntFieldUpdateOperationsInput | number
+  TrackerJobId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  status?: Prisma.EnumStatusJobFieldUpdateOperationsInput | $Enums.StatusJob
+  errorMessage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
 export type MustExecutedJobUncheckedUpdateInput = {
   JobId?: Prisma.IntFieldUpdateOperationsInput | number
-  ExcutedTime?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  ExecutedTime?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   LotId?: Prisma.IntFieldUpdateOperationsInput | number
   BinId?: Prisma.IntFieldUpdateOperationsInput | number
+  TrackerJobId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  status?: Prisma.EnumStatusJobFieldUpdateOperationsInput | $Enums.StatusJob
+  errorMessage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
 export type MustExecutedJobCreateManyInput = {
-  JobId: number
-  ExcutedTime: Date | string
+  JobId?: number
+  ExecutedTime?: Date | string
   LotId: number
   BinId: number
+  TrackerJobId?: string | null
+  status?: $Enums.StatusJob
+  errorMessage?: string | null
+  createdAt?: Date | string
 }
 
 export type MustExecutedJobUpdateManyMutationInput = {
-  JobId?: Prisma.IntFieldUpdateOperationsInput | number
-  ExcutedTime?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  ExecutedTime?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   LotId?: Prisma.IntFieldUpdateOperationsInput | number
   BinId?: Prisma.IntFieldUpdateOperationsInput | number
+  TrackerJobId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  status?: Prisma.EnumStatusJobFieldUpdateOperationsInput | $Enums.StatusJob
+  errorMessage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
 export type MustExecutedJobUncheckedUpdateManyInput = {
   JobId?: Prisma.IntFieldUpdateOperationsInput | number
-  ExcutedTime?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  ExecutedTime?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   LotId?: Prisma.IntFieldUpdateOperationsInput | number
   BinId?: Prisma.IntFieldUpdateOperationsInput | number
+  TrackerJobId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  status?: Prisma.EnumStatusJobFieldUpdateOperationsInput | $Enums.StatusJob
+  errorMessage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
 export type MustExecutedJobCountOrderByAggregateInput = {
   JobId?: Prisma.SortOrder
-  ExcutedTime?: Prisma.SortOrder
+  ExecutedTime?: Prisma.SortOrder
   LotId?: Prisma.SortOrder
   BinId?: Prisma.SortOrder
+  TrackerJobId?: Prisma.SortOrder
+  status?: Prisma.SortOrder
+  errorMessage?: Prisma.SortOrder
+  createdAt?: Prisma.SortOrder
 }
 
 export type MustExecutedJobAvgOrderByAggregateInput = {
@@ -321,16 +398,24 @@ export type MustExecutedJobAvgOrderByAggregateInput = {
 
 export type MustExecutedJobMaxOrderByAggregateInput = {
   JobId?: Prisma.SortOrder
-  ExcutedTime?: Prisma.SortOrder
+  ExecutedTime?: Prisma.SortOrder
   LotId?: Prisma.SortOrder
   BinId?: Prisma.SortOrder
+  TrackerJobId?: Prisma.SortOrder
+  status?: Prisma.SortOrder
+  errorMessage?: Prisma.SortOrder
+  createdAt?: Prisma.SortOrder
 }
 
 export type MustExecutedJobMinOrderByAggregateInput = {
   JobId?: Prisma.SortOrder
-  ExcutedTime?: Prisma.SortOrder
+  ExecutedTime?: Prisma.SortOrder
   LotId?: Prisma.SortOrder
   BinId?: Prisma.SortOrder
+  TrackerJobId?: Prisma.SortOrder
+  status?: Prisma.SortOrder
+  errorMessage?: Prisma.SortOrder
+  createdAt?: Prisma.SortOrder
 }
 
 export type MustExecutedJobSumOrderByAggregateInput = {
@@ -343,42 +428,62 @@ export type MustExecutedJobSumOrderByAggregateInput = {
 
 export type MustExecutedJobSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   JobId?: boolean
-  ExcutedTime?: boolean
+  ExecutedTime?: boolean
   LotId?: boolean
   BinId?: boolean
+  TrackerJobId?: boolean
+  status?: boolean
+  errorMessage?: boolean
+  createdAt?: boolean
 }, ExtArgs["result"]["mustExecutedJob"]>
 
 export type MustExecutedJobSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   JobId?: boolean
-  ExcutedTime?: boolean
+  ExecutedTime?: boolean
   LotId?: boolean
   BinId?: boolean
+  TrackerJobId?: boolean
+  status?: boolean
+  errorMessage?: boolean
+  createdAt?: boolean
 }, ExtArgs["result"]["mustExecutedJob"]>
 
 export type MustExecutedJobSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   JobId?: boolean
-  ExcutedTime?: boolean
+  ExecutedTime?: boolean
   LotId?: boolean
   BinId?: boolean
+  TrackerJobId?: boolean
+  status?: boolean
+  errorMessage?: boolean
+  createdAt?: boolean
 }, ExtArgs["result"]["mustExecutedJob"]>
 
 export type MustExecutedJobSelectScalar = {
   JobId?: boolean
-  ExcutedTime?: boolean
+  ExecutedTime?: boolean
   LotId?: boolean
   BinId?: boolean
+  TrackerJobId?: boolean
+  status?: boolean
+  errorMessage?: boolean
+  createdAt?: boolean
 }
 
-export type MustExecutedJobOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"JobId" | "ExcutedTime" | "LotId" | "BinId", ExtArgs["result"]["mustExecutedJob"]>
+export type MustExecutedJobOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"JobId" | "ExecutedTime" | "LotId" | "BinId" | "TrackerJobId" | "status" | "errorMessage" | "createdAt", ExtArgs["result"]["mustExecutedJob"]>
 
 export type $MustExecutedJobPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   name: "MustExecutedJob"
   objects: {}
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     JobId: number
-    ExcutedTime: Date
+    ExecutedTime: Date
     LotId: number
     BinId: number
+    TrackerJobId: string | null
+    status: $Enums.StatusJob
+    errorMessage: string | null
+    createdAt: Date
   }, ExtArgs["result"]["mustExecutedJob"]>
   composites: {}
 }
@@ -803,9 +908,13 @@ export interface Prisma__MustExecutedJobClient<T, Null = never, ExtArgs extends 
  */
 export interface MustExecutedJobFieldRefs {
   readonly JobId: Prisma.FieldRef<"MustExecutedJob", 'Int'>
-  readonly ExcutedTime: Prisma.FieldRef<"MustExecutedJob", 'DateTime'>
+  readonly ExecutedTime: Prisma.FieldRef<"MustExecutedJob", 'DateTime'>
   readonly LotId: Prisma.FieldRef<"MustExecutedJob", 'Int'>
   readonly BinId: Prisma.FieldRef<"MustExecutedJob", 'Int'>
+  readonly TrackerJobId: Prisma.FieldRef<"MustExecutedJob", 'String'>
+  readonly status: Prisma.FieldRef<"MustExecutedJob", 'StatusJob'>
+  readonly errorMessage: Prisma.FieldRef<"MustExecutedJob", 'String'>
+  readonly createdAt: Prisma.FieldRef<"MustExecutedJob", 'DateTime'>
 }
     
 

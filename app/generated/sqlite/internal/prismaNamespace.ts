@@ -678,7 +678,13 @@ export const JobTrackerScalarFieldEnum = {
   LotId: 'LotId',
   BinId: 'BinId',
   ExecuteTime: 'ExecuteTime',
-  status: 'status'
+  IntervalMinutes: 'IntervalMinutes',
+  status: 'status',
+  attemptCount: 'attemptCount',
+  lastError: 'lastError',
+  lockedAt: 'lockedAt',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
 } as const
 
 export type JobTrackerScalarFieldEnum = (typeof JobTrackerScalarFieldEnum)[keyof typeof JobTrackerScalarFieldEnum]
@@ -686,9 +692,13 @@ export type JobTrackerScalarFieldEnum = (typeof JobTrackerScalarFieldEnum)[keyof
 
 export const MustExecutedJobScalarFieldEnum = {
   JobId: 'JobId',
-  ExcutedTime: 'ExcutedTime',
+  ExecutedTime: 'ExecutedTime',
   LotId: 'LotId',
-  BinId: 'BinId'
+  BinId: 'BinId',
+  TrackerJobId: 'TrackerJobId',
+  status: 'status',
+  errorMessage: 'errorMessage',
+  createdAt: 'createdAt'
 } as const
 
 export type MustExecutedJobScalarFieldEnum = (typeof MustExecutedJobScalarFieldEnum)[keyof typeof MustExecutedJobScalarFieldEnum]
@@ -700,6 +710,14 @@ export const SortOrder = {
 } as const
 
 export type SortOrder = (typeof SortOrder)[keyof typeof SortOrder]
+
+
+export const NullsOrder = {
+  first: 'first',
+  last: 'last'
+} as const
+
+export type NullsOrder = (typeof NullsOrder)[keyof typeof NullsOrder]
 
 
 
