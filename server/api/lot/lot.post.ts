@@ -19,7 +19,7 @@ export default defineEventHandler(async (event) => {
     try {
         const body = bodySchema.parse(await readBody(event));
 
-        const [user, bin, activeLot] = await Promise.all([
+        const [user, bin, activeLot, sameLotNumber] = await Promise.all([
             prisma.user.findUnique({
                 where: { userId: body.created_by },
             }),
@@ -41,6 +41,9 @@ export default defineEventHandler(async (event) => {
                     },
                 },
             }),
+            prisma.lot.findUnique({
+                where: { lotNumber: body.lot_number },
+            }),
         ]);
 
         if (!user) {
@@ -56,6 +59,11 @@ export default defineEventHandler(async (event) => {
         if (activeLot) {
             setResponseStatus(event, 409);
             return { error: "Bin already has an active lot" };
+        }
+
+        if (sameLotNumber) {
+            setResponseStatus(event, 409);
+            return { error: "Lot number already exists" };
         }
 
         const lotStatus = body.status ?? "UPAIR";

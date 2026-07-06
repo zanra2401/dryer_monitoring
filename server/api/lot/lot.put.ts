@@ -46,6 +46,17 @@ export default defineEventHandler(async (event) => {
             return { error: "Bin not found" };
         }
 
+        if (body.lot_number !== undefined) {
+            const sameLotNumber = await prisma.lot.findUnique({
+                where: { lotNumber: body.lot_number },
+            });
+
+            if (sameLotNumber && sameLotNumber.lotId !== body.lot_id) {
+                setResponseStatus(event, 409);
+                return { error: "Lot number already exists" };
+            }
+        }
+
         const activeLotConflict = await prisma.lot.findFirst({
             where: {
                 lotId: {
