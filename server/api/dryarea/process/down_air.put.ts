@@ -4,21 +4,15 @@ import { LotStatus } from "~/generated/prisma/enums";
 export default defineEventHandler(async (event) => {
     try {
         const body = await readBody(event);
-        const { logs_id, time, lot_id } = body;
-
+        const { time, lot_id } = body;
+        console.log("time", new Date(time));
         const result = await prisma.$transaction(async (prisma) => {
             const log = await prisma.log.updateMany({
                 where: {
-                    OR: [
-                        {
-                            logId: logs_id,
-                        },
-                        {
-                            timestampThingspeak: {
-                                gte: new Date(time),
-                            }
-                        }
-                    ]
+                    lotId: lot_id,
+                    timestampThingspeak: {
+                        gte: new Date(time),
+                    }
                 },
                 data: {
                     statusBin: BinStatus.DOWNAIR,
@@ -31,6 +25,7 @@ export default defineEventHandler(async (event) => {
                 },
                 data: {
                     status: LotStatus.DOWNAIR,
+                    downAirAt: new Date(time),
                 },
                 select: {
                     lotNumber: true,

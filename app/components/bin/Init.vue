@@ -6,7 +6,7 @@ const props = defineProps({
         required: true
     },
     binNumber: {
-        type: Number,
+        type: String,
         required: true
     }
 });

@@ -1,16 +1,16 @@
 <script setup lang="ts">
 import type { DropdownMenuItem, NavigationMenuItem } from '@nuxt/ui'
-
 const open = ref(true)
 
 const colorMode = useColorMode()
+
+
 
 function getItems(state: 'collapsed' | 'expanded') {
   return [
     {
       label: 'Dry Area',
       icon: 'i-lucide-inbox',
-      badge: '4',
       to: '/dryercfg',
     },
   ] satisfies NavigationMenuItem[]
@@ -90,7 +90,7 @@ const props = defineProps({
       }"
     >
       <template #header>
-        Prasad Seeds
+        <UIcon name="i-logos-nuxt-icon" class="size-8" />
       </template>
 
       <template #default="{ state }">

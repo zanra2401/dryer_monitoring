@@ -1,11 +1,12 @@
 export default defineEventHandler(async (event) => {
     try {
         const body = await readBody(event);
-        const { log_id, mc } = body;
+        const { log_id, mc, remark } = body;
 
         const log = await prisma.log.update({  
             data: {
                 mc: mc,
+                remark: remark,
             },
             where: {
                 logId: log_id,

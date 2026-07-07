@@ -21,6 +21,7 @@ export default defineEventHandler(async (event) => {
                 },
                 data: {
                     status: BinStatus.UPAIR,
+                    downAirAt: null,
                 },
                 select: {
                     lotNumber: true,
@@ -38,7 +39,6 @@ export default defineEventHandler(async (event) => {
             });
         });
 
-        
         return { success: true, data: result };
     }
     catch (error: unknown) {

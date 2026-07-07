@@ -1,7 +1,7 @@
 export const useSingleBin = () => {
     const bin = ref<Record<string, any>|null>(null);
 
-    const fetch_bin = async (area_id: number, bin_number: number) => {
+    const fetch_bin = async (area_id: number, bin_number: string) => {
         bin.value = null;
         const { data, error } = await useFetch('/api/bin/bin', {
             method: 'GET',
