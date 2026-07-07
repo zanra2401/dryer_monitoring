@@ -7,7 +7,10 @@
     "dev": "nuxt dev",
     "generate": "nuxt generate",
     "preview": "nuxt preview",
-    "postinstall": "nuxt prepare"
+    "postinstall": "nuxt prepare",
+    "seed:manual-test": "jiti ./.local/manual-test-seeder.ts",
+    "seed:manual-test:reset": "jiti ./.local/manual-test-seeder.ts --reset",
+    "seed:manual-test:users": "jiti ./.local/manual-test-user-seeder.ts"
   },
   "dependencies": {
     "@nuxt/ui": "^4.9.0",
@@ -15,6 +18,7 @@
     "@prisma/adapter-mariadb": "^7.8.0",
     "@prisma/client": "^7.8.0",
     "dotenv": "^17.4.2",
+    "exceljs": "^4.4.0",
     "nuxt": "^4.4.8",
     "sqlite": "^5.1.1",
     "vue": "^3.5.38",
@@ -22,6 +26,7 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
+    "@iconify-json/lucide": "^1.2.116",
     "@types/node": "^26.1.0",
     "prisma": "^7.8.0"
   }

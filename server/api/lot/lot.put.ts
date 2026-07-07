@@ -8,9 +8,10 @@ const bodySchema = z.object({
     quality: z.string().trim().min(1).optional().nullable(),
     net_to_bin: z.coerce.number().optional().nullable(),
     initial_mc: z.coerce.number().optional().nullable(),
-    status: z.enum(["UPAIR", "DOWNAIR"]).optional(),
+    status: z.enum(["UPAIR", "DOWNAIR", "DRIED"]).optional(),
     bin_number: z.coerce.number().int().positive().optional(),
     area_id: z.coerce.number().int().positive().optional(),
+    start_time: z.coerce.date().optional(),
     end_time: z.coerce.date().optional().nullable(),
 });
 
@@ -85,7 +86,7 @@ export default defineEventHandler(async (event) => {
             areaId: nextAreaId,
         };
         const isSameBin = oldBinKey.binNumber === newBinKey.binNumber && oldBinKey.areaId === newBinKey.areaId;
-        const isActiveLot = nextEndTime === null && ["UPAIR", "DOWNAIR"].includes(nextStatus);
+        const shouldOccupyBin = nextEndTime === null && ["UPAIR", "DOWNAIR", "DRIED"].includes(nextStatus);
 
         const result = await prisma.$transaction(async (tx) => {
             const updatedLot = await tx.lot.update({
@@ -99,6 +100,7 @@ export default defineEventHandler(async (event) => {
                     ...(body.status !== undefined ? { status: body.status } : {}),
                     ...(body.bin_number !== undefined ? { binNumber: body.bin_number } : {}),
                     ...(body.area_id !== undefined ? { areaId: body.area_id } : {}),
+                    ...(body.start_time !== undefined ? { startTime: body.start_time } : {}),
                     ...(body.end_time !== undefined ? { endTime: body.end_time } : {}),
                 },
             });
@@ -120,8 +122,8 @@ export default defineEventHandler(async (event) => {
                     binNumber_areaId: newBinKey,
                 },
                 data: {
-                    occupiedBy: isActiveLot ? updatedLot.lotId : null,
-                    binStatus: isActiveLot ? nextStatus : "EMPTY",
+                    occupiedBy: shouldOccupyBin ? updatedLot.lotNumber : null,
+                    binStatus: shouldOccupyBin ? nextStatus : "EMPTY",
                 },
             });
 

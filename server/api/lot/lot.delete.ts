@@ -29,7 +29,7 @@ export default defineEventHandler(async (event) => {
                 where: {
                     binNumber: existingLot.binNumber,
                     areaId: existingLot.areaId,
-                    occupiedBy: body.lot_id,
+                    occupiedBy: existingLot.lotNumber,
                 },
                 data: {
                     occupiedBy: null,

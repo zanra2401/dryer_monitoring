@@ -8,6 +8,7 @@ dist
 plant
 # Node dependencies
 node_modules
+.local
 # Logs
 logs
 *.log

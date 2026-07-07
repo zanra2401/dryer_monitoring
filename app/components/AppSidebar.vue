@@ -8,10 +8,19 @@ const colorMode = useColorMode()
 function getItems(state: 'collapsed' | 'expanded') {
   return [
     {
+      label: 'Lots',
+      icon: 'i-lucide-package-search',
+      to: '/dryercfg',
+    },
+    {
       label: 'Dry Area',
       icon: 'i-lucide-inbox',
-      badge: '4',
-      to: '/dryercfg',
+      to: '/dryercfg/dry-areas',
+    },
+    {
+      label: 'Users',
+      icon: 'i-lucide-users',
+      to: '/dryercfg/users',
     },
   ] satisfies NavigationMenuItem[]
 }
