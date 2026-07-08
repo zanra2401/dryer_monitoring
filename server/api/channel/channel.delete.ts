@@ -1,6 +1,4 @@
 import { BinStatus } from "~/generated/prisma/client";
-import sqliteUtils from "~~/server/utils/sqlite";
-import { FlagType } from "~/generated/sqlite/client";
 
 export default defineEventHandler(async (event) => {    
     const body = await readBody(event);
@@ -49,9 +47,6 @@ export default defineEventHandler(async (event) => {
                 deletedBinsCount: binsCount
             };
         });
-
-        const binCount = (await sqliteUtils.getSystemFlag("binCount")) ? parseInt(await sqliteUtils.getSystemFlag("binCount") as string) - result.deletedBinsCount : 0 - result.deletedBinsCount;
-        await sqliteUtils.setSystemFlag("binCount", binCount.toString(), FlagType.NUMBER);
 
         return { success: true, data: result };
     } catch (error: unknown) {

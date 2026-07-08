@@ -85,6 +85,7 @@ model Bin {
   
   dryerArea       DryerArea @relation(fields: [areaId], references: [areaId]) 
   channel         Channel @relation(fields: [channelId], references: [channelId], onDelete: Cascade)
+  binLogs         BinLog[]
 
   @@id([binNumber, areaId])
   @@map("bins")
@@ -109,25 +110,38 @@ model Lot {
   depth        Float?    @map("depth")
 
   user         User?     @relation("CreatedLots", fields: [createdBy], references: [userId])
-  logs         Log[]
+  mcLogs       LotMcLog[]
 
   @@map("lots")
 }
 
-model Log {
-  logId               Int      @id @default(autoincrement()) @map("log_id")
-  lotId               Int      @map("lot_id")
+model BinLog {
+  binLogId            Int      @id @default(autoincrement()) @map("bin_log_id")
+  binNumber           Int      @map("bin_number")
+  areaId              Int      @map("area_id")
   timestampThingspeak DateTime @map("timestamp_thingspeak")
   statusBin           String   @map("status_bin")
-  tempTop             Float? @map("temp_top")
-  rhTop               Float? @map("rh_top")
-  tempBottom          Float? @map("temp_bottom")
-  rhBottom            Float? @map("rh_bottom")
-  mc                  Float?
-  checkerName         String?  @map("checker_name")
-  remark              String?    @map("remark")
+  tempTop             Float?   @map("temp_top")
+  rhTop               Float?   @map("rh_top")
+  tempBottom          Float?   @map("temp_bottom")
+  rhBottom            Float?   @map("rh_bottom")
+  remark              String?  @map("remark")
+  isEphemeral         Boolean  @default(false) @map("is_ephemeral")
 
-  lot                 Lot      @relation(fields: [lotId], references: [lotId])
+  bin                 Bin      @relation(fields: [binNumber, areaId], references: [binNumber, areaId], onDelete: Cascade)
 
-  @@map("logs")
+  @@map("bin_logs")
+}
+
+model LotMcLog {
+  lotMcLogId  Int      @id @default(autoincrement()) @map("lot_mc_log_id")
+  lotId       Int      @map("lot_id")
+  mc          Float    @map("mc")
+  checkerName String?  @map("checker_name")
+  remark      String?  @map("remark")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  lot         Lot      @relation(fields: [lotId], references: [lotId], onDelete: Cascade)
+
+  @@map("lot_mc_logs")
 }

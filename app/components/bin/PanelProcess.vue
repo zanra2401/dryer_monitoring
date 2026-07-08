@@ -18,7 +18,6 @@
     isControlModalOpen.value = true
     }
 
-    // Fungsi eksekutor saat modal dikonfirmasi
     const executeControlAction = async (payload: { action: 'down' | 'stop', timestamp: string }) => {
     
     // 1. Validasi String Kosong
@@ -39,7 +38,7 @@
 
     try {
         if (payload.action == 'down') {
-          const { data, error } = await useFetch(`/api/dryarea/process/down_air`, {
+          await $fetch(`/api/dryarea/process/down_air`, {
             method: 'PUT',
             body: {
               lot_id: props.lot.lotId,
@@ -47,12 +46,8 @@
             }
           })
 
-          if (error.value) {
-            toast.add({
-              title: 'Gagal Set Down',
-              color: 'error'
-            })
-          }
+          // Memicu re-fetch di komponen induk (refreshNuxtData dari useFetch setup)
+          await refreshNuxtData(`lot-${props.lotNumber}`)
 
           toast.add({
             title: 'Berhasil Set Down',
@@ -60,7 +55,7 @@
           })
 
         } else {
-          const { data, error } = await useFetch(`/api/dryarea/process/end`, {
+          await $fetch(`/api/dryarea/process/end`, {
             method: 'PUT',
             body: {
               lot_id: props.lot.lotId,
@@ -68,20 +63,22 @@
             }
           });
 
-          if (error.value) {
-            toast.add({
-              title: 'Gagal Set Stop',
-              color: 'error'
-            })
-          }
           toast.add({
               title: 'Berhasil Set Stop',
               color: 'success'
           })
+
+          // Redirect ke halaman Bin setelah Lot selesai
+          await navigateTo(`/dryer/${props.lot.areaId}/bin/${props.binNumber}/start`)
         }
 
     } catch (error) {
         console.error('Terjadi kegagalan transmisi data:', error)
+        toast.add({
+            title: 'Gagal',
+            description: 'Terjadi kegagalan transmisi data' + error,
+            color: 'error'
+        })
     }
     }
     const formatCompactDateTime = (isoString?: string | null | undefined) => {
@@ -138,20 +135,14 @@
 
     const undo_down_air = async () => {
         try {
-            const { data, error } = await useFetch(`/api/dryarea/process/undo_downair`, {
+            await $fetch(`/api/dryarea/process/undo_downair`, {
                 method: 'PUT',
                 body: {
                     lot_id: props.lot.lotId
                 }
             })
 
-            if (error.value) {
-                toast.add({
-                    title: 'Gagal Undo Down',
-                    color: 'error'
-                })
-                return;
-            }
+            await refreshNuxtData(`lot-${props.lotNumber}`)
 
             toast.add({
                 title: 'Berhasil Undo Down',
@@ -159,6 +150,10 @@
             })
         } catch (error) {
             console.error('Terjadi kegagalan transmisi data:', error)
+            toast.add({
+                title: 'Gagal Undo Down',
+                color: 'error'
+            })
         }
     }
 </script>
@@ -211,7 +206,7 @@
 
     <div class="flex flex-col gap-6">
       
-      <div class="grid grid-cols-4 gap-4">
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
         <div>
           <div class="text-xs text-gray-500">Net To Bin</div>
           <div class="font-medium">{{ lot.netToBin ?? "-" }}</div>
@@ -230,7 +225,7 @@
         </div>
       </div>
 
-      <div class="grid grid-cols-4 gap-4">
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
         <div>
           <div class="text-xs text-gray-500">Time Stop</div>
           <div class="font-medium font-mono text-sm">{{ formatCompactDateTime(lot.endTime) }}</div>
@@ -249,7 +244,7 @@
         </div>
       </div>
 
-      <div class="grid grid-cols-3 gap-4">
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div>
           <div class="text-xs text-gray-500">Total Drying</div>
           <div class="font-medium">{{ calculateTotalDrying(lot.startTime, lot.endTime) ?? "-" }}</div>

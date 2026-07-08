@@ -1,12 +1,24 @@
 <script setup lang="ts">
-    import { useBin } from '~/composable/dryer_page/useBin';
     import GridLoader from '~/components/GridLoader.vue';
     import Header from '~/components/Header.vue';
+    
     const route = useRoute();
     const toast = useToast();
     const areaId = parseInt(route.params.areaId as string);
-    const { bins, fetch_bins } = useBin();  
-    fetch_bins(areaId, toast);
+
+    // Kueri Pembacaan (GET) menggunakan useFetch di top-level untuk SSR Hydration
+    const { data: bins, error } = await useFetch('/api/bin/bins', {
+        key: `bins-area-${areaId}`, // Kunci khusus untuk Auto-Refresh Nuxt
+        method: 'GET',
+        query: { area_id: areaId }
+    });
+
+    if (error.value) {
+        toast.add({
+            title: "Gagal memuat data: " + (error.value?.statusMessage || "Unknown error"),
+            color: "error" 
+        });
+    }
 </script>
 <template>
     <div v-if="bins == null" class="w-full h-screen flex justify-center items-center">
@@ -14,13 +26,25 @@
     </div>  
     <div v-else>
         <Header />
-        <div class="flex items-center">
-            <a class="p-2 flex items-center" href="/dryer">
-                <UIcon name="i-lucide-move-left" class="w-4 h-4 mr-1" />
-            </a>
-            <b>
-                {{ bins.dryerArea.name || 'Unknown Area' }}
-            </b>
+        <div class="flex items-center justify-between p-2">
+            <div class="flex items-center">
+                <a class="p-2 flex items-center" href="/dryer">
+                    <UIcon name="i-lucide-move-left" class="w-4 h-4 mr-1" />
+                </a>
+                <b>
+                    {{ bins.dryerArea?.name || 'Unknown Area' }}
+                </b>
+            </div>
+            <NuxtLink :to="`/dryer/${areaId}/dried`">
+                <UButton 
+                    color="neutral" 
+                    variant="subtle" 
+                    class="rounded-none text-xs"
+                >
+                    <UIcon name="i-lucide-archive" class="w-3.5 h-3.5 mr-1" />
+                    Riwayat Dried
+                </UButton>
+            </NuxtLink>
         </div>
         <div class="grid min-h-screen p-2 grid-cols-3 md:grid-cols-6 lg:grid-cols-8 gap-3">
         <NuxtLink
@@ -35,10 +59,10 @@
         >
             <div class="p-1 border-b flex items-center justify-between text-[10px] font-bold bg-white/50 dark:bg-black/20">
                 <div class="flex-1 text-blue-600 dark:text-blue-400 flex justify-center border-r border-inherit">
-                    {{ data.latestLog?.tempTop ?? '-' }} C
+                    {{ data.latestLog?.tempTop?.toFixed(2) ?? '-' }} C
                 </div>
                 <div class="flex-1 text-green-600 dark:text-green-400 flex justify-center"> 
-                    {{ data.latestLog?.rhTop ?? '-' }} %
+                    {{ data.latestLog?.rhTop?.toFixed(2) ?? '-' }} %
                 </div>
             </div>
 
@@ -66,10 +90,10 @@
 
             <div class="p-1 border-t flex items-center justify-between text-[10px] font-bold bg-white/50 dark:bg-black/20">
                 <div class="flex-1 text-blue-600 dark:text-blue-400 flex justify-center border-r border-inherit">
-                    {{ data.latestLog?.tempBottom ?? '-' }} C
+                    {{ data.latestLog?.tempBottom?.toFixed(2) ?? '-' }} C
                 </div>
                 <div class="flex-1 text-green-600 dark:text-green-400 flex justify-center"> 
-                    {{ data.latestLog?.rhBottom ?? '-' }} %
+                    {{ data.latestLog?.rhBottom?.toFixed(2) ?? '-' }} %
                 </div>
             </div>
         </NuxtLink>

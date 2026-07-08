@@ -1,53 +1,67 @@
 <script setup lang="ts">
-   
-    import { useSingleBin } from '~/composable/dryer_page/useSingleBin';
-    import { BinStatus } from '~/generated/prisma/enums';
     import Init from '~/components/bin/Init.vue';
     import Process from '~/components/bin/Process.vue';
-    import { useLot } from '~/composable/useLot';
     import GridLoader from '~/components/GridLoader.vue';
     import Header from '~/components/Header.vue';
 
     const toast = useToast();
     const route = useRoute();
-    const router = useRouter();
     const lotNumber = route.params.lotNumber as string;
     const areaId = parseInt(route.params.areaId as string);
     const binNumber = route.params.binNumber as string;
 
-    const { lot_log, fetch_lot_log, data, change_log_page } = useLot();
-    const { bin, fetch_bin } = useSingleBin();
-    let dataLog = ref<any | null>(null); 
+    // Kueri Pembacaan (GET) menggunakan useFetch di top-level untuk SSR Hydration
+    // Karena kita tidak dapat memanggil composable di dalam aksi, kita letakkan ini di top-level
+    // dengan parameter 'key' yang kuat agar kita dapat menggunakan refreshNuxtData
+    
+    // Kueri Bin
+    const { data: binResponse } = await useFetch<any>('/api/bin/bin', {
+        method: 'GET',
+        query: { area_id: areaId, bin_number: binNumber },
+        key: `bin-${binNumber}`
+    });
 
-    const init = async () => {
-        await fetch_bin(areaId, binNumber);   
-        await fetch_lot_log(lotNumber, toast);
-        dataLog.value = data(lot_log.value?.data.log || []);
-    }
+    // Kueri Lot
+    const { data: lotResponse } = await useFetch<any>('/api/process/lot', {
+        method: 'GET',
+        query: { lot_number: lotNumber },
+        key: `lot-${lotNumber}`
+    });
 
-    const updateLotPage = async (page: number) => {
-        dataLog.value.data = (await change_log_page(page, lotNumber, toast))  || [];
-    }
+    // Kueri Laporan Interval 30-Menit (Dinamis O(M))
+    const { data: reportResponse } = await useFetch<any>('/api/process/report', {
+        method: 'GET',
+        query: { lot_number: lotNumber },
+        key: `report-${lotNumber}`
+    });
 
-    if (lotNumber != 'start') {
-        init();
-    }
+    console.log('Data Laporan:', reportResponse.value?.data || []);
+
+    const reportData = computed(() => (reportResponse.value?.data || []) as any[]);
+
 </script>
 
 <template>
-    <div v-if="(lot_log == null || bin == null) && lotNumber != 'start'" class="w-full h-screen flex justify-center items-center">
+    <div v-if="(!lotResponse?.data || !binResponse?.data) && lotNumber != 'start'" class="w-full h-screen flex justify-center items-center">
         <GridLoader />
     </div>
-    <div v-else>
+    <div v-else class="w-full max-w-full overflow-x-hidden min-h-screen bg-gray-50">
         <Header/>
-        <Init v-if="lotNumber == 'start'" :areaId="areaId" :lotNumber="lotNumber" :binNumber="binNumber" />
-        <div v-else>
-            <div v-if="dataLog == null">Loading2</div>
-            <ClientOnly v-else>
-                <Process @update:lotpage="(p) => {
-                    updateLotPage(p)
-                }" :areaId="areaId" :lotNumber="lotNumber" :binNumber="binNumber" :data="dataLog" :lot="lot_log.data.lot" :countLog="lot_log.data.countLog" />
-            </ClientOnly>
-        </div>
+        <main class="p-4 w-full max-w-full overflow-x-hidden">
+            <Init v-if="lotNumber == 'start'" :areaId="areaId" :lotNumber="lotNumber" :binNumber="binNumber" />
+            <div v-else class="w-full max-w-full overflow-x-hidden">
+                <div v-if="!reportData">Memuat Visualisasi Data...</div>
+                <ClientOnly v-else>
+                    <Process 
+                        :areaId="areaId" 
+                        :lotNumber="lotNumber" 
+                        :binNumber="binNumber" 
+                        :reportData="reportData" 
+                        :lot="lotResponse.data.lot" 
+                        :countLog="reportData.length" 
+                    />
+                </ClientOnly>
+            </div>
+        </main>
     </div>
 </template>

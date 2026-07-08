@@ -48,7 +48,7 @@ const handleSubmit = () => {
     <template #body>
       <div class="flex flex-col gap-5">
         <div v-if="selectedData" class="text-sm text-gray-600 bg-gray-50 p-3 border border-gray-200 rounded-none">
-          Entri Waktu: <span class="font-bold text-gray-900">{{ new Date(selectedData.timestampThingspeak) }}</span>
+          Entri Waktu: <span class="font-bold text-gray-900">{{ new Date(selectedData.time).toLocaleString('id-ID') }}</span>
         </div>
 
         <div class="flex flex-col gap-1.5">

@@ -1,8 +1,7 @@
 import * as z from "zod";
 import { Prisma } from "~/generated/prisma/client"; 
 import { prisma } from "~~/server/utils/prisma";
-import sqliteUtils from "~~/server/utils/sqlite";
-import { FlagType } from "~/generated/sqlite/client";
+import { logger } from "~~/server/utils/pino";
 
 const schema = z.object({
     name: z.string().min(1, "Name is required"),
@@ -18,41 +17,33 @@ export default defineEventHandler(async (event) => {
             },
         });
 
-        const currentFlag = await sqliteUtils.getSystemFlag("dryCount");
-
-        const dryCount = currentFlag
-            ? Number(currentFlag) + 1
-            : 1;
-
-        await sqliteUtils.setSystemFlag(
-            "dryCount",
-            dryCount.toString(),
-            FlagType.NUMBER
-        );
-
         setResponseStatus(event, 201);
-
         return dryArea;
     } catch (err: any) {
         if (err instanceof z.ZodError) {
+            const errorMessages = err.issues.map(issue => `${issue.path.join('.')} - ${issue.message}`).join(', ');
+            logger.warn({ context: 'api', error: errorMessages }, "[api] Validasi dry_area.post gagal.");
             throw createError({
                 statusCode: 400,
-                statusMessage: err.issues
-                    .map(issue => issue.message)
-                    .join(", "),
+                statusMessage: `Validasi gagal: ${errorMessages}`,
             });
         }
 
-        if (
-            err instanceof Prisma.PrismaClientKnownRequestError &&
-            err.code === "P2002"
-        ) {
-            throw createError({
-                statusCode: 409,
-                statusMessage: "Dry area already exists or Duplicate Name",
-            });
+        if (err instanceof Prisma.PrismaClientKnownRequestError) {
+            if (err.code === "P2002") {
+                throw createError({
+                    statusCode: 409,
+                    statusMessage: "Konflik penulisan data: Dryer area sudah terdaftar.",
+                });
+            }
         }
 
-        throw err;
+        if (err.statusCode) throw err;
+
+        logger.error({ context: 'api', error: err }, "[api] Kesalahan internal pada dry_area.post.");
+        throw createError({
+            statusCode: 500,
+            statusMessage: "Terjadi kesalahan komputasi internal pada peladen.",
+        });
     }
 });

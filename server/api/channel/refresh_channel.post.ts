@@ -1,7 +1,5 @@
 import  { prisma } from "~~/server/utils/prisma";
 import thinkspeaks from "~~/server/utils/thinkspeaks";
-import sqliteUtils from "~~/server/utils/sqlite";
-import { FlagType } from "~/generated/sqlite/client";
 
 export default defineEventHandler(async (event) => {
     try {
@@ -76,9 +74,6 @@ export default defineEventHandler(async (event) => {
                 }
             });
         });
-
-        const binCount = (await sqliteUtils.getSystemFlag("binCount")) ? parseInt(await sqliteUtils.getSystemFlag("binCount") as string) - will_be_deleted_bins.length + will_be_created_bins.length : 0;
-        await sqliteUtils.setSystemFlag("binCount", binCount.toString(), FlagType.NUMBER);
 
         return { success: true, data: [will_be_deleted_bins, will_be_created_bins] };
     } catch (error: unknown) {

@@ -20,15 +20,18 @@ export default defineEventHandler(async (event) => {
                 where: { areaId: area_id },
                 include: {
                     dryerArea: true,
+                    binLogs: {
+                        orderBy: { timestampThingspeak: 'desc' },
+                        take: 1
+                    }
                 },
             }),
             prisma.lot.findMany({
                 where: { areaId: area_id, status: { not: LotStatus.DRIED } },
-                // 3. Injeksi Pengambilan Log Terakhir (Top 1 Relational Query)
                 include: {
-                    logs: { // Sesuaikan nama relasi ini dengan skema schema.prisma Anda (misal: 'Log' atau 'logs')
-                        orderBy: { timestampThingspeak: 'desc' },
-                        take: 1, // Hanya ambil baris teratas (log terbaru)
+                    mcLogs: {
+                        orderBy: { createdAt: 'desc' },
+                        take: 1
                     }
                 }
             })
@@ -46,10 +49,14 @@ export default defineEventHandler(async (event) => {
             const occupiedLot = activeLots.find((lot) => lot.binNumber === bin.binNumber);
             
             // Ekstrak log terakhir dari relasi array
-            const latestLog = occupiedLot?.logs?.[0] || null;
+            const latestLog = bin.binLogs?.[0] || null;
+            const latestMcLog = occupiedLot?.mcLogs?.[0] || null;
+
+            // Pastikan binLogs tidak ikut terekspos berlebihan di level root object
+            const { binLogs, ...binData } = bin;
 
             return {
-                ...bin,
+                ...binData,
                 // Menggunakan Optional Chaining dan Nullish Coalescing (??) untuk efisiensi sintaks
                 occupiedBy: occupiedLot?.lotNumber ?? null,
                 netToBin: occupiedLot?.netToBin ?? null,
@@ -60,14 +67,14 @@ export default defineEventHandler(async (event) => {
                 
                 // Menyematkan data sensor terakhir langsung ke dalam respons Bin
                 latestLog: latestLog ? {
-                    logId: latestLog.logId,
+                    logId: latestLog.binLogId,
                     timestamp: latestLog.timestampThingspeak,
                     status: latestLog.statusBin,
                     tempTop: latestLog.tempTop,
                     rhTop: latestLog.rhTop,
                     tempBottom: latestLog.tempBottom,
                     rhBottom: latestLog.rhBottom,   
-                    mc: latestLog.mc
+                    mc: latestMcLog?.mc ?? null
                 } : null,
             };
         });

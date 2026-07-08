@@ -1,5 +1,5 @@
+import { Prisma } from "~/generated/prisma/client";
 import { BinStatus, LotStatus } from "~/generated/prisma/enums";
-import { Queue } from "bullmq";
 import * as z from "zod";
 import { prisma } from "~~/server/utils/prisma"; 
 import { logger } from "~~/server/utils/pino"; 
@@ -16,22 +16,33 @@ export default defineEventHandler(async (event) => {
         const { lot_id, time } = endDryingSchema.parse(rawBody);
         const endTimeStr = new Date(time).toISOString();
 
-        // 2. [KOREKSI] Injeksi Await pada Transaksi
         const result = await prisma.$transaction(async (tx) => {
-            const log = await tx.log.findFirst({
-                where: { lotId: lot_id, timestampThingspeak: { lte: endTimeStr } },
+            const lot = await tx.lot.findUnique({ where: { lotId: lot_id } });
+
+            if (!lot) {
+                throw createError({ statusCode: 404, statusMessage: "Data Lot tidak ditemukan." });
+            }
+
+            // Guard Clause: Tolak jika masih UPAIR
+            if (lot.status === 'UPAIR') {
+                throw createError({ 
+                    statusCode: 403, 
+                    statusMessage: "Operasi ditolak: Proses harus melalui tahap Set DownAir sebelum dapat di-Stop." 
+                });
+            }
+
+            const mcLog = await tx.lotMcLog.findFirst({
+                where: { lotId: lot_id, createdAt: { lte: endTimeStr } },
                 select: { mc: true },
-                orderBy: { timestampThingspeak: 'desc' },
+                orderBy: { createdAt: 'desc' },
                 take: 1,
             });
-
-
             const updateLot = await tx.lot.update({
                 where: { lotId: lot_id },
                 data: {
                     status: LotStatus.DRIED,
                     endTime: endTimeStr,
-                    endMC: log?.mc ?? null,
+                    endMC: mcLog?.mc ?? null,
                 },
                 // [KOREKSI] Tarik binNumber dari pangkalan data untuk presisi penghapusan
                 select: { 
@@ -51,39 +62,29 @@ export default defineEventHandler(async (event) => {
             return updateLot; // Sekarang objek ini memuat binNumber
         });
 
-        // 3. Logika Penghapusan Pekerjaan Presisi Tinggi
-        const globalScope = globalThis as typeof globalThis & {
-            __SensorQueue?: Queue;
-        };
-        const queue = globalScope.__SensorQueue;
-
-        if (queue) {
-            const pendingJobs = await queue.getJobs(['delayed', 'waiting', 'active']);
-            
-            // [KOREKSI] Konstruksi kunci pencarian absolut: drying-{lot_id}-{bin_number}-
-            const targetPrefix = `drying-${lot_id}-${result.binNumber}-`;
-            
-            const jobsToDelete = pendingJobs.filter(job => job.id && job.id.startsWith(targetPrefix));
-
-            for (const job of jobsToDelete) {
-                await job.remove();
-                logger.info({ 
-                    context: 'bullmq', jobId: job.id 
-                }, `[bullmq] Pekerjaan ${job.id} dihapus. Siklus Lot ${lot_id} pada Bin ${result.binNumber} dihentikan.`);
-            }
-        } else {
-            logger.warn({ context: 'api' }, "[api] Antrean BullMQ tidak terdeteksi.");
-        }
-
         return { success: true, data: result };
 
     } catch (error: unknown) {
         // 4. [KOREKSI] Standardisasi Respons Galat
         if (error instanceof z.ZodError) {
-            throw createError({ statusCode: 400, statusMessage: "Validasi muatan data gagal." });
+            const errorMessages = error.issues.map(issue => `${issue.path.join('.')} - ${issue.message}`).join(', ');
+            throw createError({ statusCode: 400, statusMessage: `Validasi gagal: ${errorMessages}` });
+        }
+        if (error instanceof Prisma.PrismaClientKnownRequestError) {
+            if (error.code === "P2034") {
+                logger.warn({ context: 'database', error }, "[database] Terjadi Deadlock pada MySQL. Merespons dengan HTTP 409.");
+                throw createError({ statusCode: 409, statusMessage: "Konflik penulisan data (Deadlock). Silakan coba lagi." });
+            } else if (error.code === "P2002") {
+                throw createError({ statusCode: 409, statusMessage: "Duplikasi data: Pelanggaran kunci unik." });
+            } else if (error.code === "P2003") {
+                throw createError({ statusCode: 400, statusMessage: "Pelanggaran relasi basis data (Kunci Asing tidak valid)." });
+            } else if (error.code === "P2025") {
+                throw createError({ statusCode: 404, statusMessage: "Data yang dituju tidak ditemukan." });
+            }
         }
         
-        logger.error({ context: 'api', error }, `[api] Kegagalan sistemik saat mengakhiri Lot.`);
-        throw createError({ statusCode: 500, statusMessage: "Terjadi kesalahan internal peladen." });
+        if ((error as any).statusCode) throw error;
+        logger.error({ context: 'api', error }, `[api] Kegagalan sistemik yang tidak terprediksi pada saat mengakhiri Lot.`);
+        throw createError({ statusCode: 500, statusMessage: "Terjadi kesalahan komputasi internal pada peladen." });
     }
 });

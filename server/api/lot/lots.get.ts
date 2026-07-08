@@ -6,7 +6,7 @@ const querySchema = z.object({
     offset: z.coerce.number().int().min(0).optional(),
     area_id: z.coerce.number().int().positive().optional(),
     bin_number: z.coerce.number().int().positive().optional(),
-    status: z.enum(["UPAIR", "DOWNAIR"]).optional(),
+    status: z.enum(["UPAIR", "DOWNAIR", "DRIED"]).optional(),
 });
 
 export default defineEventHandler(async (event) => {

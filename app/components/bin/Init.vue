@@ -91,6 +91,9 @@ const startDrying = async () => {
             color: 'success',
             icon: 'i-heroicons-check-circle'
         });
+
+        // Redirect ke halaman Lot yang baru dibuat
+        await navigateTo(`/dryer/${props.areaId}/bin/${props.binNumber}/${lot_data.value.lot_number}`);
         
     } catch (err: any) {
         if (err instanceof z.ZodError) {

@@ -12,7 +12,7 @@ function getItems(state: 'collapsed' | 'expanded') {
       label: 'Dry Area',
       icon: 'i-lucide-inbox',
       to: '/dryercfg',
-    },
+    }
   ] satisfies NavigationMenuItem[]
 }
 

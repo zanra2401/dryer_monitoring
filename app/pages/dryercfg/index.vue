@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { h, resolveComponent } from 'vue'
 import type { TableColumn } from '@nuxt/ui'
-import type { Row } from '@tanstack/vue-table'
 import { computedWithControl, useClipboard } from '@vueuse/core'
 import { useDryerList } from '~/composable/useDryerList'
 import { useRouter } from 'vue-router'
@@ -29,18 +28,18 @@ type Dryer = {
   name: string
 }
 
-const columns: TableColumn<Dryer>[] = [
+const columns: Dryer[] = [
   {
     accessorKey: 'areaId',
     header: 'Area ID',
-    cell: ({ row }) => {
+    cell: ({ row }: any) => {
       return row.getValue('areaId');
     }
   },
   {
     accessorKey: 'name',
     header: 'Name',
-    cell: ({ row }) => {
+    cell: ({ row }: any) => {
       return row.getValue('name');
     }
   },
@@ -51,7 +50,7 @@ const columns: TableColumn<Dryer>[] = [
         td: 'text-right'
       }
     },
-    cell: ({ row }) => {
+    cell: ({ row }: any) => {
       return h(
         UDropdownMenu,
         {
@@ -73,7 +72,7 @@ const columns: TableColumn<Dryer>[] = [
   }
 ]
 
-function    getRowItems(row: Row<Dryer>) {
+function    getRowItems(row: any) {
   return [
     {
       label: 'View',
