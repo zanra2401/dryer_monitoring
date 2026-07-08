@@ -16,11 +16,3 @@ export const FlagType = {
 } as const
 
 export type FlagType = (typeof FlagType)[keyof typeof FlagType]
-
-
-export const StatusJob = {
-  ACTIVE: 'ACTIVE',
-  INACTIVE: 'INACTIVE'
-} as const
-
-export type StatusJob = (typeof StatusJob)[keyof typeof StatusJob]

@@ -21,13 +21,21 @@ export default defineEventHandler(async (event) => {
                     lotId: lot?.lotId,
                 },
                 orderBy: {
-                    logId: 'asc',
+                    logId: 'desc',
+                },
+                take: 15
+            });
+
+            const countLog = await prisma.log.count({
+                where: {
+                    lotId: lot?.lotId,
                 },
             });
 
             return {
                 lot: lot,
-                log: logs
+                log: logs,
+                countLog: countLog,
             };
         });
 

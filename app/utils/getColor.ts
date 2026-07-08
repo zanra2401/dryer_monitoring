@@ -1,13 +1,51 @@
 export const getCardClassByStatus = (status_bin: string) => {
     switch (status_bin) {
         case 'DRIED':
-            return 'border-red-600 bg-red-500 dark:border-red-500 dark:bg-red-900/20 text-white';
+            return 'border-red-500 bg-red-200 text-red-950 dark:border-red-600 dark:bg-red-900/20 dark:text-red-100';
         case 'DOWNAIR':
-            return 'border-blue-600 bg-blue-700 text-white dark:border-blue-500 text-black dark:bg-blue-900/20';
+            return 'border-blue-500 bg-blue-200 text-blue-950 dark:border-blue-600 dark:bg-blue-900/20 dark:text-blue-100';
         case 'UPAIR':
-            return 'border-yellow-600 bg-yellow-200 dark:border-yellow-500 dark:bg-yellow-900/20';
+            return 'border-amber-500 bg-amber-200 text-amber-950 dark:border-amber-600 dark:bg-amber-900/20 dark:text-amber-100';
         default:
-            return 'border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800';
+            return 'border-slate-200 bg-white text-slate-900 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100';
     }
 };
 
+export const getColor = (status_bin: string) => {
+    switch (status_bin) {
+        case 'DRIED':
+            return 'text-red-500 dark:text-red-400';
+        case 'DOWNAIR':
+            return 'text-blue-500 dark:text-blue-400';
+        case 'UPAIR':
+            return 'text-amber-500 dark:text-amber-400';
+        default:
+            return 'text-slate-500 dark:text-slate-400';
+    }
+};
+
+export const getBgColor = (status_bin: string) => {
+    switch (status_bin) {
+        case 'DRIED':
+            return 'bg-red-500 dark:bg-red-400';
+        case 'DOWNAIR':
+            return 'bg-blue-500 dark:bg-blue-400';
+        case 'UPAIR':
+            return 'bg-amber-500 dark:bg-amber-400';
+        default:
+            return 'bg-slate-500 dark:bg-slate-400';
+    }
+};
+
+export const getColorClassNuxt = (status_bin: string) => {
+    switch (status_bin) {
+        case 'DRIED':
+            return 'error';
+        case 'DOWNAIR':
+            return 'info';
+        case 'UPAIR':
+            return 'warning';
+        default:
+            return 'neutral';
+    }
+};

@@ -24,7 +24,8 @@ export interface  Log {
 
 
 const props = defineProps<{
-  logs: Log[]
+  logs: Log[],
+  countLog: number,
 }>()
 
 // 2. Definisi Matriks Kolom yang Dikompresi
@@ -129,6 +130,11 @@ const saveOperatorData = (updatedLog: Log) => {
   })
   return;
 }
+
+const page = ref(1) // Placeholder untuk pagination, jika diperlukan di masa depan
+const emit = defineEmits<{
+  (e: 'update:page', value: number): void
+}>()
 </script>
 
 <template>
@@ -147,6 +153,12 @@ const saveOperatorData = (updatedLog: Log) => {
       @select="(e: Event, row: TableRow<Log>) => handleRowSelect(e, row)"
     />
   </UCard>
+
+  <div class="w-full flex justify-center items-center mb-6">
+    <UPagination @update:page="(p) => {
+      emit('update:page', p)
+    }" v-model:page="page" :total="countLog" :items-per-page="15" />
+  </div>
 
   <OperatorEntryModal 
     v-model="isModalOpen"

@@ -51,9 +51,7 @@ export const AnyNull = runtime.AnyNull
 
 
 export const ModelName = {
-  SystemFlag: 'SystemFlag',
-  JobTracker: 'JobTracker',
-  MustExecutedJob: 'MustExecutedJob'
+  SystemFlag: 'SystemFlag'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -78,49 +76,10 @@ export const SystemFlagScalarFieldEnum = {
 export type SystemFlagScalarFieldEnum = (typeof SystemFlagScalarFieldEnum)[keyof typeof SystemFlagScalarFieldEnum]
 
 
-export const JobTrackerScalarFieldEnum = {
-  JobId: 'JobId',
-  LotId: 'LotId',
-  BinId: 'BinId',
-  ExecuteTime: 'ExecuteTime',
-  IntervalMinutes: 'IntervalMinutes',
-  status: 'status',
-  attemptCount: 'attemptCount',
-  lastError: 'lastError',
-  lockedAt: 'lockedAt',
-  createdAt: 'createdAt',
-  updatedAt: 'updatedAt'
-} as const
-
-export type JobTrackerScalarFieldEnum = (typeof JobTrackerScalarFieldEnum)[keyof typeof JobTrackerScalarFieldEnum]
-
-
-export const MustExecutedJobScalarFieldEnum = {
-  JobId: 'JobId',
-  ExecutedTime: 'ExecutedTime',
-  LotId: 'LotId',
-  BinId: 'BinId',
-  TrackerJobId: 'TrackerJobId',
-  status: 'status',
-  errorMessage: 'errorMessage',
-  createdAt: 'createdAt'
-} as const
-
-export type MustExecutedJobScalarFieldEnum = (typeof MustExecutedJobScalarFieldEnum)[keyof typeof MustExecutedJobScalarFieldEnum]
-
-
 export const SortOrder = {
   asc: 'asc',
   desc: 'desc'
 } as const
 
 export type SortOrder = (typeof SortOrder)[keyof typeof SortOrder]
-
-
-export const NullsOrder = {
-  first: 'first',
-  last: 'last'
-} as const
-
-export type NullsOrder = (typeof NullsOrder)[keyof typeof NullsOrder]
 

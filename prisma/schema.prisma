@@ -95,8 +95,8 @@ model Lot {
   lotNumber    String    @unique @map("lot_number")
   hybrid       String?
   quality      String?
-  netToBin     Decimal?  @map("net_to_bin")
-  initialMc    Decimal?  @map("initial_mc")
+  netToBin     Float?  @map("net_to_bin")
+  initialMc    Float?  @map("initial_mc")
   status       LotStatus @default(UPAIR)
   downAirAt    DateTime?  @map("down_air_at")
   downMC       Float?  @map("down_mc")
@@ -119,11 +119,11 @@ model Log {
   lotId               Int      @map("lot_id")
   timestampThingspeak DateTime @map("timestamp_thingspeak")
   statusBin           String   @map("status_bin")
-  tempTop             Decimal? @map("temp_top")
-  rhTop               Decimal? @map("rh_top")
-  tempBottom          Decimal? @map("temp_bottom")
-  rhBottom            Decimal? @map("rh_bottom")
-  mc                  Decimal?
+  tempTop             Float? @map("temp_top")
+  rhTop               Float? @map("rh_top")
+  tempBottom          Float? @map("temp_bottom")
+  rhBottom            Float? @map("rh_bottom")
+  mc                  Float?
   checkerName         String?  @map("checker_name")
   remark              String?    @map("remark")
 

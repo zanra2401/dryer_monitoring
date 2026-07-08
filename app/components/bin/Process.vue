@@ -59,7 +59,8 @@ const props = defineProps<{
   binNumber: string
   lotNumber: string
   data: SensorData,
-  lot: LotLog
+  lot: LotLog,
+  countLog: number
 }>()
 
 const labels = computed(() =>
@@ -72,6 +73,8 @@ const labels = computed(() =>
     })
   })
 )
+
+const router = useRouter();
 
 // Koreksi 2: Anotasi tipe yang jelas pada fungsi pabrikan metrik
 const createChartData = (
@@ -172,6 +175,10 @@ const options: ChartOptions<'line'> = {
   }
 }
 
+const emit = defineEmits<{
+  (e: 'update:lotpage', value: number): void
+}>()
+
 </script>
 
 <template>
@@ -199,7 +206,6 @@ const options: ChartOptions<'line'> = {
         </UCard>
       </template>
     </UCarousel>
-
-    <PanelLog :logs="data?.data" />
+    <PanelLog @update:page="(p) => emit('update:lotpage', p)" :logs="data?.data" :countLog="countLog" />
   </div>
 </template>

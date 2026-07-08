@@ -384,9 +384,7 @@ type FieldRefInputType<Model, FieldType> = Model extends never ? never : FieldRe
 
 
 export const ModelName = {
-  SystemFlag: 'SystemFlag',
-  JobTracker: 'JobTracker',
-  MustExecutedJob: 'MustExecutedJob'
+  SystemFlag: 'SystemFlag'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -402,7 +400,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "systemFlag" | "jobTracker" | "mustExecutedJob"
+    modelProps: "systemFlag"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -480,154 +478,6 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
-    JobTracker: {
-      payload: Prisma.$JobTrackerPayload<ExtArgs>
-      fields: Prisma.JobTrackerFieldRefs
-      operations: {
-        findUnique: {
-          args: Prisma.JobTrackerFindUniqueArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$JobTrackerPayload> | null
-        }
-        findUniqueOrThrow: {
-          args: Prisma.JobTrackerFindUniqueOrThrowArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$JobTrackerPayload>
-        }
-        findFirst: {
-          args: Prisma.JobTrackerFindFirstArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$JobTrackerPayload> | null
-        }
-        findFirstOrThrow: {
-          args: Prisma.JobTrackerFindFirstOrThrowArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$JobTrackerPayload>
-        }
-        findMany: {
-          args: Prisma.JobTrackerFindManyArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$JobTrackerPayload>[]
-        }
-        create: {
-          args: Prisma.JobTrackerCreateArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$JobTrackerPayload>
-        }
-        createMany: {
-          args: Prisma.JobTrackerCreateManyArgs<ExtArgs>
-          result: BatchPayload
-        }
-        createManyAndReturn: {
-          args: Prisma.JobTrackerCreateManyAndReturnArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$JobTrackerPayload>[]
-        }
-        delete: {
-          args: Prisma.JobTrackerDeleteArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$JobTrackerPayload>
-        }
-        update: {
-          args: Prisma.JobTrackerUpdateArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$JobTrackerPayload>
-        }
-        deleteMany: {
-          args: Prisma.JobTrackerDeleteManyArgs<ExtArgs>
-          result: BatchPayload
-        }
-        updateMany: {
-          args: Prisma.JobTrackerUpdateManyArgs<ExtArgs>
-          result: BatchPayload
-        }
-        updateManyAndReturn: {
-          args: Prisma.JobTrackerUpdateManyAndReturnArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$JobTrackerPayload>[]
-        }
-        upsert: {
-          args: Prisma.JobTrackerUpsertArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$JobTrackerPayload>
-        }
-        aggregate: {
-          args: Prisma.JobTrackerAggregateArgs<ExtArgs>
-          result: runtime.Types.Utils.Optional<Prisma.AggregateJobTracker>
-        }
-        groupBy: {
-          args: Prisma.JobTrackerGroupByArgs<ExtArgs>
-          result: runtime.Types.Utils.Optional<Prisma.JobTrackerGroupByOutputType>[]
-        }
-        count: {
-          args: Prisma.JobTrackerCountArgs<ExtArgs>
-          result: runtime.Types.Utils.Optional<Prisma.JobTrackerCountAggregateOutputType> | number
-        }
-      }
-    }
-    MustExecutedJob: {
-      payload: Prisma.$MustExecutedJobPayload<ExtArgs>
-      fields: Prisma.MustExecutedJobFieldRefs
-      operations: {
-        findUnique: {
-          args: Prisma.MustExecutedJobFindUniqueArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$MustExecutedJobPayload> | null
-        }
-        findUniqueOrThrow: {
-          args: Prisma.MustExecutedJobFindUniqueOrThrowArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$MustExecutedJobPayload>
-        }
-        findFirst: {
-          args: Prisma.MustExecutedJobFindFirstArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$MustExecutedJobPayload> | null
-        }
-        findFirstOrThrow: {
-          args: Prisma.MustExecutedJobFindFirstOrThrowArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$MustExecutedJobPayload>
-        }
-        findMany: {
-          args: Prisma.MustExecutedJobFindManyArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$MustExecutedJobPayload>[]
-        }
-        create: {
-          args: Prisma.MustExecutedJobCreateArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$MustExecutedJobPayload>
-        }
-        createMany: {
-          args: Prisma.MustExecutedJobCreateManyArgs<ExtArgs>
-          result: BatchPayload
-        }
-        createManyAndReturn: {
-          args: Prisma.MustExecutedJobCreateManyAndReturnArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$MustExecutedJobPayload>[]
-        }
-        delete: {
-          args: Prisma.MustExecutedJobDeleteArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$MustExecutedJobPayload>
-        }
-        update: {
-          args: Prisma.MustExecutedJobUpdateArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$MustExecutedJobPayload>
-        }
-        deleteMany: {
-          args: Prisma.MustExecutedJobDeleteManyArgs<ExtArgs>
-          result: BatchPayload
-        }
-        updateMany: {
-          args: Prisma.MustExecutedJobUpdateManyArgs<ExtArgs>
-          result: BatchPayload
-        }
-        updateManyAndReturn: {
-          args: Prisma.MustExecutedJobUpdateManyAndReturnArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$MustExecutedJobPayload>[]
-        }
-        upsert: {
-          args: Prisma.MustExecutedJobUpsertArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$MustExecutedJobPayload>
-        }
-        aggregate: {
-          args: Prisma.MustExecutedJobAggregateArgs<ExtArgs>
-          result: runtime.Types.Utils.Optional<Prisma.AggregateMustExecutedJob>
-        }
-        groupBy: {
-          args: Prisma.MustExecutedJobGroupByArgs<ExtArgs>
-          result: runtime.Types.Utils.Optional<Prisma.MustExecutedJobGroupByOutputType>[]
-        }
-        count: {
-          args: Prisma.MustExecutedJobCountArgs<ExtArgs>
-          result: runtime.Types.Utils.Optional<Prisma.MustExecutedJobCountAggregateOutputType> | number
-        }
-      }
-    }
   }
 } & {
   other: {
@@ -673,51 +523,12 @@ export const SystemFlagScalarFieldEnum = {
 export type SystemFlagScalarFieldEnum = (typeof SystemFlagScalarFieldEnum)[keyof typeof SystemFlagScalarFieldEnum]
 
 
-export const JobTrackerScalarFieldEnum = {
-  JobId: 'JobId',
-  LotId: 'LotId',
-  BinId: 'BinId',
-  ExecuteTime: 'ExecuteTime',
-  IntervalMinutes: 'IntervalMinutes',
-  status: 'status',
-  attemptCount: 'attemptCount',
-  lastError: 'lastError',
-  lockedAt: 'lockedAt',
-  createdAt: 'createdAt',
-  updatedAt: 'updatedAt'
-} as const
-
-export type JobTrackerScalarFieldEnum = (typeof JobTrackerScalarFieldEnum)[keyof typeof JobTrackerScalarFieldEnum]
-
-
-export const MustExecutedJobScalarFieldEnum = {
-  JobId: 'JobId',
-  ExecutedTime: 'ExecutedTime',
-  LotId: 'LotId',
-  BinId: 'BinId',
-  TrackerJobId: 'TrackerJobId',
-  status: 'status',
-  errorMessage: 'errorMessage',
-  createdAt: 'createdAt'
-} as const
-
-export type MustExecutedJobScalarFieldEnum = (typeof MustExecutedJobScalarFieldEnum)[keyof typeof MustExecutedJobScalarFieldEnum]
-
-
 export const SortOrder = {
   asc: 'asc',
   desc: 'desc'
 } as const
 
 export type SortOrder = (typeof SortOrder)[keyof typeof SortOrder]
-
-
-export const NullsOrder = {
-  first: 'first',
-  last: 'last'
-} as const
-
-export type NullsOrder = (typeof NullsOrder)[keyof typeof NullsOrder]
 
 
 
@@ -744,27 +555,6 @@ export type EnumFlagTypeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaM
  * Reference to a field of type 'Int'
  */
 export type IntFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Int'>
-    
-
-
-/**
- * Reference to a field of type 'DateTime'
- */
-export type DateTimeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'DateTime'>
-    
-
-
-/**
- * Reference to a field of type 'StatusJob'
- */
-export type EnumStatusJobFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'StatusJob'>
-    
-
-
-/**
- * Reference to a field of type 'Float'
- */
-export type FloatFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Float'>
     
 
 /**
@@ -878,8 +668,6 @@ export type PrismaClientOptions = ({
 }
 export type GlobalOmitConfig = {
   systemFlag?: Prisma.SystemFlagOmit
-  jobTracker?: Prisma.JobTrackerOmit
-  mustExecutedJob?: Prisma.MustExecutedJobOmit
 }
 
 /* Types for Logging */

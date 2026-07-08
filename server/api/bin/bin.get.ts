@@ -7,7 +7,7 @@ export default defineEventHandler(async (event) => {
             where: {
                 areaId: area_id,
                 binNumber: bin_number,
-            },
+            }
         });
 
         if (!result) {
@@ -16,7 +16,6 @@ export default defineEventHandler(async (event) => {
                 statusMessage: "Bin not found",
             });
         }
-
         return { success: true, data: result };
     } catch (error: unknown) {
         return error;

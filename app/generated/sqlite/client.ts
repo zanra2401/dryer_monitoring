@@ -46,13 +46,3 @@ export { Prisma }
  * 
  */
 export type SystemFlag = Prisma.SystemFlagModel
-/**
- * Model JobTracker
- * 
- */
-export type JobTracker = Prisma.JobTrackerModel
-/**
- * Model MustExecutedJob
- * 
- */
-export type MustExecutedJob = Prisma.MustExecutedJobModel

@@ -7,7 +7,7 @@
         lotNumber: string;
         lot: LotLog;
     }>();
-
+    const router = useRouter();
     // State untuk mengelola modal operasi kendali
     const isControlModalOpen = ref(false)
     const activeControlAction = ref<'down' | 'stop' | null>(null)
@@ -60,8 +60,26 @@
           })
 
         } else {
-          return
+          const { data, error } = await useFetch(`/api/dryarea/process/end`, {
+            method: 'PUT',
+            body: {
+              lot_id: props.lot.lotId,
+              time: safeIsoString
+            }
+          });
+
+          if (error.value) {
+            toast.add({
+              title: 'Gagal Set Stop',
+              color: 'error'
+            })
+          }
+          toast.add({
+              title: 'Berhasil Set Stop',
+              color: 'success'
+          })
         }
+
     } catch (error) {
         console.error('Terjadi kegagalan transmisi data:', error)
     }
@@ -96,7 +114,7 @@
     const diffHours = (stop - start) / 3600000;
     
     // Validasi absolut: Mencegah nilai negatif jika operator salah memasukkan tanggal
-    return diffHours > 0 ? diffHours : null;
+    return diffHours > 0 ? Math.round(diffHours) : null;
     };
 
     // 2. Fungsi Dry Down
@@ -115,7 +133,7 @@
     // Validasi pencegahan pembagian dengan nol (Division by Zero)
     if (totalDryingHours == null || dryDownValue == null || dryDownValue === 0) return null;
     
-    return totalDryingHours / dryDownValue;
+    return Number((totalDryingHours / dryDownValue).toFixed(2));
     };
 
     const undo_down_air = async () => {
@@ -150,10 +168,18 @@
     <template #header>
       <div class="flex items-center justify-between">
         <div>
+          <UButton
+            variant="ghost"
+            icon="i-heroicons-arrow-left"
+            class="text-gray-500 hover:bg-gray-100 rounded-none -my-1"
+            @click="router.back()"
+          />
           <h2 class="text-xl font-bold">Bin {{ binNumber }}</h2>
           <p class="text-gray-500">Lot {{ lotNumber }}</p>
+          <UBadge color="neutral" class="rounded">{{ lot.hybrid }}</UBadge>
+          <UBadge color="neutral" class="rounded ml-2">{{ lot.quality }}</UBadge>
         </div>
-        <UBadge color="success">{{ lot.status }}</UBadge>
+        <UBadge :color="getColorClassNuxt(lot.status)">{{ lot.status }}</UBadge> 
       </div>
     </template>
 
@@ -165,7 +191,7 @@
       >
         Set Down
       </UButton>
-      <UButton  v-else
+      <UButton  v-else-if="!lot.endTime"
         color="warning" 
         class="rounded-none"
         @click="undo_down_air()"
@@ -174,6 +200,7 @@
       </UButton>
 
       <UButton 
+        v-if="!lot.endTime"
         color="error" 
         class="rounded-none"
         @click="openControlModal('stop')"

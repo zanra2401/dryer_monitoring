@@ -60,9 +60,9 @@ const items: TabsItem[] = [
         class="w-full"
         variant="link"
         color="secondary"
-    >
+      >
         <template #user>
-          <User :areaId="areaId"  />
+          <User :areaId="areaId" />
         </template>
         <template #channel>
           <Channel :areaId="areaId"  />

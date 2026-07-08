@@ -20,7 +20,7 @@ const items = computed<NavigationMenuItem[]>(() => [
 <template>
   <UHeader>
     <template #title>
-      <div class="h-full">
+      <div class="h-full" >
         <img src="~/assets/logo.png" class="h-[100px]" alt="">
       </div>
     </template>

@@ -10,7 +10,7 @@ const log = {
         if (Number.isNaN(date.getTime())) {
             throw new Error("Invalid date time value");
         }
-
+        console.log(date);
         return date;
     },
     is_future_date: (dateTime: string | Date) => {
@@ -37,7 +37,7 @@ const log = {
         return `${year}-${month}-${day}%20${timePart.replaceAll(".", ":")}`;
     },
     make_range_date: (dateTime: Date) => {
-        const searchWindowMs = 2 * 60 * 1000; // 2 menit untuk testing agar feed terdekat tidak kelewat
+        const searchWindowMs = 3 * 60 * 1000; // 2 menit untuk testing agar feed terdekat tidak kelewat
         const baseTime = dateTime.getTime();
 
         return {
@@ -80,8 +80,10 @@ const log = {
             fieldTempBottom: string;
             fieldRhBottom: string;
         };
-        initialMc: number;
+        initialMc: number | null;
+        binStatus: string | null | undefined;
     }) => {
+
         const getDecimalValue = (fieldName: string) => {
             const value = params.feed[fieldName];
             if (value === undefined || value === null || value === "") {
@@ -90,16 +92,18 @@ const log = {
 
             return new Prisma.Decimal(value);
         };
-
+        console.log("----------------------");
+        console.log(params.bin.fieldTempTop);
+        console.log(Number(params.bin.fieldTempTop));
         return {
             lotId: params.lotId,
             timestampThingspeak: log.to_valid_date(params.feed.created_at ?? params.feed.createdAt),
-            statusBin: "UPAIR",
-            tempTop: getDecimalValue(params.bin.fieldTempTop),
-            rhTop: getDecimalValue(params.bin.fieldRhTop),
-            tempBottom: getDecimalValue(params.bin.fieldTempBottom),
-            rhBottom: getDecimalValue(params.bin.fieldRhBottom),
-            mc: new Prisma.Decimal(params.initialMc),
+            statusBin: params.binStatus ?? "UPAIR",
+            tempTop: Number(params.feed[params.bin.fieldTempTop]),
+            rhTop: Number(params.feed[params.bin.fieldRhTop]),
+            tempBottom: Number(params.feed[params.bin.fieldTempBottom]),
+            rhBottom: Number(params.feed[params.bin.fieldRhBottom]),
+            mc: params.initialMc ? Number(params.initialMc) : null,
             checkerName: null,
         };
     },
