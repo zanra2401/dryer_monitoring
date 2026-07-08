@@ -9,10 +9,14 @@ type LotFormData = {
     net_to_bin: number | null;
     initial_mc: number | null;
     status: LotStatus;
+    down_air_at: string;
+    down_mc: number | null;
     area_id: number | null;
     bin_number: number | null;
     start_time: string;
     end_time: string;
+    end_mc: number | null;
+    depth: number | null;
 };
 
 type LotDetailResponse = {
@@ -27,10 +31,14 @@ const lotFormSchema = z.object({
     net_to_bin: z.number().nullable(),
     initial_mc: z.number().nullable(),
     status: z.enum(LOT_STATUSES),
+    down_air_at: z.string(),
+    down_mc: z.number().nullable(),
     area_id: z.number().int().positive("Dryer area is required").nullable(),
     bin_number: z.number().int().positive("Bin is required").nullable(),
     start_time: z.string().trim().min(1, "Start time is required"),
     end_time: z.string(),
+    end_mc: z.number().nullable(),
+    depth: z.number().nullable(),
 });
 
 const getApiErrorMessage = (error: unknown) => {
@@ -84,10 +92,14 @@ const makeEmptyForm = (): LotFormData => ({
     net_to_bin: null,
     initial_mc: null,
     status: "UPAIR",
+    down_air_at: "",
+    down_mc: null,
     area_id: null,
     bin_number: null,
     start_time: "",
     end_time: "",
+    end_mc: null,
+    depth: null,
 });
 
 export const useLotCRUD = (refreshLotData: () => Promise<unknown> = async () => null) => {
@@ -113,10 +125,14 @@ export const useLotCRUD = (refreshLotData: () => Promise<unknown> = async () => 
             net_to_bin: lot.netToBin === null ? null : Number(lot.netToBin),
             initial_mc: lot.initialMc === null ? null : Number(lot.initialMc),
             status: lot.status,
+            down_air_at: toDateTimeLocal(lot.downAirAt),
+            down_mc: lot.downMC === null ? null : Number(lot.downMC),
             area_id: lot.areaId,
             bin_number: lot.binNumber,
             start_time: toDateTimeLocal(lot.startTime),
             end_time: toDateTimeLocal(lot.endTime),
+            end_mc: lot.endMC === null ? null : Number(lot.endMC),
+            depth: lot.depth === null ? null : Number(lot.depth),
         };
     };
 
@@ -165,10 +181,14 @@ export const useLotCRUD = (refreshLotData: () => Promise<unknown> = async () => 
                     net_to_bin: parsed.net_to_bin,
                     initial_mc: parsed.initial_mc,
                     status: parsed.status,
+                    down_air_at: parsed.down_air_at ? toApiDate(parsed.down_air_at) : null,
+                    down_mc: parsed.down_mc,
                     area_id: parsed.area_id,
                     bin_number: parsed.bin_number,
                     start_time: toApiDate(parsed.start_time),
                     end_time: parsed.end_time ? toApiDate(parsed.end_time) : null,
+                    end_mc: parsed.end_mc,
+                    depth: parsed.depth,
                 },
             });
 
@@ -213,10 +233,14 @@ export const useLotCRUD = (refreshLotData: () => Promise<unknown> = async () => 
                     net_to_bin: parsed.net_to_bin,
                     initial_mc: parsed.initial_mc,
                     status: parsed.status,
+                    down_air_at: parsed.down_air_at ? toApiDate(parsed.down_air_at) : null,
+                    down_mc: parsed.down_mc,
                     area_id: parsed.area_id,
                     bin_number: parsed.bin_number,
                     start_time: toApiDate(parsed.start_time),
                     end_time: parsed.end_time ? toApiDate(parsed.end_time) : null,
+                    end_mc: parsed.end_mc,
+                    depth: parsed.depth,
                 },
             });
 

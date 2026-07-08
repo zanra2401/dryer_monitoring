@@ -7,6 +7,7 @@ import AppSidebar from "~/components/AppSidebar.vue";
 import { useBinOptions } from "~/composable/useBinOptions";
 import { useDryerAreaOptions } from "~/composable/useDryerAreaOptions";
 import { useLogCRUD } from "~/composable/useLogCRUD";
+import { useLotReport } from "~/composable/useLotReport";
 import { useLotReportExport } from "~/composable/useLotReportExport";
 import {
   LOG_PAGE_SIZE_OPTIONS,
@@ -25,6 +26,9 @@ const route = useRoute();
 const router = useRouter();
 const toast = useToast();
 const { export_excel, export_pdf } = useLotReportExport();
+const {
+  fetch_lot_report,
+} = useLotReport();
 
 const lotId = computed(() => Number(route.params.lotId));
 
@@ -49,6 +53,20 @@ const {
   update_lot,
   delete_lot,
 } = useLotCRUD();
+
+const updateAreaIdModel = computed<number | undefined>({
+  get: () => update_data.value.area_id ?? undefined,
+  set: (value) => {
+    update_data.value.area_id = value ?? null;
+  },
+});
+
+const updateBinNumberModel = computed<number | undefined>({
+  get: () => update_data.value.bin_number ?? undefined,
+  set: (value) => {
+    update_data.value.bin_number = value ?? null;
+  },
+});
 
 const {
   current_data: logCurrentData,
@@ -96,6 +114,14 @@ const isCreateLogConfirmOpen = ref(false);
 const isEditLogConfirmOpen = ref(false);
 const selectedLog = ref<LogRow | null>(null);
 const logPageSize = ref<LogPageSize>(10);
+const isExportingExcel = ref(false);
+const isExportingPdf = ref(false);
+const numberInputProps = {
+  locale: "en-US",
+  formatOptions: {
+    maximumFractionDigits: 2,
+  },
+} as const;
 
 const statusLabels: Record<LotStatus, string> = {
   UPAIR: "Up Air",
@@ -148,7 +174,7 @@ const formatNumber = (value: number | string | null) => {
     return "-";
   }
 
-  return new Intl.NumberFormat("id-ID", {
+  return new Intl.NumberFormat("en-US", {
     maximumFractionDigits: 2,
   }).format(parsed);
 };
@@ -373,20 +399,55 @@ const changeLogPageSize = async () => {
   }
 };
 
-const handleExportExcel = () => {
-  if (!lot.value) {
-    return;
+const loadReportData = async () => {
+  if (!Number.isInteger(lotId.value) || lotId.value <= 0) {
+    throw new Error("Invalid lot id");
   }
 
-  export_excel(lot.value.lotId);
+  return fetch_lot_report(lotId.value);
 };
 
-const handleExportPdf = () => {
+const handleExportExcel = async () => {
   if (!lot.value) {
     return;
   }
 
-  export_pdf(lot.value.lotId);
+  isExportingExcel.value = true;
+
+  try {
+    await export_excel(lot.value.lotId);
+  } catch (error) {
+    toast.add({
+      title: "Failed to export Excel",
+      description: getErrorMessage(error),
+      color: "error",
+      icon: "i-lucide-circle-alert",
+    });
+  } finally {
+    isExportingExcel.value = false;
+  }
+};
+
+const handleExportPdf = async () => {
+  if (!lot.value) {
+    return;
+  }
+
+  isExportingPdf.value = true;
+
+  try {
+    const report = await loadReportData();
+    await export_pdf(report, `lot-report-${lot.value.lotNumber}`);
+  } catch (error) {
+    toast.add({
+      title: "Failed to export PDF",
+      description: getErrorMessage(error),
+      color: "error",
+      icon: "i-lucide-circle-alert",
+    });
+  } finally {
+    isExportingPdf.value = false;
+  }
 };
 
 watch(
@@ -481,6 +542,11 @@ const logColumns: TableColumn<LogRow>[] = [
     accessorKey: "mc",
     header: "MC",
     cell: ({ row }) => formatNumber(row.original.mc),
+  },
+  {
+    accessorKey: "remark",
+    header: "Remark",
+    cell: ({ row }) => row.original.remark || "-",
   },
   {
     accessorKey: "checkerName",
@@ -578,6 +644,7 @@ onMounted(async () => {
             icon="i-lucide-file-spreadsheet"
             color="neutral"
             variant="outline"
+            :loading="isExportingExcel"
             :disabled="!lot"
             @click="handleExportExcel"
           />
@@ -586,6 +653,7 @@ onMounted(async () => {
             icon="i-lucide-printer"
             color="neutral"
             variant="outline"
+            :loading="isExportingPdf"
             :disabled="!lot"
             @click="handleExportPdf"
           />
@@ -669,7 +737,7 @@ onMounted(async () => {
 
               <UFormField label="Dryer Area" required>
                 <USelect
-                  v-model="update_data.area_id"
+                  v-model="updateAreaIdModel"
                   :items="dryerAreas"
                   value-key="value"
                   label-key="label"
@@ -680,7 +748,7 @@ onMounted(async () => {
 
               <UFormField label="Bin" required>
                 <USelect
-                  v-model="update_data.bin_number"
+                  v-model="updateBinNumberModel"
                   :items="detailBinOptions"
                   value-key="value"
                   label-key="label"
@@ -699,11 +767,23 @@ onMounted(async () => {
               </UFormField>
 
               <UFormField label="Net To Bin">
-                <UInputNumber v-model="update_data.net_to_bin" :step="0.01" class="w-full" />
+                <UInputNumber v-model="update_data.net_to_bin" v-bind="numberInputProps" :step="0.01" class="w-full" />
               </UFormField>
 
               <UFormField label="Initial MC">
-                <UInputNumber v-model="update_data.initial_mc" :step="0.01" class="w-full" />
+                <UInputNumber v-model="update_data.initial_mc" v-bind="numberInputProps" :step="0.01" class="w-full" />
+              </UFormField>
+
+              <UFormField label="Depth (Meter)">
+                <UInputNumber v-model="update_data.depth" v-bind="numberInputProps" :step="0.01" class="w-full" />
+              </UFormField>
+
+              <UFormField label="Down Air At">
+                <UInput v-model="update_data.down_air_at" type="datetime-local" class="w-full" />
+              </UFormField>
+
+              <UFormField label="Down MC">
+                <UInputNumber v-model="update_data.down_mc" v-bind="numberInputProps" :step="0.01" class="w-full" />
               </UFormField>
 
               <UFormField label="Start Time" required>
@@ -712,6 +792,10 @@ onMounted(async () => {
 
               <UFormField label="End Time">
                 <UInput v-model="update_data.end_time" type="datetime-local" class="w-full" />
+              </UFormField>
+
+              <UFormField label="End MC">
+                <UInputNumber v-model="update_data.end_mc" v-bind="numberInputProps" :step="0.01" class="w-full" />
               </UFormField>
             </div>
 
@@ -805,23 +889,27 @@ onMounted(async () => {
 
           <div class="grid gap-4 md:grid-cols-2">
             <UFormField label="Temp Top">
-              <UInputNumber v-model="createLogData.temp_top" :step="0.01" class="w-full" />
+              <UInputNumber v-model="createLogData.temp_top" v-bind="numberInputProps" :step="0.01" class="w-full" />
             </UFormField>
 
             <UFormField label="RH Top">
-              <UInputNumber v-model="createLogData.rh_top" :step="0.01" class="w-full" />
+              <UInputNumber v-model="createLogData.rh_top" v-bind="numberInputProps" :step="0.01" class="w-full" />
             </UFormField>
 
             <UFormField label="Temp Bottom">
-              <UInputNumber v-model="createLogData.temp_bottom" :step="0.01" class="w-full" />
+              <UInputNumber v-model="createLogData.temp_bottom" v-bind="numberInputProps" :step="0.01" class="w-full" />
             </UFormField>
 
             <UFormField label="RH Bottom">
-              <UInputNumber v-model="createLogData.rh_bottom" :step="0.01" class="w-full" />
+              <UInputNumber v-model="createLogData.rh_bottom" v-bind="numberInputProps" :step="0.01" class="w-full" />
             </UFormField>
 
             <UFormField label="MC">
-              <UInputNumber v-model="createLogData.mc" :step="0.01" class="w-full" />
+              <UInputNumber v-model="createLogData.mc" v-bind="numberInputProps" :step="0.01" class="w-full" />
+            </UFormField>
+
+            <UFormField label="Remark">
+              <UInput v-model="createLogData.remark" class="w-full" />
             </UFormField>
 
             <UFormField label="Checker Name">
@@ -896,23 +984,27 @@ onMounted(async () => {
 
           <div class="grid gap-4 md:grid-cols-2">
             <UFormField label="Temp Top">
-              <UInputNumber v-model="updateLogData.temp_top" :step="0.01" class="w-full" />
+              <UInputNumber v-model="updateLogData.temp_top" v-bind="numberInputProps" :step="0.01" class="w-full" />
             </UFormField>
 
             <UFormField label="RH Top">
-              <UInputNumber v-model="updateLogData.rh_top" :step="0.01" class="w-full" />
+              <UInputNumber v-model="updateLogData.rh_top" v-bind="numberInputProps" :step="0.01" class="w-full" />
             </UFormField>
 
             <UFormField label="Temp Bottom">
-              <UInputNumber v-model="updateLogData.temp_bottom" :step="0.01" class="w-full" />
+              <UInputNumber v-model="updateLogData.temp_bottom" v-bind="numberInputProps" :step="0.01" class="w-full" />
             </UFormField>
 
             <UFormField label="RH Bottom">
-              <UInputNumber v-model="updateLogData.rh_bottom" :step="0.01" class="w-full" />
+              <UInputNumber v-model="updateLogData.rh_bottom" v-bind="numberInputProps" :step="0.01" class="w-full" />
             </UFormField>
 
             <UFormField label="MC">
-              <UInputNumber v-model="updateLogData.mc" :step="0.01" class="w-full" />
+              <UInputNumber v-model="updateLogData.mc" v-bind="numberInputProps" :step="0.01" class="w-full" />
+            </UFormField>
+
+            <UFormField label="Remark">
+              <UInput v-model="updateLogData.remark" class="w-full" />
             </UFormField>
 
             <UFormField label="Checker Name">
@@ -1071,5 +1163,6 @@ onMounted(async () => {
         </div>
       </template>
     </UModal>
+
   </AppSidebar>
 </template>

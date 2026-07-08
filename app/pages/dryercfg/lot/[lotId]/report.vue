@@ -85,7 +85,7 @@ onMounted(async () => {
             label="Back to Detail"
             color="neutral"
             variant="ghost"
-            @click="router.push(`/dryercfg/lot/${lotId}`)"
+            @click="() => { void router.push(`/dryercfg/lot/${lotId}`) }"
           />
           <UButton
             icon="i-lucide-printer"

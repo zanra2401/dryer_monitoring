@@ -12,6 +12,7 @@ type LogFormData = {
     rh_bottom: number | null;
     mc: number | null;
     checker_name: string;
+    remark: string;
 };
 
 const logFormSchema = z.object({
@@ -24,6 +25,7 @@ const logFormSchema = z.object({
     rh_bottom: z.number().nullable(),
     mc: z.number().nullable(),
     checker_name: z.string(),
+    remark: z.string(),
 });
 
 const getApiErrorMessage = (error: unknown) => {
@@ -80,6 +82,7 @@ const makeEmptyForm = (): LogFormData => ({
     rh_bottom: null,
     mc: null,
     checker_name: "",
+    remark: "",
 });
 
 export const useLogCRUD = (refreshLogData: () => Promise<unknown> = async () => null) => {
@@ -111,6 +114,7 @@ export const useLogCRUD = (refreshLogData: () => Promise<unknown> = async () => 
             rh_bottom: log.rhBottom === null ? null : Number(log.rhBottom),
             mc: log.mc === null ? null : Number(log.mc),
             checker_name: log.checkerName ?? "",
+            remark: log.remark ?? "",
         };
     };
 
@@ -137,6 +141,7 @@ export const useLogCRUD = (refreshLogData: () => Promise<unknown> = async () => 
                     rh_bottom: parsed.rh_bottom,
                     mc: parsed.mc,
                     checker_name: normalizeOptionalText(parsed.checker_name),
+                    remark: normalizeOptionalText(parsed.remark),
                 },
             });
 
@@ -175,6 +180,7 @@ export const useLogCRUD = (refreshLogData: () => Promise<unknown> = async () => 
                     rh_bottom: parsed.rh_bottom,
                     mc: parsed.mc,
                     checker_name: normalizeOptionalText(parsed.checker_name),
+                    remark: normalizeOptionalText(parsed.remark),
                 },
             });
 

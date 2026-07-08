@@ -50,6 +50,10 @@ const rows = computed(() => {
 
       <tbody>
         <tr>
+          <td colspan="14" class="blank-row" />
+        </tr>
+
+        <tr>
           <td />
           <td class="toolbar-cell">
             DOWNLOAD
@@ -92,7 +96,7 @@ const rows = computed(() => {
           <td class="summary-label">
             Date/Time Start
           </td>
-          <td class="summary-value">
+          <td class="summary-value summary-value-datetime">
             : {{ report.startTime || "" }}
           </td>
           <td class="summary-label">
@@ -133,7 +137,7 @@ const rows = computed(() => {
           <td class="summary-label">
             Date/Time Down
           </td>
-          <td class="summary-value">
+          <td class="summary-value summary-value-datetime">
             : {{ report.downTime || "" }}
           </td>
           <td class="summary-label">
@@ -174,7 +178,7 @@ const rows = computed(() => {
           <td class="summary-label">
             Date/Time Stop
           </td>
-          <td class="summary-value">
+          <td class="summary-value summary-value-datetime">
             : {{ report.stopTime || "" }}
           </td>
           <td class="summary-label">
@@ -257,28 +261,28 @@ const rows = computed(() => {
         </tr>
 
         <tr v-for="(row, index) in rows" :key="index">
-          <td class="body-cell">
+          <td class="body-cell body-cell-date">
             {{ row.date }}
           </td>
-          <td class="body-cell">
+          <td class="body-cell body-cell-center">
             {{ row.hour }}
           </td>
-          <td class="body-cell">
+          <td class="body-cell body-cell-center">
             {{ row.minute }}
           </td>
-          <td class="body-cell">
+          <td class="body-cell body-cell-sensor">
             {{ row.tempTop }}
           </td>
-          <td class="body-cell">
+          <td class="body-cell body-cell-sensor">
             {{ row.tempBottom }}
           </td>
-          <td class="body-cell body-cell-small">
+          <td class="body-cell body-cell-small body-cell-sensor">
             {{ row.rhTop }}
           </td>
-          <td class="body-cell body-cell-small">
+          <td class="body-cell body-cell-small body-cell-sensor">
             {{ row.rhBottom }}
           </td>
-          <td class="body-cell">
+          <td class="body-cell body-cell-sensor">
             {{ row.mc }}
           </td>
           <td colspan="2" class="body-cell remarks-cell">
@@ -308,9 +312,12 @@ const rows = computed(() => {
 }
 
 .lot-report-table td {
-  padding: 2px 4px;
-  height: 19px;
+  box-sizing: border-box;
+  height: 14.45pt;
+  padding: 0 4px;
   vertical-align: middle;
+  overflow: hidden;
+  line-height: 1;
 }
 
 .col-b { width: 52px; }
@@ -330,22 +337,24 @@ const rows = computed(() => {
 
 .toolbar-cell {
   border: 1px solid #000;
-  font: 11px Calibri, sans-serif;
+  font: 11pt Calibri, sans-serif;
   text-align: center;
 }
 
 .blank-row {
-  height: 19px;
+  height: 14.45pt;
 }
 
 .report-title {
-  height: 31px !important;
-  font: 18px Calibri, sans-serif;
+  height: 23.45pt !important;
+  font: 700 18pt Calibri, sans-serif;
   text-align: center;
 }
 
 .summary-row td {
-  font: 8px Arial, sans-serif;
+  height: 14.45pt;
+  font: 8pt Arial, sans-serif;
+  white-space: nowrap;
 }
 
 .summary-label,
@@ -353,10 +362,22 @@ const rows = computed(() => {
   color: #000;
 }
 
+.summary-value {
+  padding-right: 6px;
+}
+
+.summary-value-datetime {
+  white-space: normal;
+  line-height: 1.05;
+  font-size: 7.5pt;
+}
+
 .formula-label,
 .formula-text {
   color: #f00;
-  font: 8px Arial, sans-serif;
+  font: 7pt Arial, sans-serif;
+  line-height: 1;
+  white-space: normal;
 }
 
 .table-head {
@@ -364,8 +385,9 @@ const rows = computed(() => {
   background: #c0c0c0;
   color: #000;
   text-align: center;
-  font: 7px Arial, sans-serif;
+  font: 700 7pt Arial, sans-serif;
   white-space: normal;
+  padding: 0 2px;
 }
 
 .table-head-rh {
@@ -377,7 +399,8 @@ const rows = computed(() => {
   background: #bfbfbf;
   color: #000;
   text-align: center;
-  font: 7px Arial, sans-serif;
+  font: 700 7pt Arial, sans-serif;
+  padding: 0 2px;
 }
 
 .table-head-spacer {
@@ -387,15 +410,30 @@ const rows = computed(() => {
 
 .body-cell {
   border: 1px solid #000;
-  font: 11px Calibri, sans-serif;
+  font: 10pt Calibri, sans-serif;
+  white-space: nowrap;
 }
 
 .body-cell-small {
-  font: 8px Arial, sans-serif;
+  font: 8pt Arial, sans-serif;
+}
+
+.body-cell-date {
+  font: 8.5pt Arial, sans-serif;
+}
+
+.body-cell-center {
+  text-align: center;
+}
+
+.body-cell-sensor {
+  padding-left: 3px;
+  padding-right: 3px;
 }
 
 .remarks-cell {
   text-align: center;
+  white-space: nowrap;
 }
 
 .body-spacer {

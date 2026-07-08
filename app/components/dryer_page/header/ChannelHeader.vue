@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { useCRUDChannel } from '~/composable/dryer_page/useCRUDChannel';
+    import { useCRUDChannel } from '~/composable/dryer_page/useCRUDChannel';
     const props = defineProps({
         areaId: {
             type: String,
@@ -7,21 +7,29 @@ import { useCRUDChannel } from '~/composable/dryer_page/useCRUDChannel';
         }
     });
 
-    const { api_keys, post_channels, channels } = useCRUDChannel();
+    const toast = useToast()
+
+    const { api_keys, post_channels, channels, change_create_state, create_state } = useCRUDChannel();
 </script>
 
 <template>
-    Channel Header
-    <div>
-        Area ID: {{ props.areaId }}
-    </div>
-    <div>
-        <input :style="{
-            marginRight: '20px'
-        }" type="text" v-model="channels" placeholder="Enter channel name" />
-        <input type="text" v-model="api_keys" placeholder="Enter API key" />
-        <button :style="{
-            marginLeft: '20px'
-        }" @click="post_channels(parseInt(props.areaId))"  >add</button>
-    </div>
+    <b>
+        Channels
+    </b>
+    <UButton color="neutral"  @click="() => {change_create_state(true)}" class="cursor-pointer" >Add Channel</UButton>
+    <UModal v-model:open="create_state" title="Add Channel" @close="(false)" >
+        <template #body>
+            <div>
+                <UFormField label="Channel ID, contoh : 1,2,3">
+                    <UInput v-model="channels" class="flex"/>
+                </UFormField>
+                <UFormField label="API Key, contoh : 1,2,3">
+                    <UInput v-model="api_keys" class="flex" />
+                </UFormField>
+            </div>
+        </template>
+        <template #footer>
+            <UButton color="primary" @click="() => {post_channels(parseInt(areaId), toast)}">Add</UButton>
+        </template>
+    </UModal>
 </template>

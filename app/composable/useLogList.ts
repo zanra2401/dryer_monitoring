@@ -14,6 +14,7 @@ export type LogRow = {
     rhBottom: LogDecimalValue;
     mc: LogDecimalValue;
     checkerName: string | null;
+    remark: string | null;
 };
 
 type LogListResponse = {

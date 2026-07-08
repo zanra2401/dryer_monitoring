@@ -83,7 +83,7 @@ const roleFilterModel = computed<RoleFilterValue[]>(() => {
   return selectedRoleFilters.value.length === 0 ? [ALL_ROLE_FILTER_VALUE] : selectedRoleFilters.value;
 });
 
-const singleAreaRoles: UserRole[] = ["OPERATOR", "CLIENT"];
+const limitedAreaRoles: UserRole[] = ["OPERATOR", "CLIENT"];
 
 const roleColor: Record<UserRole, "primary" | "info" | "warning" | "neutral"> = {
   ADMIN: "primary",
@@ -92,7 +92,34 @@ const roleColor: Record<UserRole, "primary" | "info" | "warning" | "neutral"> = 
   CLIENT: "neutral",
 };
 
-const isSingleAreaRole = (role: UserRole) => singleAreaRoles.includes(role);
+const isLimitedAreaRole = (role: UserRole) => limitedAreaRoles.includes(role);
+const isUserRole = (value: RoleFilterValue): value is UserRole => value !== ALL_ROLE_FILTER_VALUE;
+
+const createAreaIdsModel = computed<number[]>({
+  get: () => create_data.value.area_ids,
+  set: (value) => {
+    create_data.value.area_ids = value ?? [];
+  },
+});
+
+const updateAreaIdsModel = computed<number[]>({
+  get: () => update_data.value.area_ids,
+  set: (value) => {
+    update_data.value.area_ids = value ?? [];
+  },
+});
+
+const areaAccessLabel = (areaIds: number[]) => {
+  if (areaIds.length === 0) {
+    return "Select dryer areas";
+  }
+
+  if (areaIds.length === 1) {
+    return dryerAreas.value.find((area) => area.value === areaIds[0])?.label ?? "1 selected";
+  }
+
+  return `${areaIds.length} selected`;
+};
 
 const roleFilterLabel = computed(() => {
   if (selectedRoleFilters.value.length === 0) {
@@ -200,10 +227,10 @@ const handleRoleFilterChange = async (value: RoleFilterValue[] | undefined) => {
 
   if (nextValue.includes(ALL_ROLE_FILTER_VALUE)) {
     selectedRoleFilters.value = selectedRoleFilters.value.length === 0
-      ? nextValue.filter((item): item is UserRole => item !== ALL_ROLE_FILTER_VALUE)
+      ? nextValue.filter(isUserRole)
       : [];
   } else {
-    selectedRoleFilters.value = nextValue;
+    selectedRoleFilters.value = nextValue.filter(isUserRole);
   }
 
   await applyRoleFilter();
@@ -343,8 +370,8 @@ const changePage = async (direction: "next" | "prev") => {
 watch(
   () => create_data.value.role,
   (role) => {
-    if (!isSingleAreaRole(role)) {
-      create_data.value.area_id = null;
+    if (!isLimitedAreaRole(role)) {
+      create_data.value.area_ids = [];
     }
   },
 );
@@ -352,8 +379,8 @@ watch(
 watch(
   () => update_data.value.role,
   (role) => {
-    if (!isSingleAreaRole(role)) {
-      update_data.value.area_id = null;
+    if (!isLimitedAreaRole(role)) {
+      update_data.value.area_ids = [];
     }
   },
 );
@@ -393,14 +420,12 @@ const columns: TableColumn<UserRow>[] = [
   {
     accessorKey: "username",
     header: "Username",
-    cell: ({ row }) => {
-      const user = row.original;
-
-      return h("div", { class: "min-w-44" }, [
-        h("p", { class: "font-medium text-highlighted" }, user.username),
-        h("p", { class: "text-sm text-muted" }, user.fullName),
-      ]);
-    },
+    cell: ({ row }) => row.getValue("username"),
+  },
+  {
+    accessorKey: "fullName",
+    header: "Full Name",
+    cell: ({ row }) => row.getValue("fullName"),
   },
   {
     accessorKey: "role",
@@ -600,19 +625,30 @@ onMounted(async () => {
 
             <UFormField
               label="Dryer Area"
-              :required="isSingleAreaRole(create_data.role)"
-              :help="isSingleAreaRole(create_data.role) ? 'Required for operator and client.' : 'Global access for admin and manager.'"
+              :required="isLimitedAreaRole(create_data.role)"
+              :help="isLimitedAreaRole(create_data.role) ? 'Select one or more dryer areas.' : 'Global access for admin and manager.'"
             >
-              <USelect
-                v-model="create_data.area_id"
+              <USelectMenu
+                v-if="isLimitedAreaRole(create_data.role)"
+                v-model="createAreaIdsModel"
                 :items="dryerAreas"
                 value-key="value"
                 label-key="label"
-                placeholder="Select dryer area"
+                multiple
+                placeholder="Select dryer areas"
                 class="w-full"
                 :loading="dryerAreasLoading"
-                :disabled="!isSingleAreaRole(create_data.role)"
-              />
+                :disabled="dryerAreasLoading"
+              >
+                <template #default>
+                  <span class="truncate text-sm">
+                    {{ areaAccessLabel(create_data.area_ids) }}
+                  </span>
+                </template>
+              </USelectMenu>
+              <p v-else class="rounded-lg border border-default px-3 py-2 text-sm text-muted">
+                Global access for this role.
+              </p>
             </UFormField>
           </div>
         </form>
@@ -698,19 +734,30 @@ onMounted(async () => {
 
             <UFormField
               label="Dryer Area"
-              :required="isSingleAreaRole(update_data.role)"
-              :help="isSingleAreaRole(update_data.role) ? 'Required for operator and client.' : 'Global access for admin and manager.'"
+              :required="isLimitedAreaRole(update_data.role)"
+              :help="isLimitedAreaRole(update_data.role) ? 'Select one or more dryer areas.' : 'Global access for admin and manager.'"
             >
-              <USelect
-                v-model="update_data.area_id"
+              <USelectMenu
+                v-if="isLimitedAreaRole(update_data.role)"
+                v-model="updateAreaIdsModel"
                 :items="dryerAreas"
                 value-key="value"
                 label-key="label"
-                placeholder="Select dryer area"
+                multiple
+                placeholder="Select dryer areas"
                 class="w-full"
                 :loading="dryerAreasLoading"
-                :disabled="!isSingleAreaRole(update_data.role)"
-              />
+                :disabled="dryerAreasLoading"
+              >
+                <template #default>
+                  <span class="truncate text-sm">
+                    {{ areaAccessLabel(update_data.area_ids) }}
+                  </span>
+                </template>
+              </USelectMenu>
+              <p v-else class="rounded-lg border border-default px-3 py-2 text-sm text-muted">
+                Global access for this role.
+              </p>
             </UFormField>
           </div>
         </form>

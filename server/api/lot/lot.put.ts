@@ -9,10 +9,14 @@ const bodySchema = z.object({
     net_to_bin: z.coerce.number().optional().nullable(),
     initial_mc: z.coerce.number().optional().nullable(),
     status: z.enum(["UPAIR", "DOWNAIR", "DRIED"]).optional(),
+    down_air_at: z.coerce.date().optional().nullable(),
+    down_mc: z.coerce.number().optional().nullable(),
     bin_number: z.coerce.number().int().positive().optional(),
     area_id: z.coerce.number().int().positive().optional(),
     start_time: z.coerce.date().optional(),
     end_time: z.coerce.date().optional().nullable(),
+    end_mc: z.coerce.number().optional().nullable(),
+    depth: z.coerce.number().optional().nullable(),
 });
 
 export default defineEventHandler(async (event) => {
@@ -98,10 +102,14 @@ export default defineEventHandler(async (event) => {
                     ...(body.net_to_bin !== undefined ? { netToBin: body.net_to_bin } : {}),
                     ...(body.initial_mc !== undefined ? { initialMc: body.initial_mc } : {}),
                     ...(body.status !== undefined ? { status: body.status } : {}),
+                    ...(body.down_air_at !== undefined ? { downAirAt: body.down_air_at } : {}),
+                    ...(body.down_mc !== undefined ? { downMC: body.down_mc } : {}),
                     ...(body.bin_number !== undefined ? { binNumber: body.bin_number } : {}),
                     ...(body.area_id !== undefined ? { areaId: body.area_id } : {}),
                     ...(body.start_time !== undefined ? { startTime: body.start_time } : {}),
                     ...(body.end_time !== undefined ? { endTime: body.end_time } : {}),
+                    ...(body.end_mc !== undefined ? { endMC: body.end_mc } : {}),
+                    ...(body.depth !== undefined ? { depth: body.depth } : {}),
                 },
             });
 

@@ -7,17 +7,17 @@ type UserFormData = {
     password: string;
     full_name: string;
     role: UserRole;
-    area_id: number | null;
+    area_ids: number[];
 };
 
-const singleAreaRoles: UserRole[] = ["OPERATOR", "CLIENT"];
+const limitedAreaRoles: UserRole[] = ["OPERATOR", "CLIENT"];
 
 const userFormSchema = z.object({
     username: z.string().trim().min(1, "Username is required"),
     password: z.string().trim().optional(),
     full_name: z.string().trim().min(1, "Full name is required"),
     role: z.enum(USER_ROLES),
-    area_id: z.number().int().positive().nullable(),
+    area_ids: z.array(z.number().int().positive()),
 });
 
 const getApiErrorMessage = (error: unknown) => {
@@ -35,7 +35,7 @@ const getApiErrorMessage = (error: unknown) => {
 };
 
 const areaIdsFromForm = (form: UserFormData) => {
-    return singleAreaRoles.includes(form.role) && form.area_id ? [form.area_id] : [];
+    return limitedAreaRoles.includes(form.role) ? [...new Set(form.area_ids)] : [];
 };
 
 const validateRoleAccess = (form: UserFormData, requirePassword: boolean) => {
@@ -45,8 +45,8 @@ const validateRoleAccess = (form: UserFormData, requirePassword: boolean) => {
         throw new Error("Password is required");
     }
 
-    if (singleAreaRoles.includes(parsed.role) && !parsed.area_id) {
-        throw new Error(`${parsed.role} must have exactly one dryer area`);
+    if (limitedAreaRoles.includes(parsed.role) && parsed.area_ids.length < 1) {
+        throw new Error(`${parsed.role} must have at least one dryer area`);
     }
 
     return parsed;
@@ -58,7 +58,7 @@ const makeEmptyForm = (): UserFormData => ({
     password: "",
     full_name: "",
     role: "OPERATOR",
-    area_id: null,
+    area_ids: [],
 });
 
 export const useUserCRUD = (refreshUserList: () => Promise<unknown>) => {
@@ -82,7 +82,7 @@ export const useUserCRUD = (refreshUserList: () => Promise<unknown>) => {
             password: "",
             full_name: user.fullName,
             role: user.role,
-            area_id: user.canAccess[0]?.areaId ?? null,
+            area_ids: user.canAccess.map((access) => access.areaId),
         };
     };
 

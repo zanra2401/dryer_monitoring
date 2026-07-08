@@ -98,11 +98,15 @@ model Lot {
   netToBin     Decimal?  @map("net_to_bin")
   initialMc    Decimal?  @map("initial_mc")
   status       LotStatus @default(UPAIR)
-  createdBy    Int?       @map("create_by")
+  downAirAt    DateTime?  @map("down_air_at")
+  downMC       Float?  @map("down_mc")
+  createdBy    Int?      @map("create_by")
   binNumber    Int       @map("bin_number")
   areaId       Int       @map("area_id")
   startTime    DateTime  @default(now()) @map("start_time")
   endTime      DateTime? @map("end_time")
+  endMC        Float?    @map("end_mc")
+  depth        Float?    @map("depth")
 
   user         User?     @relation("CreatedLots", fields: [createdBy], references: [userId])
   logs         Log[]
@@ -121,6 +125,7 @@ model Log {
   rhBottom            Decimal? @map("rh_bottom")
   mc                  Decimal?
   checkerName         String?  @map("checker_name")
+  remark              String?    @map("remark")
 
   lot                 Lot      @relation(fields: [lotId], references: [lotId])
 

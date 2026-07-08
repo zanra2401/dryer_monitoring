@@ -8,11 +8,15 @@ const bodySchema = z.object({
     net_to_bin: z.coerce.number().optional().nullable(),
     initial_mc: z.coerce.number().optional().nullable(),
     status: z.enum(["UPAIR", "DOWNAIR", "DRIED"]).optional(),
+    down_air_at: z.coerce.date().optional().nullable(),
+    down_mc: z.coerce.number().optional().nullable(),
     created_by: z.coerce.number().int().positive().optional().nullable(),
     bin_number: z.coerce.number().int().positive(),
     area_id: z.coerce.number().int().positive(),
     start_time: z.coerce.date().optional(),
     end_time: z.coerce.date().optional().nullable(),
+    end_mc: z.coerce.number().optional().nullable(),
+    depth: z.coerce.number().optional().nullable(),
 });
 
 export default defineEventHandler(async (event) => {
@@ -80,11 +84,15 @@ export default defineEventHandler(async (event) => {
                     netToBin: body.net_to_bin ?? null,
                     initialMc: body.initial_mc ?? null,
                     status: lotStatus,
+                    downAirAt: body.down_air_at ?? null,
+                    downMC: body.down_mc ?? null,
                     createdBy: body.created_by ?? null,
                     binNumber: body.bin_number,
                     areaId: body.area_id,
                     startTime: body.start_time ?? new Date(),
                     endTime: body.end_time ?? null,
+                    endMC: body.end_mc ?? null,
+                    depth: body.depth ?? null,
                 },
             });
 

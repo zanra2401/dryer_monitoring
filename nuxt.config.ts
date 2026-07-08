@@ -3,8 +3,18 @@ export default defineNuxtConfig({
   compatibilityDate: '2025-07-15',
   devtools: { enabled: true },
   modules: [
-    '@nuxt/ui'
+    '@nuxt/ui',
+    'nuxt-auth-utils',
   ],
+  runtimeConfig: {
+    authBypass: process.env.NUXT_AUTH_BYPASS !== 'false',
+    session: {
+      password: process.env.NUXT_SESSION_PASSWORD || 'dryer-monitoring-dev-session-secret-minimum-32-chars',
+    },
+    public: {
+      authBypass: (process.env.NUXT_PUBLIC_AUTH_BYPASS ?? process.env.NUXT_AUTH_BYPASS) !== 'false',
+    },
+  },
   css: ['~/assets/css/main.css'],
   icon: {
     clientBundle: {
@@ -21,14 +31,18 @@ export default defineNuxtConfig({
         'lucide:file-spreadsheet',
         'lucide:filter',
         'lucide:inbox',
+        'lucide:lock-keyhole',
         'lucide:log-out',
         'lucide:moon',
+        'lucide:package-search',
         'lucide:panel-left',
         'lucide:pencil',
+        'lucide:plus',
         'lucide:printer',
         'lucide:rotate-ccw',
         'lucide:save',
         'lucide:search',
+        'lucide:shield-check',
         'lucide:sun',
         'lucide:sun-moon',
         'lucide:trash-2',
@@ -43,6 +57,8 @@ export default defineNuxtConfig({
         '@vue/devtools-core',
         '@vue/devtools-kit',
         '@vueuse/core',
+        'html2canvas',
+        'jspdf',
         'zod',
       ],
     },

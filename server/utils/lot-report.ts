@@ -97,7 +97,7 @@ const formatDecimal = (value: DecimalLike) => {
         return "";
     }
 
-    return new Intl.NumberFormat("id-ID", {
+    return new Intl.NumberFormat("en-US", {
         minimumFractionDigits: 0,
         maximumFractionDigits: 2,
     }).format(parsed);
@@ -169,7 +169,7 @@ const formatDryingRate = (
         return "";
     }
 
-    return new Intl.NumberFormat("id-ID", {
+    return new Intl.NumberFormat("en-US", {
         minimumFractionDigits: 0,
         maximumFractionDigits: 2,
     }).format(durationHours / dryDown);
@@ -208,6 +208,7 @@ export const getLotReportData = async (lotId: number): Promise<LotReportData | n
     });
 
     const latestMcLog = [...lot.logs].reverse().find((log) => log.mc !== null);
+    const resolvedEndMc = lot.endMC ?? latestMcLog?.mc ?? null;
     const visibleLogs = lot.logs.slice(0, REPORT_MAX_LOG_ROWS);
 
     return {
@@ -219,16 +220,16 @@ export const getLotReportData = async (lotId: number): Promise<LotReportData | n
         quality: lot.quality ?? "",
         status: lot.status,
         netToBin: formatDecimal(lot.netToBin),
-        depthMeter: "",
+        depthMeter: formatDecimal(lot.depth),
         startTime: formatDateTime(lot.startTime),
-        downTime: "",
+        downTime: formatDateTime(lot.downAirAt),
         stopTime: formatDateTime(lot.endTime),
         mcStart: formatDecimal(lot.initialMc),
-        mcDown: "",
-        mcEnd: formatDecimal(latestMcLog?.mc ?? null),
+        mcDown: formatDecimal(lot.downMC),
+        mcEnd: formatDecimal(resolvedEndMc),
         totalDrying: formatDuration(lot.startTime, lot.endTime),
-        dryDown: formatDryDown(lot.initialMc, latestMcLog?.mc ?? null),
-        dryingRate: formatDryingRate(lot.startTime, lot.endTime, lot.initialMc, latestMcLog?.mc ?? null),
+        dryDown: formatDryDown(lot.initialMc, resolvedEndMc),
+        dryingRate: formatDryingRate(lot.startTime, lot.endTime, lot.initialMc, resolvedEndMc),
         rows: visibleLogs.map((log) => ({
             date: formatDate(log.timestampThingspeak),
             hour: formatHour(log.timestampThingspeak),
@@ -238,7 +239,7 @@ export const getLotReportData = async (lotId: number): Promise<LotReportData | n
             rhTop: formatDecimal(log.rhTop),
             rhBottom: formatDecimal(log.rhBottom),
             mc: formatDecimal(log.mc),
-            remarks: log.checkerName ?? "",
+            remarks: log.remark ?? log.checkerName ?? "",
         })),
         totalLogCount: lot.logs.length,
         overflowLogCount: Math.max(lot.logs.length - REPORT_MAX_LOG_ROWS, 0),

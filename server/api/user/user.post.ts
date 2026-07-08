@@ -1,6 +1,7 @@
 import { Prisma } from "~/generated/prisma/client";
 import { prisma } from "~~/server/utils/prisma";
-import { hashPassword } from "~~/server/utils/password";
+import { requireAuthRole } from "~~/server/utils/auth";
+import { hashUserPassword } from "~~/server/utils/password";
 import { getRoleAccessAreaIds, ROLES, validateRoleAreaAccess } from "~~/server/utils/rbac";
 import { ZodError, z } from "zod";
 
@@ -35,6 +36,8 @@ const userSelect = {
 };
 
 export default defineEventHandler(async (event) => {
+    await requireAuthRole(event, ["ADMIN"]);
+
     try {
         const body = bodySchema.parse(await readBody(event));
 
@@ -73,7 +76,7 @@ export default defineEventHandler(async (event) => {
             const createdUser = await tx.user.create({
                 data: {
                     username: body.username,
-                    password: hashPassword(body.password),
+                    password: await hashUserPassword(body.password),
                     fullName: body.full_name,
                     role: body.role,
                 },

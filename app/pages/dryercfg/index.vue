@@ -6,6 +6,7 @@ import { useRouter } from "vue-router";
 import AppSidebar from "~/components/AppSidebar.vue";
 import { useBinOptions } from "~/composable/useBinOptions";
 import { useDryerAreaOptions } from "~/composable/useDryerAreaOptions";
+import { useLotCRUD } from "~/composable/useLotCRUD";
 import {
   LOT_PAGE_SIZE_OPTIONS,
   LOT_STATUSES,
@@ -14,7 +15,6 @@ import {
   type LotStatus,
   useLotList,
 } from "~/composable/useLotList";
-import { useLotCRUD } from "~/composable/useLotCRUD";
 
 const UButton = resolveComponent("UButton");
 const UBadge = resolveComponent("UBadge");
@@ -64,17 +64,13 @@ const {
   fetch_bin_options: fetchCreateBinOptions,
 } = useBinOptions();
 
-async function refreshLotListForPage() {
-  return fetch_lot_list();
-}
-
 const {
   create_data,
   loading: crudLoading,
   create_lot,
   delete_lot,
   reset_create_data,
-} = useLotCRUD(refreshLotListForPage);
+} = useLotCRUD(fetch_lot_list);
 
 const statusLabels: Record<LotStatus, string> = {
   UPAIR: "Up Air",
@@ -87,6 +83,12 @@ const statusColors: Record<LotStatus, "warning" | "info" | "success"> = {
   DOWNAIR: "info",
   DRIED: "success",
 };
+const numberInputProps = {
+  locale: "en-US",
+  formatOptions: {
+    maximumFractionDigits: 2,
+  },
+} as const;
 
 const searchInput = ref("");
 const selectedAreaIds = ref<number[]>([]);
@@ -163,7 +165,8 @@ const statusFilterLabel = computed(() => {
   }
 
   if (selectedStatuses.value.length === 1) {
-    return statusLabels[selectedStatuses.value[0]];
+    const status = selectedStatuses.value[0];
+    return status ? statusLabels[status] : "All statuses";
   }
 
   return `${selectedStatuses.value.length} statuses`;
@@ -179,6 +182,20 @@ const binFilterLabel = computed(() => {
   }
 
   return `${selectedBinNumbers.value.length} bins`;
+});
+
+const createAreaIdModel = computed<number | undefined>({
+  get: () => create_data.value.area_id ?? undefined,
+  set: (value) => {
+    create_data.value.area_id = value ?? null;
+  },
+});
+
+const createBinNumberModel = computed<number | undefined>({
+  get: () => create_data.value.bin_number ?? undefined,
+  set: (value) => {
+    create_data.value.bin_number = value ?? null;
+  },
 });
 
 const getErrorMessage = (error: unknown) => {
@@ -201,11 +218,12 @@ const formatNumber = (value: LotRow["netToBin"]) => {
   }
 
   const parsed = Number(value);
+
   if (Number.isNaN(parsed)) {
     return "-";
   }
 
-  return new Intl.NumberFormat("id-ID", {
+  return new Intl.NumberFormat("en-US", {
     maximumFractionDigits: 2,
   }).format(parsed);
 };
@@ -216,6 +234,7 @@ const formatDateTime = (value: string | null) => {
   }
 
   const date = new Date(value);
+
   if (Number.isNaN(date.getTime())) {
     return "-";
   }
@@ -228,16 +247,19 @@ const formatDateTime = (value: string | null) => {
 
 const getAreaName = (areaId: number) => areaMap.value.get(areaId)?.name ?? `Area #${areaId}`;
 
-const normalizeAreaSelection = (areaIds: number[]) => {
-  return [...new Set(areaIds)].sort((left, right) => left - right);
-};
+const normalizeAreaSelection = (areaIds: number[]) => [...new Set(areaIds)].sort((left, right) => left - right);
+const normalizeStatusSelection = (statuses: LotStatus[]) => [...new Set(statuses)];
+const normalizeNumberSelection = (numbers: number[]) => [...new Set(numbers)].sort((left, right) => left - right);
+const normalizeModelArray = <T,>(value: unknown) => {
+  if (Array.isArray(value)) {
+    return value as T[];
+  }
 
-const normalizeStatusSelection = (statuses: LotStatus[]) => {
-  return [...new Set(statuses)];
-};
+  if (value === null || value === undefined) {
+    return [];
+  }
 
-const normalizeNumberSelection = (numbers: number[]) => {
-  return [...new Set(numbers)].sort((left, right) => left - right);
+  return [value as T];
 };
 
 const resolveAllSelection = <T>(currentValues: T[], nextValues: Array<T | string>, allValue: string) => {
@@ -291,9 +313,9 @@ const applyAreaFilter = async () => {
   }
 };
 
-const handleAreaFilterChange = async (value: AreaFilterValue[] | undefined) => {
+const handleAreaFilterChange = async (value: unknown) => {
   selectedAreaIds.value = normalizeAreaSelection(
-    resolveAllSelection(selectedAreaIds.value, value ?? [], ALL_AREA_FILTER_VALUE),
+    resolveAllSelection(selectedAreaIds.value, normalizeModelArray<AreaFilterValue>(value), ALL_AREA_FILTER_VALUE),
   );
   await applyAreaFilter();
 };
@@ -324,9 +346,9 @@ const applyStatusFilter = async () => {
   }
 };
 
-const handleStatusFilterChange = async (value: StatusFilterValue[] | undefined) => {
+const handleStatusFilterChange = async (value: unknown) => {
   selectedStatuses.value = normalizeStatusSelection(
-    resolveAllSelection(selectedStatuses.value, value ?? [], ALL_STATUS_FILTER_VALUE),
+    resolveAllSelection(selectedStatuses.value, normalizeModelArray<StatusFilterValue>(value), ALL_STATUS_FILTER_VALUE),
   );
   await applyStatusFilter();
 };
@@ -346,14 +368,20 @@ const applyBinFilter = async () => {
   }
 };
 
-const handleBinFilterChange = async (value: BinFilterValue[] | undefined) => {
+const handleBinFilterChange = async (value: unknown) => {
   selectedBinNumbers.value = normalizeNumberSelection(
-    resolveAllSelection(selectedBinNumbers.value, value ?? [], ALL_BIN_FILTER_VALUE),
+    resolveAllSelection(selectedBinNumbers.value, normalizeModelArray<BinFilterValue>(value), ALL_BIN_FILTER_VALUE),
   );
   await applyBinFilter();
 };
 
-const changePageSize = async () => {
+const changePageSize = async (value: unknown) => {
+  const parsedValue = Number(value);
+
+  if (LOT_PAGE_SIZE_OPTIONS.includes(parsedValue as LotPageSize)) {
+    pageSize.value = parsedValue as LotPageSize;
+  }
+
   try {
     await set_limit(pageSize.value);
   } catch (error) {
@@ -385,9 +413,10 @@ const openCreateModal = async () => {
   createBinOptions.value = [];
   isCreateConfirmOpen.value = false;
 
-  if (selectedAreaIds.value.length === 1) {
-    create_data.value.area_id = selectedAreaIds.value[0];
-    await fetchCreateBinOptions([selectedAreaIds.value[0]]);
+  const selectedAreaId = selectedAreaIds.value[0];
+  if (selectedAreaIds.value.length === 1 && selectedAreaId !== undefined) {
+    create_data.value.area_id = selectedAreaId;
+    await fetchCreateBinOptions([selectedAreaId]);
   }
 
   isCreateOpen.value = true;
@@ -501,7 +530,7 @@ function getRowItems(row: Row<LotRow>) {
     },
     {
       label: "Detail",
-      icon: "i-lucide-file-pen-line",
+      icon: "i-lucide-pencil",
       onSelect() {
         router.push(`/dryercfg/lot/${lot.lotId}`);
       },
@@ -567,6 +596,21 @@ const columns: TableColumn<LotRow>[] = [
     cell: ({ row }) => formatNumber(row.original.initialMc),
   },
   {
+    accessorKey: "depth",
+    header: "Depth",
+    cell: ({ row }) => formatNumber(row.original.depth),
+  },
+  {
+    accessorKey: "downAirAt",
+    header: "Down Air At",
+    cell: ({ row }) => formatDateTime(row.original.downAirAt),
+  },
+  {
+    accessorKey: "downMC",
+    header: "Down MC",
+    cell: ({ row }) => formatNumber(row.original.downMC),
+  },
+  {
     accessorKey: "startTime",
     header: "Start Time",
     cell: ({ row }) => formatDateTime(row.original.startTime),
@@ -575,6 +619,11 @@ const columns: TableColumn<LotRow>[] = [
     accessorKey: "endTime",
     header: "End Time",
     cell: ({ row }) => formatDateTime(row.original.endTime),
+  },
+  {
+    accessorKey: "endMC",
+    header: "End MC",
+    cell: ({ row }) => formatNumber(row.original.endMC),
   },
   {
     id: "actions",
@@ -619,7 +668,7 @@ onMounted(async () => {
 
 <template>
   <AppSidebar :loading="isInitialLoading">
-    <div class="space-y-4">
+    <div class="min-w-0 w-full space-y-4">
       <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
         <div>
           <h1 class="text-2xl font-semibold text-highlighted">
@@ -638,7 +687,7 @@ onMounted(async () => {
         />
       </div>
 
-      <div class="rounded-lg border border-default bg-default">
+      <div class="min-w-0 overflow-hidden rounded-lg border border-default bg-default">
         <div class="space-y-4 border-b border-default p-4">
           <div class="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
             <div class="flex min-w-0 flex-1 flex-col gap-3 xl:flex-row">
@@ -723,14 +772,16 @@ onMounted(async () => {
           </div>
         </div>
 
-        <div class="overflow-x-auto">
-          <UTable
-            :data="tableData"
-            :columns="columns"
-            :loading="listLoading"
-            empty="No lots found"
-            class="min-h-80 min-w-[82rem]"
-          />
+        <div class="w-full max-w-full overflow-x-auto overflow-y-hidden overscroll-x-contain">
+          <div class="inline-block min-w-[108rem] align-top">
+            <UTable
+              :data="tableData"
+              :columns="columns"
+              :loading="listLoading"
+              empty="No lots found"
+              class="min-h-80"
+            />
+          </div>
         </div>
 
         <div class="border-t border-default p-4">
@@ -753,7 +804,7 @@ onMounted(async () => {
               label-key="label"
               class="w-20"
               :disabled="listLoading"
-              @change="changePageSize"
+              @update:model-value="changePageSize"
             />
             <UButton
               trailing-icon="i-lucide-chevron-right"
@@ -798,7 +849,7 @@ onMounted(async () => {
           <div class="grid gap-4 md:grid-cols-2">
             <UFormField label="Dryer Area" required>
               <USelect
-                v-model="create_data.area_id"
+                v-model="createAreaIdModel"
                 :items="dryerAreas"
                 value-key="value"
                 label-key="label"
@@ -810,7 +861,7 @@ onMounted(async () => {
 
             <UFormField label="Bin" required>
               <USelect
-                v-model="create_data.bin_number"
+                v-model="createBinNumberModel"
                 :items="createBinOptions"
                 value-key="value"
                 label-key="label"
@@ -832,13 +883,31 @@ onMounted(async () => {
             </UFormField>
           </div>
 
-          <div class="grid gap-4 md:grid-cols-2">
+          <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
             <UFormField label="Net To Bin">
-              <UInputNumber v-model="create_data.net_to_bin" :step="0.01" class="w-full" />
+              <UInputNumber v-model="create_data.net_to_bin" v-bind="numberInputProps" :step="0.01" class="w-full" />
             </UFormField>
 
             <UFormField label="Initial MC">
-              <UInputNumber v-model="create_data.initial_mc" :step="0.01" class="w-full" />
+              <UInputNumber v-model="create_data.initial_mc" v-bind="numberInputProps" :step="0.01" class="w-full" />
+            </UFormField>
+
+            <UFormField label="Depth (Meter)">
+              <UInputNumber v-model="create_data.depth" v-bind="numberInputProps" :step="0.01" class="w-full" />
+            </UFormField>
+          </div>
+
+          <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+            <UFormField label="Down Air At">
+              <UInput v-model="create_data.down_air_at" type="datetime-local" class="w-full" />
+            </UFormField>
+
+            <UFormField label="Down MC">
+              <UInputNumber v-model="create_data.down_mc" v-bind="numberInputProps" :step="0.01" class="w-full" />
+            </UFormField>
+
+            <UFormField label="End MC">
+              <UInputNumber v-model="create_data.end_mc" v-bind="numberInputProps" :step="0.01" class="w-full" />
             </UFormField>
           </div>
 
@@ -943,4 +1012,3 @@ onMounted(async () => {
     </UModal>
   </AppSidebar>
 </template>
-

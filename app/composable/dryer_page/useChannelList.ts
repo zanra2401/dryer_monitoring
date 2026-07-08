@@ -2,7 +2,7 @@ export const useChannelList = () => {
     const channel_list = ref<any>(null);
     const error = ref<Record<string, any>|null>(null);
 
-    const fetch_channel_list = async (area_id: number) => {
+    const fetch_channel_list = async (area_id: number, toast: any) => {
         channel_list.value = [];
         try {
             const { data, error } = await useFetch('/api/channel/channels', {
@@ -19,7 +19,10 @@ export const useChannelList = () => {
 
             channel_list.value = data.value;
         } catch (err: any) {
-            alert(err || "Unknown error");
+            toast.add({
+                title: "Error fetching channel list: " + err.message || "Unknown error",
+                color: "error" 
+            });
             error.value = err;
         }
     }

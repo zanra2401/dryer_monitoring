@@ -8,7 +8,7 @@
 </script>
 
 <template>
-    <div>
-        Area ID: {{ props.areaId }}
-    </div>
+    <b class="mt-1">
+        Bins
+    </b>
 </template>

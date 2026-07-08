@@ -13,11 +13,15 @@ export type LotRow = {
     netToBin: DecimalValue;
     initialMc: DecimalValue;
     status: LotStatus;
+    downAirAt: string | null;
+    downMC: DecimalValue;
     createdBy: number | null;
     binNumber: number;
     areaId: number;
     startTime: string;
     endTime: string | null;
+    endMC: DecimalValue;
+    depth: DecimalValue;
 };
 
 type LotListResponse = {

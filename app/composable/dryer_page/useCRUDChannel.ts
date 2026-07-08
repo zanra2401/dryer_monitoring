@@ -1,3 +1,4 @@
+import { toast } from "#build/ui";
 import * as z from "zod";
 
 const createChannelSchema = z.object({
@@ -7,9 +8,10 @@ const createChannelSchema = z.object({
 });
 
 export const useCRUDChannel = () => {
-    const channels = ref<string|null>(null);
-    const api_keys = ref<string|null>(null);
+    const channels = ref<string|undefined>(undefined);
+    const api_keys = ref<string|undefined>(undefined);
     const edit_state = ref<boolean>(false);
+    const create_state = ref<boolean>(false);
 
     const edit_data = ref<any>({
         channel_id: null,
@@ -27,7 +29,7 @@ export const useCRUDChannel = () => {
     });
 
 
-    const post_channels = async (area_id: number) => {
+    const post_channels = async (area_id: number, toast: any) => {
         const data_to_validate = {
             area_id: area_id,
             channels: channel_arr.value,
@@ -36,14 +38,19 @@ export const useCRUDChannel = () => {
 
         try {
             createChannelSchema.parse(data_to_validate);
-            console.log("valid");
         } catch (err: unknown) {
-            console.log("test");
             if (err instanceof z.ZodError) {
-                alert("Validation error: " + err.issues.map(issue => issue.message).join(", "));
+                toast.add({
+                    title: "Validation error: " + err.issues.map(issue => issue.message).join(", "),
+                    color: "error" 
+                });
                 return null;
             }
-            alert("Error creating channels: " + err || "Unknown error");
+            toast.add({
+                title: "Error creating channels: " + err || "Unknown error",
+                color: "error" 
+            });
+
             return null;
         }
 
@@ -52,44 +59,63 @@ export const useCRUDChannel = () => {
             body: data_to_validate,
         });
 
-        console.log("Response data:", data_to_validate);
 
         if (error.value) {
-            alert("Error creating channels: " + error.value?.statusMessage || "Unknown error");
+            toast.add({
+                title: "Error creating channels: " + error.value?.statusMessage || "Unknown error",
+                color: "error" 
+            });
             return null;
         }
+
+        toast.add({
+            title: "Channels created successfully",
+            color: "success" 
+        });
 
         return data;
     };    
 
 
-    const refresh_channels = async (area_id: number, channel_id: string) => {
+    const refresh_channels = async (area_id: number, channel_id: string, toast: any) => {
         const { data, error } = await useFetch('/api/channel/refresh_channel', {
             method: 'POST',
             body: { area_id, channel_id },
         });
 
         if (error.value) {
-            alert("Error refreshing channels: " + error.value?.statusMessage || "Unknown error");
+            toast.add({
+                title: "Error refreshing channels: " + error.value?.statusMessage || "Unknown error",
+                color: "error" 
+            });
             return null;
         }
 
-        alert("Channel refreshed successfully");
+        toast.add({
+            title: "Channels refreshed successfully",
+            color: "success" 
+        });
         return data;
     };
 
-    const delete_channel = async (area_id: number, channel_id: string) => {
+    const delete_channel = async (area_id: number, channel_id: string, toast: any) => {
         const { data, error } = await useFetch('/api/channel/channel', {
             method: 'DELETE',
             body: { area_id, channel_id },
         });
 
         if (error.value) {
-            alert("Error deleting channel: " + error.value?.statusMessage || "Unknown error");
+            toast.add({
+                title: "Error deleting channel: " + error.value?.statusMessage || "Unknown error",
+                color: "error" 
+            });
             return null;
         }
 
-        alert("Channel deleted successfully");
+        toast.add({
+            title: "Channel deleted successfully",
+            color: "success" 
+        });
         return data;
     }
 
@@ -100,7 +126,11 @@ export const useCRUDChannel = () => {
         edit_data.value.api_key = api_key;
     }
 
-    const update_channel = async (area_id: number) => {
+    const change_create_state = (state: boolean) => {
+        create_state.value = state;
+    }
+
+    const update_channel = async (area_id: number, toast: any) => {
         const { data, error } = await useFetch('/api/channel/channel', {
             method: 'PUT',
             body: {
@@ -111,10 +141,16 @@ export const useCRUDChannel = () => {
         });
 
         if (error.value) {
-            alert("Error updating channel: " + error.value?.statusMessage || "Unknown error");
+            toast.add({
+                title: "Error updating channel: " + error.value?.statusMessage || "Unknown error",
+                color: "error" 
+            });
             return null;
         }
-        alert("Channel updated successfully");
+        toast.add({
+            title: "Channel updated successfully",
+            color: "success"
+        });
         return data;
     }
 
@@ -128,5 +164,7 @@ export const useCRUDChannel = () => {
         edit_state,
         edit_data,
         update_channel,
+        create_state,
+        change_create_state
     }
 }

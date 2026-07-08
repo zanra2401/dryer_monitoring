@@ -11,6 +11,7 @@ const bodySchema = z.object({
     rh_bottom: z.coerce.number().optional().nullable(),
     mc: z.coerce.number().optional().nullable(),
     checker_name: z.string().trim().optional().nullable(),
+    remark: z.string().trim().optional().nullable(),
 });
 
 export default defineEventHandler(async (event) => {
@@ -44,6 +45,7 @@ export default defineEventHandler(async (event) => {
                 ...(body.rh_bottom !== undefined ? { rhBottom: body.rh_bottom } : {}),
                 ...(body.mc !== undefined ? { mc: body.mc } : {}),
                 ...(body.checker_name !== undefined ? { checkerName: body.checker_name } : {}),
+                ...(body.remark !== undefined ? { remark: body.remark } : {}),
             },
         });
 

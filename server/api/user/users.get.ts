@@ -1,4 +1,5 @@
 import { prisma } from "~~/server/utils/prisma";
+import { requireAuthRole } from "~~/server/utils/auth";
 import { ROLES } from "~~/server/utils/rbac";
 import { ZodError, z } from "zod";
 
@@ -45,6 +46,8 @@ const userSelect = {
 };
 
 export default defineEventHandler(async (event) => {
+    await requireAuthRole(event, ["ADMIN"]);
+
     try {
         const query = querySchema.parse(getQuery(event));
 
