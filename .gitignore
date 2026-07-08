@@ -5,10 +5,9 @@
 .nitro
 .cache
 dist
-
+plant
 # Node dependencies
 node_modules
-
 # Logs
 logs
 *.log
