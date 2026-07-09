@@ -1,2 +1,29 @@
 @import "tailwindcss";
 @import "@nuxt/ui";
+
+@theme {
+  /* Spacing Scale Standard */
+  --spacing-page: 24px;
+  --spacing-section: 16px;
+  --spacing-element: 8px;
+
+  /* Semantic Colors for High Contrast (Outdoors) */
+  --color-sensor-temp: var(--color-blue-600);
+  --color-sensor-rh: var(--color-green-600);
+  
+  --color-status-active: var(--color-green-500);
+  --color-status-idle: var(--color-gray-500);
+  --color-status-alert: var(--color-red-600);
+}
+
+@layer base {
+  /* Fallback text colors to ensure high contrast by default */
+  html, body {
+    @apply text-gray-900;
+    overflow-x: hidden;
+    max-width: 100vw;
+  }
+  html.dark, html.dark body {
+    @apply text-white;
+  }
+}

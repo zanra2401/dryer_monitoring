@@ -90,7 +90,17 @@ const props = defineProps({
       }"
     >
       <template #header>
-        <UIcon name="i-logos-nuxt-icon" class="size-8" />
+        <div class="flex items-center justify-between w-full">
+          <UIcon name="i-logos-nuxt-icon" class="size-8" />
+          <UButton
+            icon="i-lucide-x"
+            color="neutral"
+            variant="ghost"
+            class="md:hidden"
+            aria-label="Close sidebar"
+            @click="open = false"
+          />
+        </div>
       </template>
 
       <template #default="{ state }">
@@ -127,17 +137,17 @@ const props = defineProps({
       <GridLoader/>
     </div>
 
-    <div v-if="!props.loading" class="flex-1 flex flex-col">
-      <div class="h-(--ui-header-height) shrink-0 flex items-center px-4 border-b border-default">
+    <div v-if="!props.loading" class="flex-1 flex flex-col min-w-0 max-w-full overflow-x-hidden">
+      <div class="h-14 shrink-0 flex items-center px-4 border-b border-default">
         <UButton
-          icon="i-lucide-panel-left"
+          icon="i-lucide-menu"
           color="neutral"
           variant="ghost"
           aria-label="Toggle sidebar"
           @click="() => {open = !open}"
         />
       </div>
-      <div v-if="!props.loading" class="flex-1 p-4">
+      <div v-if="!props.loading" class="flex-1 p-4 overflow-x-auto">
         <slot/>
       </div>
     </div>

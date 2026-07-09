@@ -28,9 +28,9 @@
         <Header />
         <div class="flex items-center justify-between p-2">
             <div class="flex items-center">
-                <a class="p-2 flex items-center" href="/dryer">
+                <NuxtLink class="p-2 flex items-center" to="/dryer">
                     <UIcon name="i-lucide-move-left" class="w-4 h-4 mr-1" />
-                </a>
+                </NuxtLink>
                 <b>
                     {{ bins.dryerArea?.name || 'Unknown Area' }}
                 </b>
@@ -46,7 +46,7 @@
                 </UButton>
             </NuxtLink>
         </div>
-        <div class="grid min-h-screen p-2 grid-cols-3 md:grid-cols-6 lg:grid-cols-8 gap-3">
+        <div class="grid min-h-screen p-2 sm:p-4 grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
         <NuxtLink
             v-for="(data, idx) in bins.data"
             :key="data.binNumber"
@@ -57,7 +57,7 @@
                 getCardClassByStatus(data.binStatus) 
             ]"
         >
-            <div class="p-1 border-b flex items-center justify-between text-[10px] font-bold bg-white/50 dark:bg-black/20">
+            <div class="p-1.5 border-b flex items-center justify-between text-xs font-bold bg-white/80 dark:bg-gray-900/80">
                 <div class="flex-1 text-blue-600 dark:text-blue-400 flex justify-center border-r border-inherit">
                     {{ data.latestLog?.tempTop?.toFixed(2) ?? '-' }} C
                 </div>
@@ -69,12 +69,16 @@
             <div class="p-1.5 flex-1 flex flex-col justify-center">
                 <div class="mb-1 text-xs font-bold flex justify-between items-center">
                     <span>{{ data.binNumber || '-' }}</span>
-                    <span class="text-[9px] uppercase tracking-wider font-bold px-1 py-0.5 border rounded-none bg-white/60 dark:bg-black/30">
+                    <span class="flex items-center gap-1 text-[11px] uppercase tracking-wider font-bold px-1.5 py-0.5 border rounded-none bg-white/80 dark:bg-gray-800">
+                        <UIcon v-if="data.binStatus === 'UPAIR'" name="i-lucide-arrow-up" class="w-3 h-3 text-green-600 dark:text-green-400" />
+                        <UIcon v-else-if="data.binStatus === 'DOWNAIR'" name="i-lucide-arrow-down" class="w-3 h-3 text-amber-600 dark:text-amber-400" />
+                        <UIcon v-else-if="data.binStatus === 'DRIER'" name="i-lucide-flame" class="w-3 h-3 text-red-600 dark:text-red-400" />
+                        <UIcon v-else name="i-lucide-circle" class="w-3 h-3 text-gray-500 dark:text-gray-400" />
                         {{ data.binStatus || 'IDLE' }}
                     </span>
                 </div>
     
-                <div class="mb-1 space-y-0.5 text-[11px]">
+                <div class="mb-1 space-y-0.5 text-xs">
                     <div class="truncate font-medium">{{ data.occupiedBy || '-' }}</div>
                     <div class="flex items-center gap-1 opacity-90">
                         <span class="truncate">{{ data.hybrid || '-' }}</span>
@@ -83,12 +87,12 @@
                     </div>
                 </div>
     
-                <div class="truncate text-[10px] font-mono mt-auto pt-1 border-t border-inherit/30">
+                <div class="truncate text-[11px] font-mono mt-auto pt-1 border-t border-inherit/30">
                     {{ data.startTime ? Math.floor((Date.now() - new Date(data.startTime).getTime()) / (1000 * 60 * 60)) + ' Hrs' : '-' }}                
                 </div>
             </div>
 
-            <div class="p-1 border-t flex items-center justify-between text-[10px] font-bold bg-white/50 dark:bg-black/20">
+            <div class="p-1.5 border-t flex items-center justify-between text-xs font-bold bg-white/80 dark:bg-gray-900/80">
                 <div class="flex-1 text-blue-600 dark:text-blue-400 flex justify-center border-r border-inherit">
                     {{ data.latestLog?.tempBottom?.toFixed(2) ?? '-' }} C
                 </div>

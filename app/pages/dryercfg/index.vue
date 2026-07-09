@@ -93,9 +93,12 @@ function    getRowItems(row: any) {
       }
     },
     {
-      label: 'Delete',
+      label: 'Hapus',
+      icon: 'i-lucide-trash-2',
       onSelect() {
-        delete_dryer(row.getValue('areaId'), toast);
+        if (window.confirm(`Apakah Anda yakin ingin menghapus area: ${row.getValue('name')}? Aksi ini tidak dapat dibatalkan.`)) {
+          delete_dryer(row.getValue('areaId'), toast);
+        }
       }
     },
   ]

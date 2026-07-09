@@ -132,10 +132,10 @@ const startDrying = async () => {
                     <UIcon name="i-lucide-arrow-left" class="w-5 h-5 mr-2" />
                 </UButton>
                 <div>
-                    <h3 class="text-lg font-bold text-gray-800 ">
+                    <h3 class="text-lg font-bold text-gray-900 dark:text-white">
                         Inisialisasi Parameter Lot
                     </h3>
-                    <p class="text-xs text-gray-500">Konfigurasi data awal untuk proses pengeringan</p>
+                    <p class="text-xs text-gray-500 dark:text-gray-400">Konfigurasi data awal untuk proses pengeringan</p>
                 </div>
             </div>
         </template>
@@ -143,39 +143,39 @@ const startDrying = async () => {
         <div class="flex flex-col gap-5">
             
             <div class="flex flex-col gap-1.5">
-                <label class="text-sm font-semibold text-gray-700">Lot Number</label>
+                <label class="text-sm font-semibold text-gray-700 dark:text-gray-300">Lot Number</label>
                 <UInput v-model="lot_data.lot_number" placeholder="Masukkan Lot Number" class="rounded-none" />
             </div>
             
             <div class="flex flex-col gap-1.5">
-                <label class="text-sm font-semibold text-gray-700">Spesifikasi Hybrid</label>
+                <label class="text-sm font-semibold text-gray-700 dark:text-gray-300">Spesifikasi Hybrid</label>
                 <UInput v-model="lot_data.hybrid" placeholder="Masukkan Spesifikasi Hybrid" class="rounded-none" />
             </div>
             
             <div class="flex flex-col gap-1.5">
-                <label class="text-sm font-semibold text-gray-700">Metrik Kualitas</label>
+                <label class="text-sm font-semibold text-gray-700 dark:text-gray-300">Metrik Kualitas</label>
                 <UInput v-model="lot_data.quality" placeholder="Masukkan Metrik Kualitas" class="rounded-none" />
             </div>
             
             <div class="grid grid-cols-2 gap-4">
                 <div class="flex flex-col gap-1.5">
-                    <label class="text-sm font-semibold text-gray-700">Net to Bin (kg)</label>
+                    <label class="text-sm font-semibold text-gray-700 dark:text-gray-300">Net to Bin (kg)</label>
                     <UInput v-model.number="lot_data.net_to_bin" type="number" placeholder="Kuantitas Net" class="rounded-none" />
                 </div>
                 
                 <div class="flex flex-col gap-1.5">
-                    <label class="text-sm font-semibold text-gray-700">Depth (meter)</label>
+                    <label class="text-sm font-semibold text-gray-700 dark:text-gray-300">Depth (meter)</label>
                     <UInput v-model.number="lot_data.depth" type="number" placeholder="Kedalaman" class="rounded-none" />
                 </div>
             </div>
             
             <div class="flex flex-col gap-1.5">
-                <label class="text-sm font-semibold text-gray-700">Initial Moisture Content (MC) %</label>
+                <label class="text-sm font-semibold text-gray-700 dark:text-gray-300">Initial Moisture Content (MC) %</label>
                 <UInput v-model.number="lot_data.initial_mc" type="number" step="0.1" placeholder="Nilai Initial MC" class="rounded-none" />
             </div>
             
             <div class="flex flex-col gap-1.5">
-                <label class="text-sm font-semibold text-gray-700">
+                <label class="text-sm font-semibold text-gray-700 dark:text-gray-300">
                     Waktu Inisialisasi <span class="text-red-500">*</span>
                 </label>
                 <VueDatePicker
@@ -185,7 +185,7 @@ const startDrying = async () => {
                     format="dd/MM/yyyy HH:mm"
                     placeholder="Tentukan Waktu Aktual"
                     auto-apply
-                    input-class-name="w-full border border-gray-300 p-2 text-sm text-gray-900 focus:ring-2 focus:ring-primary-500 outline-none rounded-none shadow-sm"
+                    input-class-name="w-full border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 p-2 text-sm text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 outline-none rounded-none shadow-sm"
                 />
             </div>
 

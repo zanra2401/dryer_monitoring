@@ -41,7 +41,7 @@ const columns = [
       const shortDate = rawDate.toLocaleDateString('id-ID', { day: '2-digit', month: '2-digit' })
       const shortTime = rawDate.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })
       
-      return h('span', { class: 'text-sm font-medium text-gray-700' }, `${shortDate} ${shortTime}`)
+      return h('span', { class: 'text-sm font-medium text-gray-700 dark:text-gray-300' }, `${shortDate} ${shortTime}`)
     }
   },
   { 
@@ -71,9 +71,9 @@ const columns = [
     cell: ({ row }: any) => {
       const mc = Number(row.getValue('mc'))
       if (mc !== null && mc !== undefined && !isNaN(mc)) {
-        return h('span', { class: 'font-mono text-sm font-bold text-gray-900' }, mc.toFixed(1))
+        return h('span', { class: 'font-mono text-sm font-bold text-gray-900 dark:text-white' }, mc.toFixed(1))
       }
-      return h('span', { class: 'text-xs text-gray-400 italic' }, 'Kosong')
+      return h('span', { class: 'text-xs text-gray-400 dark:text-gray-500 italic' }, 'Kosong')
     }
   },
   { 
@@ -103,7 +103,6 @@ const selectedRowData = ref<Log | null>(null)
 // Dalam TanStack Table, 'row' yang diklik mengandung metadata kompleks.
 // Anda HARUS menggunakan referensi `row.original` untuk mendapatkan entitas data aslinya.
 const handleRowSelect = (e: Event, row: TableRow<Log>) => {
-  console.log(row) // Debug: Pastikan data asli berhasil diekstraksi
   selectedRowData.value = { ...row.original } 
   isModalOpen.value = true
 }
@@ -153,24 +152,24 @@ const paginatedLogs = computed(() => {
 </script>
 
 <template>
-  <UCard class="rounded-none">
+  <UCard class="w-full min-w-0 rounded-none overflow-hidden" :ui="{ body: { padding: 'p-0 sm:p-0' } }">
     <template #header>
       <div class="flex items-center justify-between">
         <h3 class="text-lg font-bold">Log Telemetri Sensor</h3>
-        <span class="text-xs text-gray-500">Klik baris untuk mengisi MC</span>
+        <span class="text-xs text-gray-500 dark:text-gray-400">Klik baris untuk mengisi MC</span>
       </div>
     </template>
     
     <UTable 
+      :key="`log-table-page-${page}`"
       :data="paginatedLogs" 
       :columns="columns"
-      class="cursor-pointer hover:bg-gray-50 transition-colors"
+      class="cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
       @select="(e: Event, row: TableRow<Log>) => handleRowSelect(e, row)"
     />
   </UCard>
-
   <div class="w-full flex justify-center items-center mb-6">
-    <UPagination v-model="page" :total="props.logs.length" :items-per-page="itemsPerPage" />
+    <UPagination v-model:page="page" :total="props.logs.length" :items-per-page="itemsPerPage" />
   </div>
 
   <OperatorEntryModal 

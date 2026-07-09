@@ -47,12 +47,12 @@ const handleSubmit = () => {
   <UModal v-model:open="isOpen">
     <template #body>
       <div class="flex flex-col gap-5">
-        <div v-if="selectedData" class="text-sm text-gray-600 bg-gray-50 p-3 border border-gray-200 rounded-none">
-          Entri Waktu: <span class="font-bold text-gray-900">{{ new Date(selectedData.time).toLocaleString('id-ID') }}</span>
+        <div v-if="selectedData" class="text-sm text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-800 p-3 border border-gray-200 dark:border-gray-700 rounded-none">
+          Entri Waktu: <span class="font-bold text-gray-900 dark:text-white">{{ new Date(selectedData.time).toLocaleString('id-ID') }}</span>
         </div>
 
         <div class="flex flex-col gap-1.5">
-          <label class="text-sm font-semibold text-gray-700">
+          <label class="text-sm font-semibold text-gray-700 dark:text-gray-300">
             Moisture Content (MC) % <span class="text-red-500">*</span>
           </label>
           <UInput 
@@ -83,7 +83,7 @@ const handleSubmit = () => {
         <UButton 
           color="neutral" 
           variant="solid" 
-          class="text-gray-700 border border-gray-300 rounded-none shadow-sm hover:bg-gray-50" 
+          class="text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-700 rounded-none shadow-sm hover:bg-gray-50 dark:hover:bg-gray-800" 
           @click="handleClose"
         >
           Batal

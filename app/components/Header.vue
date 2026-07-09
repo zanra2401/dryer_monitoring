@@ -9,8 +9,8 @@ const route = useRoute()
 <template>
   <UHeader :toggle="false">
     <template #title>
-      <div class="h-full" >
-        <img src="~/assets/logo.png" class="h-[100px]" alt="">
+      <div class="h-full flex items-center">
+        <img src="~/assets/logo.png" class="h-12 w-auto object-contain" alt="Logo Aplikasi Dryer Monitoring">
       </div>
     </template>
 

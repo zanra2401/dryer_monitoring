@@ -45,7 +45,7 @@
     <div v-if="(!lotResponse?.data || !binResponse?.data) && lotNumber != 'start'" class="w-full h-screen flex justify-center items-center">
         <GridLoader />
     </div>
-    <div v-else class="w-full max-w-full overflow-x-hidden min-h-screen bg-gray-50">
+    <div v-else class="w-full max-w-full overflow-x-hidden min-h-screen bg-gray-50 dark:bg-gray-950">
         <Header/>
         <main class="p-4 w-full max-w-full overflow-x-hidden">
             <Init v-if="lotNumber == 'start'" :areaId="areaId" :lotNumber="lotNumber" :binNumber="binNumber" />

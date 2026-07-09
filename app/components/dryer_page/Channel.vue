@@ -111,9 +111,12 @@
                 }
             },
             {
-                label: 'Delete',
+                label: 'Hapus',
+                icon: 'i-lucide-trash-2',
                 onSelect() {
-                    delete_channel(parseInt(props.areaId), row.getValue('channelId'), toast);
+                    if (window.confirm(`Apakah Anda yakin ingin menghapus channel ID: ${row.getValue('channelId')}? Semua bin yang terhubung akan ikut terpengaruh.`)) {
+                        delete_channel(parseInt(props.areaId), row.getValue('channelId'), toast);
+                    }
                 }
             },
         ]
@@ -123,7 +126,15 @@
 </script>
 
 <template>
-    <UTable :data="channel_list.data" :columns="columns" class="flex-1" />
+    <UTable :data="channel_list.data" :columns="columns" class="flex-1">
+        <template #empty-state>
+            <div class="flex flex-col items-center justify-center py-12">
+                <UIcon name="i-lucide-rss" class="w-12 h-12 text-gray-400 mb-3" />
+                <h3 class="text-base font-semibold text-gray-900 dark:text-white">Belum Ada Channel</h3>
+                <p class="text-sm text-gray-500 dark:text-gray-400">Tambahkan channel telemetri baru untuk mengumpulkan data.</p>
+            </div>
+        </template>
+    </UTable>
 
     <UModal v-model:open="edit_state" title="Edit Channel" @close="change_edit_state(false)" @confirm="update_channel(parseInt(props.areaId), toast)">
         <template #body>

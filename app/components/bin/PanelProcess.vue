@@ -34,7 +34,7 @@
     // Ini adalah format yang wajib diterima oleh Prisma
     const safeIsoString = localDate.toISOString() 
 
-    console.log(`[INTEGRITAS TERJAGA] Eksekusi ${payload.action} disiapkan:`, safeIsoString)
+    // console.log(`[INTEGRITAS TERJAGA] Eksekusi ${payload.action} disiapkan:`, safeIsoString)
 
     try {
         if (payload.action == 'down') {
@@ -161,20 +161,42 @@
 <template>
     <UCard class="rounded-none">
     <template #header>
-      <div class="flex items-center justify-between">
-        <div>
-          <UButton
-            variant="ghost"
-            icon="i-heroicons-arrow-left"
-            class="text-gray-500 hover:bg-gray-100 rounded-none -my-1"
-            @click="router.back()"
-          />
-          <h2 class="text-xl font-bold">Bin {{ binNumber }}</h2>
-          <p class="text-gray-500">Lot {{ lotNumber }}</p>
-          <UBadge color="neutral" class="rounded">{{ lot.hybrid }}</UBadge>
-          <UBadge color="neutral" class="rounded ml-2">{{ lot.quality }}</UBadge>
+      <div class="flex flex-col gap-3">
+        <!-- Row 1: Back Button, Title, and Status -->
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <UButton
+              variant="ghost"
+              icon="i-heroicons-arrow-left"
+              class="text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full"
+              @click="router.back()"
+            />
+            <h2 class="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">Bin {{ binNumber }}</h2>
+          </div>
+          <UBadge :color="getColorClassNuxt(lot.status)" class="font-bold tracking-wide text-xs sm:text-sm px-2 py-1">{{ lot.status }}</UBadge> 
         </div>
-        <UBadge :color="getColorClassNuxt(lot.status)">{{ lot.status }}</UBadge> 
+
+        <!-- Row 2: Metadata / Properties -->
+        <div class="flex flex-wrap items-center gap-2 sm:gap-4 pl-0 sm:pl-10 mt-1 sm:mt-0">
+          <div class="flex items-center gap-1.5">
+            <span class="text-xs sm:text-sm font-medium text-gray-500 dark:text-gray-400">Lot:</span>
+            <span class="text-xs sm:text-sm font-bold text-gray-900 dark:text-white font-mono">{{ lotNumber }}</span>
+          </div>
+          
+          <div class="hidden sm:block w-1 h-1 rounded-full bg-gray-300 dark:bg-gray-600"></div>
+          
+          <div class="flex items-center gap-1.5">
+            <span class="text-xs sm:text-sm font-medium text-gray-500 dark:text-gray-400">Varietas:</span>
+            <UBadge color="primary" variant="subtle" size="sm" class="rounded text-[10px] sm:text-xs">{{ lot.hybrid }}</UBadge>
+          </div>
+          
+          <div class="hidden sm:block w-1 h-1 rounded-full bg-gray-300 dark:bg-gray-600"></div>
+          
+          <div class="flex items-center gap-1.5">
+            <span class="text-xs sm:text-sm font-medium text-gray-500 dark:text-gray-400">Kualitas:</span>
+            <UBadge color="gray" variant="solid" size="sm" class="rounded text-[10px] sm:text-xs">{{ lot.quality }}</UBadge>
+          </div>
+        </div>
       </div>
     </template>
 
@@ -208,53 +230,53 @@
       
       <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
         <div>
-          <div class="text-xs text-gray-500">Net To Bin</div>
+          <div class="text-xs text-gray-500 dark:text-gray-400">Net To Bin</div>
           <div class="font-medium">{{ lot.netToBin ?? "-" }}</div>
         </div>
         <div>
-          <div class="text-xs text-gray-500">Depth (meter)</div>
+          <div class="text-xs text-gray-500 dark:text-gray-400">Depth (meter)</div>
           <div class="font-medium">{{ lot.depth ?? "-" }}</div>
         </div>
         <div>
-          <div class="text-xs text-gray-500">Time Start</div>
+          <div class="text-xs text-gray-500 dark:text-gray-400">Time Start</div>
           <div class="font-medium font-mono text-sm">{{ formatCompactDateTime(lot.startTime) }}</div>
         </div>
         <div>
-          <div class="text-xs text-gray-500">Time Down</div>
+          <div class="text-xs text-gray-500 dark:text-gray-400">Time Down</div>
           <div class="font-medium font-mono text-sm">{{ formatCompactDateTime(lot.downAirAt) }}</div>
         </div>
       </div>
 
       <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
         <div>
-          <div class="text-xs text-gray-500">Time Stop</div>
+          <div class="text-xs text-gray-500 dark:text-gray-400">Time Stop</div>
           <div class="font-medium font-mono text-sm">{{ formatCompactDateTime(lot.endTime) }}</div>
         </div>
         <div>
-          <div class="text-xs text-gray-500">MC Start</div>
+          <div class="text-xs text-gray-500 dark:text-gray-400">MC Start</div>
           <div class="font-medium">{{ lot.initialMc ?? "-" }}</div>
         </div>
         <div>
-          <div class="text-xs text-gray-500">MC Down</div>
+          <div class="text-xs text-gray-500 dark:text-gray-400">MC Down</div>
           <div class="font-medium">{{ lot.downMC ?? "-" }}</div>
         </div>
         <div>
-          <div class="text-xs text-gray-500">Mc End</div>
+          <div class="text-xs text-gray-500 dark:text-gray-400">Mc End</div>
           <div class="font-medium">{{ lot.endMC ?? "-" }}</div>
         </div>
       </div>
 
       <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div>
-          <div class="text-xs text-gray-500">Total Drying</div>
+          <div class="text-xs text-gray-500 dark:text-gray-400">Total Drying</div>
           <div class="font-medium">{{ calculateTotalDrying(lot.startTime, lot.endTime) ?? "-" }}</div>
         </div>
         <div>
-          <div class="text-xs text-gray-500">Dry down</div>
+          <div class="text-xs text-gray-500 dark:text-gray-400">Dry down</div>
           <div class="font-medium">{{ calculateDryDown(lot.initialMc, lot.endMC) ?? "-" }}</div>
         </div>
         <div>
-          <div class="text-xs text-gray-500">Drying rate</div>
+          <div class="text-xs text-gray-500 dark:text-gray-400">Drying rate</div>
           <div class="font-medium">{{ calculateDryingRate(calculateTotalDrying(lot.startTime, lot.endTime), calculateDryDown(lot.initialMc, lot.endMC)) ?? "-" }}</div>
         </div>
       </div>

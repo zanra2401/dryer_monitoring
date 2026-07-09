@@ -17,6 +17,13 @@ export default defineEventHandler(async (event) => {
         const result = await prisma.dryerArea.findMany({
             skip: offset,
             take: limit,
+            include: {
+                bins: {
+                    select: {
+                        binStatus: true
+                    }
+                }
+            }
         });
         const totalCount = await prisma.dryerArea.count();
 
@@ -27,7 +34,18 @@ export default defineEventHandler(async (event) => {
             });
         }
 
-        return { success: true, data: result, totalCount: totalCount };
+        const enrichedResult = result.map(area => {
+            const totalBins = area.bins.length;
+            const activeBins = area.bins.filter(b => b.binStatus !== 'EMPTY' && b.binStatus !== 'IDLE').length;
+            return {
+                ...area,
+                totalBins,
+                activeBins,
+                bins: undefined // hapus raw array jika tidak diperlukan di frontend
+            };
+        });
+
+        return { success: true, data: enrichedResult, totalCount: totalCount };
     } catch (error: any) {
         if (error instanceof z.ZodError) {
             const errorMessages = error.issues.map(issue => `${issue.path.join('.')} - ${issue.message}`).join(', ');
