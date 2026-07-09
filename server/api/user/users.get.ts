@@ -1,11 +1,25 @@
 import { prisma } from "~~/server/utils/prisma";
+import { requireAuthRole } from "~~/server/utils/auth";
 import { ROLES } from "~~/server/utils/rbac";
 import { ZodError, z } from "zod";
+
+const normalizeStringArray = (value: unknown) => {
+    if (value === undefined || value === null || value === "") {
+        return undefined;
+    }
+
+    const values = Array.isArray(value) ? value : [value];
+
+    return values
+        .flatMap((item) => typeof item === "string" ? item.split(",") : [item])
+        .filter((item): item is string => typeof item === "string" && item.length > 0);
+};
 
 const querySchema = z.object({
     limit: z.coerce.number().int().positive().max(100).optional(),
     offset: z.coerce.number().int().min(0).optional(),
     role: z.enum(ROLES).optional(),
+    roles: z.preprocess(normalizeStringArray, z.array(z.enum(ROLES)).optional()),
     search: z.string().trim().min(1).optional(),
 });
 
@@ -32,13 +46,26 @@ const userSelect = {
 };
 
 export default defineEventHandler(async (event) => {
+    await requireAuthRole(event, ["ADMIN"]);
+
     try {
         const query = querySchema.parse(getQuery(event));
 
         const limit = query.limit ?? 10;
         const offset = query.offset ?? 0;
+        const roles = query.roles && query.roles.length > 0
+            ? [...new Set(query.roles)]
+            : undefined;
         const where = {
-            ...(query.role ? { role: query.role } : {}),
+            ...(roles
+                ? {
+                    role: {
+                        in: roles,
+                    },
+                }
+                : query.role
+                    ? { role: query.role }
+                    : {}),
             ...(query.search
                 ? {
                     OR: [

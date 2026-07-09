@@ -3,6 +3,7 @@ import { BinStatus, LotStatus } from "~/generated/prisma/enums";
 import * as z from "zod";
 import { prisma } from "~~/server/utils/prisma"; 
 import { logger } from "~~/server/utils/pino"; 
+import { requireAuthRole } from "~~/server/utils/auth";
 
 // 1. Deklarasi Skema Keamanan
 const endDryingSchema = z.object({
@@ -12,6 +13,7 @@ const endDryingSchema = z.object({
 
 export default defineEventHandler(async (event) => {
     try {
+        const user = await requireAuthRole(event, ["ADMIN", "OPERATOR"]);
         const rawBody = await readBody(event);
         const { lot_id, time } = endDryingSchema.parse(rawBody);
         const endTimeStr = new Date(time).toISOString();
@@ -21,6 +23,10 @@ export default defineEventHandler(async (event) => {
 
             if (!lot) {
                 throw createError({ statusCode: 404, statusMessage: "Data Lot tidak ditemukan." });
+            }
+
+            if (user.role === "OPERATOR" && !user.areaIds.includes(lot.areaId)) {
+                throw createError({ statusCode: 403, statusMessage: "Izin tidak cukup untuk menyelesaikan pengeringan di area ini." });
             }
 
             // Guard Clause: Tolak jika masih UPAIR

@@ -1,4 +1,5 @@
 import { prisma } from "~~/server/utils/prisma";
+import { requireAuthRole } from "~~/server/utils/auth";
 import { ZodError, z } from "zod";
 
 const querySchema = z.object({
@@ -28,6 +29,8 @@ const userSelect = {
 };
 
 export default defineEventHandler(async (event) => {
+    await requireAuthRole(event, ["ADMIN"]);
+
     try {
         const query = querySchema.parse(getQuery(event));
 

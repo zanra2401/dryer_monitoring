@@ -4,6 +4,7 @@ import { BinStatus } from "~/generated/prisma/client";
 import log from "~~/server/utils/log";
 import { prisma } from "~~/server/utils/prisma"; 
 import { logger } from "~~/server/utils/pino";
+import { requireAuthRole } from "~~/server/utils/auth";
 
 // 1. Deklarasi Skema Zod yang Absolut
 const startDryingSchema = z.object({
@@ -20,10 +21,15 @@ const startDryingSchema = z.object({
 
 export default defineEventHandler(async (event) => {
     try {
+        const user = await requireAuthRole(event, ["ADMIN", "OPERATOR"]);
         const rawBody = await readBody(event);
         
         // Eksekusi Validasi Zod (Akan otomatis melempar galat ke blok catch jika format salah)
         const body = startDryingSchema.parse(rawBody);
+        
+        if (user.role === "OPERATOR" && !user.areaIds.includes(body.area_id)) {
+            throw createError({ statusCode: 403, statusMessage: "Izin tidak cukup untuk memulai pengeringan di area ini." });
+        }
         
         const startDate = log.to_valid_date(body.start_time);
         if (log.is_future_date(startDate)) {

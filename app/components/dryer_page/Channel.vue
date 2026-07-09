@@ -1,6 +1,7 @@
 <script setup lang="ts">
     import { useChannelList } from '~/composable/dryer_page/useChannelList';
     import { useCRUDChannel } from '~/composable/dryer_page/useCRUDChannel';
+    import { useDryerAuth } from '~/composable/useDryerAuth';
     const { channel_list, error, fetch_channel_list } = useChannelList();
 
     import { h, resolveComponent } from 'vue'
@@ -24,6 +25,15 @@
     });
 
     const { refresh_channels, delete_channel, edit_state, edit_data, change_edit_state, update_channel } = useCRUDChannel();
+    const { user: sessionUser } = useDryerAuth();
+    const isReadOnly = computed(() => sessionUser.value?.role !== 'ADMIN');
+
+    const visibleColumns = computed(() => {
+        if (isReadOnly.value) {
+            return columns.filter((col) => col.id !== 'actions');
+        }
+        return columns;
+    });
 
     type Channel = {
         channelId: string
@@ -126,15 +136,7 @@
 </script>
 
 <template>
-    <UTable :data="channel_list.data" :columns="columns" class="flex-1">
-        <template #empty-state>
-            <div class="flex flex-col items-center justify-center py-12">
-                <UIcon name="i-lucide-rss" class="w-12 h-12 text-gray-400 mb-3" />
-                <h3 class="text-base font-semibold text-gray-900 dark:text-white">Belum Ada Channel</h3>
-                <p class="text-sm text-gray-500 dark:text-gray-400">Tambahkan channel telemetri baru untuk mengumpulkan data.</p>
-            </div>
-        </template>
-    </UTable>
+    <UTable :data="channel_list.data" :columns="visibleColumns" class="flex-1" />
 
     <UModal v-model:open="edit_state" title="Edit Channel" @close="change_edit_state(false)" @confirm="update_channel(parseInt(props.areaId), toast)">
         <template #body>

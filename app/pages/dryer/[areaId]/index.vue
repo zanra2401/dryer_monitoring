@@ -1,10 +1,17 @@
 <script setup lang="ts">
     import GridLoader from '~/components/GridLoader.vue';
     import Header from '~/components/Header.vue';
+    import { useDryerAuth } from '~/composable/useDryerAuth';
     
     const route = useRoute();
     const toast = useToast();
+    const { user: sessionUser } = useDryerAuth();
     const areaId = parseInt(route.params.areaId as string);
+
+    const isLimited = sessionUser.value?.role === 'OPERATOR' || sessionUser.value?.role === 'CLIENT';
+    if (isLimited && sessionUser.value?.areaIds && !sessionUser.value.areaIds.includes(areaId)) {
+        navigateTo('/dryer');
+    }
 
     // Kueri Pembacaan (GET) menggunakan useFetch di top-level untuk SSR Hydration
     const { data: bins, error } = await useFetch('/api/bin/bins', {

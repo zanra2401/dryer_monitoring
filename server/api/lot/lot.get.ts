@@ -1,5 +1,7 @@
 import { prisma } from "~~/server/utils/prisma";
 import { ZodError, z } from "zod";
+import { requireAuthUser } from "~~/server/utils/auth";
+import { isLimitedAreaRole } from "~~/server/utils/rbac";
 
 const querySchema = z.object({
     lot_id: z.coerce.number().int().positive(),
@@ -7,6 +9,7 @@ const querySchema = z.object({
 
 export default defineEventHandler(async (event) => {
     try {
+        const user = await requireAuthUser(event);
         const query = querySchema.parse(getQuery(event));
 
         const result = await prisma.lot.findUnique({
@@ -16,6 +19,11 @@ export default defineEventHandler(async (event) => {
         if (!result) {
             setResponseStatus(event, 404);
             return { error: "Lot not found" };
+        }
+
+        if (isLimitedAreaRole(user.role) && !user.areaIds.includes(result.areaId)) {
+            setResponseStatus(event, 403);
+            return { error: "Insufficient permission to access this lot" };
         }
 
         return { success: true, data: result };

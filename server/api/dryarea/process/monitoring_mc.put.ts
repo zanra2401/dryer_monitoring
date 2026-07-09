@@ -2,6 +2,7 @@ import * as z from "zod";
 import { Prisma } from "~/generated/prisma/client";
 import { prisma } from "~~/server/utils/prisma";
 import { logger } from "~~/server/utils/pino";
+import { requireAuthRole } from "~~/server/utils/auth";
 
 const mcUpdateSchema = z.object({
     lot_id: z.number().int().positive("ID Lot harus bernilai positif"),
@@ -12,11 +13,24 @@ const mcUpdateSchema = z.object({
 
 export default defineEventHandler(async (event) => {
     try {
+        const user = await requireAuthRole(event, ["ADMIN", "OPERATOR"]);
         const body = await readBody(event);
         const { lot_id, target_time, mc, remark } = mcUpdateSchema.parse(body);
 
+        // Pastikan Lot eksis
+        const lot = await prisma.lot.findUnique({
+            where: { lotId: lot_id }
+        });
+
+        if (!lot) {
+            throw createError({ statusCode: 404, statusMessage: "Data Lot tidak ditemukan." });
+        }
+
+        if (user.role === "OPERATOR" && !user.areaIds.includes(lot.areaId)) {
+            throw createError({ statusCode: 403, statusMessage: "Izin tidak cukup untuk memodifikasi lot di area ini." });
+        }
+
         // Normalisasi waktu: potong sampai level menit (buang detik & milidetik)
-        // Contoh: "2026-07-08T10:30:45.123Z" → cari antara "2026-07-08T10:30:00Z" dan "2026-07-08T10:31:00Z"
         const targetDate = new Date(target_time);
         const windowStart = new Date(targetDate);
         windowStart.setSeconds(0, 0); // Set detik dan ms ke 0

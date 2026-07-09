@@ -1,26 +1,59 @@
 <script setup lang="ts">
 import type { DropdownMenuItem, NavigationMenuItem } from '@nuxt/ui'
+import { useDryerAuth } from "~/composable/useDryerAuth";
+import Header from "~/components/Header.vue";
+
 const open = ref(true)
 
 const colorMode = useColorMode()
-
-
+const { user: sessionUser, logout } = useDryerAuth()
+const isClient = computed(() => sessionUser.value?.role === 'CLIENT')
 
 function getItems(state: 'collapsed' | 'expanded') {
-  return [
+  const role = sessionUser.value?.role
+
+  if (role === 'OPERATOR' || role === 'CLIENT') {
+    return [
+      {
+        label: 'Dryers',
+        icon: 'i-lucide-factory',
+        to: '/dryer',
+      },
+    ] satisfies NavigationMenuItem[]
+  }
+
+  const baseItems = [
+    {
+      label: 'Lots',
+      icon: 'i-lucide-package-search',
+      to: '/dryercfg',
+    },
     {
       label: 'Dry Area',
       icon: 'i-lucide-inbox',
-      to: '/dryercfg',
-    }
-  ] satisfies NavigationMenuItem[]
+      to: '/dryercfg/dry-areas',
+    },
+  ]
+
+  if (role !== 'MANAGER') {
+    baseItems.push({
+      label: 'Users',
+      icon: 'i-lucide-users',
+      to: '/dryercfg/users',
+    })
+  }
+
+  return baseItems satisfies NavigationMenuItem[]
 }
 
-const user = ref({
-  name: 'Benjamin Canac',
-  avatar: {
-    src: 'https://github.com/benjamincanac.png',
-    alt: 'Benjamin Canac'
+const user = computed(() => {
+  const name = sessionUser.value?.fullName || sessionUser.value?.username || "Bypass Admin"
+
+  return {
+    label: name,
+    avatar: {
+      alt: name,
+    }
   }
 })
 
@@ -64,21 +97,35 @@ const userItems = computed<DropdownMenuItem[][]>(() => [
   [
     {
       label: 'Log out',
-      icon: 'i-lucide-log-out'
+      icon: 'i-lucide-log-out',
+      onSelect: async () => {
+        await logout()
+      }
     }
   ]
 ])
 
-const props = defineProps({
-  loading: {
-    type: Boolean,
-    required: true
-  }
-});
+const props = withDefaults(defineProps<{
+  loading?: boolean
+}>(), {
+  loading: false
+})
 </script>
 
 <template>
-  <div class="flex flex-1">
+  <div v-if="isClient" class="w-full max-w-full overflow-x-hidden min-h-screen bg-gray-50 flex flex-col">
+    <Header />
+    <div v-if="props.loading" class="flex flex-1 items-center justify-center min-h-[60vh]">
+      <GridLoader />
+    </div>
+    <div v-else class="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
+      <div class="min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden p-4">
+        <slot />
+      </div>
+    </div>
+  </div>
+
+  <div v-else class="flex min-h-screen min-w-0 flex-1">
     <USidebar
       v-model:open="open"
       collapsible="icon"
@@ -120,7 +167,6 @@ const props = defineProps({
         >
           <UButton
             v-bind="user"
-            :label="user?.name"
             trailing-icon="i-lucide-chevrons-up-down"
             color="neutral"
             variant="ghost"
@@ -133,12 +179,8 @@ const props = defineProps({
         </UDropdownMenu>
       </template>
     </USidebar>
-    <div v-if="props.loading" class="h-screen size-full justify-center items-center flex">
-      <GridLoader/>
-    </div>
-
-    <div v-if="!props.loading" class="flex-1 flex flex-col min-w-0 max-w-full overflow-x-hidden">
-      <div class="h-14 shrink-0 flex items-center px-4 border-b border-default">
+    <div class="flex min-w-0 flex-1 flex-col">
+      <div class="h-(--ui-header-height) shrink-0 flex items-center px-4 border-b border-default">
         <UButton
           icon="i-lucide-menu"
           color="neutral"
@@ -147,8 +189,15 @@ const props = defineProps({
           @click="() => {open = !open}"
         />
       </div>
-      <div v-if="!props.loading" class="flex-1 p-4 overflow-x-auto">
-        <slot/>
+
+      <div v-if="props.loading" class="flex flex-1 items-center justify-center">
+        <GridLoader />
+      </div>
+
+      <div v-else class="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
+        <div class="min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden p-4">
+          <slot />
+        </div>
       </div>
     </div>
   </div>

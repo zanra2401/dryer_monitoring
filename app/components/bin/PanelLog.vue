@@ -3,12 +3,16 @@ import { ref, h, resolveComponent, computed } from 'vue'
 import OperatorEntryModal from '~/components/bin/OperatorEntry.vue'
 import type { LotLog } from './Process.vue';
 import type { TableRow } from '@nuxt/ui';
+import { useDryerAuth } from '~/composable/useDryerAuth';
+
 // 1. Resolusi Komponen Eksternal
 // Dalam Virtual DOM TanStack, kita tidak dapat memanggil <UBadge> secara langsung. 
 // Komponen harus di-resolve secara eksplisit agar dapat dikenali oleh mesin Vue.
 // 1. Pastikan Anda tetap mengimpor fungsi 'h' dan 'resolveComponent' dari 'vue'
 const UBadge = resolveComponent('UBadge')
 const toast = useToast();
+const { user: sessionUser } = useDryerAuth();
+const isClient = computed(() => sessionUser.value?.role === 'CLIENT');
 
 export interface Log {
   // logId dihapus karena data ini adalah hasil komputasi interval 30-menit, bukan baris tabel mentah
@@ -103,6 +107,8 @@ const selectedRowData = ref<Log | null>(null)
 // Dalam TanStack Table, 'row' yang diklik mengandung metadata kompleks.
 // Anda HARUS menggunakan referensi `row.original` untuk mendapatkan entitas data aslinya.
 const handleRowSelect = (e: Event, row: TableRow<Log>) => {
+  if (isClient.value) return; // Client is read-only
+  console.log(row) // Debug: Pastikan data asli berhasil diekstraksi
   selectedRowData.value = { ...row.original } 
   isModalOpen.value = true
 }
@@ -156,7 +162,11 @@ const paginatedLogs = computed(() => {
     <template #header>
       <div class="flex items-center justify-between">
         <h3 class="text-lg font-bold">Log Telemetri Sensor</h3>
+<<<<<<< HEAD
         <span class="text-xs text-gray-500 dark:text-gray-400">Klik baris untuk mengisi MC</span>
+=======
+        <span v-if="!isClient" class="text-xs text-gray-500">Klik baris untuk mengisi MC</span>
+>>>>>>> c4e9529a97b2644ca280d15035885150cd4e2bf6
       </div>
     </template>
     
@@ -164,8 +174,14 @@ const paginatedLogs = computed(() => {
       :key="`log-table-page-${page}`"
       :data="paginatedLogs" 
       :columns="columns"
+<<<<<<< HEAD
       class="cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
       @select="(e: Event, row: TableRow<Log>) => handleRowSelect(e, row)"
+=======
+      :class="[!isClient ? 'cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800' : '']"
+      class="transition-colors"
+      @select="(e: Event, row: TableRow<Log>) => !isClient && handleRowSelect(e, row)"
+>>>>>>> c4e9529a97b2644ca280d15035885150cd4e2bf6
     />
   </UCard>
   <div class="w-full flex justify-center items-center mb-6">
@@ -173,6 +189,7 @@ const paginatedLogs = computed(() => {
   </div>
 
   <OperatorEntryModal 
+    v-if="!isClient"
     v-model="isModalOpen" 
     :selected-data="selectedRowData"
     @save="saveOperatorData"
