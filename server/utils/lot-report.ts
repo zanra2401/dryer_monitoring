@@ -262,7 +262,7 @@ export const getLotReportData = async (lotId: number): Promise<LotReportData | n
         dryDown: formatDryDown(lot.initialMc, resolvedEndMc),
         dryingRate: formatDryingRate(lot.startTime, lot.endTime, lot.initialMc, resolvedEndMc),
         rows: visibleLogs.map((log) => ({
-            date: formatDate(log.timestampThingspeak),
+            date: formatDateTime(log.timestampThingspeak),
             hour: formatElapsedHour(lot.startTime, log.timestampThingspeak),
             minute: formatElapsedMinute(lot.startTime, log.timestampThingspeak),
             tempTop: formatDecimal(log.tempTop),

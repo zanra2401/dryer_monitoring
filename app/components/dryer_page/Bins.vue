@@ -147,15 +147,21 @@
 </script>
 
 <template>
-    <UTable v-if="bins != null" :data="bins.data" :columns="columns" class="flex-1">
-        <template #empty-state>
-            <div class="flex flex-col items-center justify-center py-12">
-                <UIcon name="i-lucide-box" class="w-12 h-12 text-gray-400 mb-3" />
-                <h3 class="text-base font-semibold text-gray-900 dark:text-white">Belum Ada Bin</h3>
-                <p class="text-sm text-gray-500 dark:text-gray-400">Bin akan muncul otomatis setelah Anda menambahkan Channel telemetri.</p>
+    <div class="space-y-4">
+        <div class="rounded-lg border border-default bg-default">
+            <div class="overflow-x-auto">
+                <UTable v-if="bins != null" :data="bins.data" :columns="columns" class="min-w-[520px]">
+                    <template #empty-state>
+                        <div class="flex flex-col items-center justify-center py-12">
+                            <UIcon name="i-lucide-box" class="w-12 h-12 text-gray-400 mb-3" />
+                            <h3 class="text-base font-semibold text-gray-900 dark:text-white">Belum Ada Bin</h3>
+                            <p class="text-sm text-gray-500 dark:text-gray-400">Bin akan muncul otomatis setelah Anda menambahkan Channel telemetri.</p>
+                        </div>
+                    </template>
+                </UTable>
             </div>
-        </template>
-    </UTable>
+        </div>
+    </div>
 
     <!-- Modal Fullscreen Viewer -->
     <UModal v-model:open="isViewerOpen" fullscreen>

@@ -27,6 +27,9 @@ export default defineEventHandler(async (event) => {
             where: areaFilter,
             skip: offset,
             take: limit,
+            include: {
+                bins: true
+            },
             orderBy: {
                 areaId: "asc",
             },
@@ -44,7 +47,7 @@ export default defineEventHandler(async (event) => {
 
         const enrichedResult = result.map(area => {
             const totalBins = area.bins.length;
-            const activeBins = area.bins.filter(b => b.binStatus !== 'EMPTY' && b.binStatus !== 'IDLE').length;
+            const activeBins = area.bins.filter((b: any) => b.binStatus !== 'EMPTY' && b.binStatus !== 'IDLE').length;
             return {
                 ...area,
                 totalBins,

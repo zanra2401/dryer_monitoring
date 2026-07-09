@@ -177,11 +177,7 @@ const paginatedLogs = computed(() => {
     <template #header>
       <div class="flex items-center justify-between">
         <h3 class="text-lg font-bold">Log Telemetri Sensor</h3>
-<<<<<<< HEAD
         <span class="text-xs text-gray-500 dark:text-gray-400">Klik baris untuk mengisi MC</span>
-=======
-        <span v-if="!isClient" class="text-xs text-gray-500">Klik baris untuk mengisi MC</span>
->>>>>>> c4e9529a97b2644ca280d15035885150cd4e2bf6
       </div>
     </template>
     
@@ -189,14 +185,9 @@ const paginatedLogs = computed(() => {
       :key="`log-table-page-${page}`"
       :data="paginatedLogs" 
       :columns="columns"
-<<<<<<< HEAD
-      class="cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
-      @select="(e: Event, row: TableRow<Log>) => handleRowSelect(e, row)"
-=======
       :class="[!isClient ? 'cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800' : '']"
       class="transition-colors"
       @select="(e: Event, row: TableRow<Log>) => !isClient && handleRowSelect(e, row)"
->>>>>>> c4e9529a97b2644ca280d15035885150cd4e2bf6
     />
   </UCard>
   <div class="w-full flex justify-center items-center mb-6">
