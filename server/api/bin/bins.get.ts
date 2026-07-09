@@ -15,7 +15,10 @@ export default defineEventHandler(async (event) => {
 
         // 2. Eksekusi Pembacaan Paralel Tersinkronisasi (Concurrent Reads)
         // Array transaction jauh lebih efisien untuk operasi baca daripada interactive callback
-        const [bins, activeLots] = await prisma.$transaction([
+        const [area, bins, activeLots] = await prisma.$transaction([
+            prisma.dryerArea.findUnique({
+                where: { areaId: area_id }
+            }),
             prisma.bin.findMany({
                 where: { areaId: area_id },
                 include: {
@@ -37,10 +40,10 @@ export default defineEventHandler(async (event) => {
             })
         ]);
 
-        if (!bins || bins.length === 0) {
+        if (!area) {
             throw createError({
                 statusCode: 404,
-                statusMessage: "Data Bin tidak ditemukan pada area tersebut.",
+                statusMessage: "Area Dryer tidak ditemukan.",
             });
         }
 
@@ -79,7 +82,7 @@ export default defineEventHandler(async (event) => {
             };
         });
 
-        return { success: true, data: binWithLot, dryerArea: bins[0]?.dryerArea ?? null };
+        return { success: true, data: binWithLot, dryerArea: area };
 
     } catch (error: unknown) {
         // 5. Standardisasi Respons Galat (Mencegah Kebocoran)
