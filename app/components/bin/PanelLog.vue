@@ -170,7 +170,7 @@ const saveOperatorData = async (updatedLog: Log) => {
       // Mekanisme Fallback: Jika kita mengira ini update (PUT) tapi server bilang 404, alihkan ke POST
       if (apiError.response?.status === 404 && method === 'PUT') {
         method = 'POST';
-        await $fetch(`/api/dryarea/process/monitoring_mc`, {
+        await $fetch(`/api/dryarea/process/monitoring_mc`, {  
           method: method,
           body: payload
         });

@@ -31,6 +31,13 @@ export default defineEventHandler(async (event) => {
 
          
         const result = await prisma.$transaction(async (tx) => {
+            const mcLog = await tx.lotMcLog.findFirst({
+                where: { lotId: lot_id, createdAt: { lte: new Date(time) } },
+                select: { mc: true },
+                orderBy: { createdAt: 'desc' },
+                take: 1,
+            });
+
             const updateLot = await tx.lot.update({
                 where: {
                     lotId: lot_id,
@@ -38,6 +45,7 @@ export default defineEventHandler(async (event) => {
                 data: {
                     status: LotStatus.DOWNAIR,
                     downAirAt: new Date(time),
+                    downMC: mcLog?.mc ?? null,
                 },
                 select: {
                     lotNumber: true,
