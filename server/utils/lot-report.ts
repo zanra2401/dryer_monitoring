@@ -1,5 +1,5 @@
 import { prisma } from "~~/server/utils/prisma";
-import { getLotLogTimeline } from "~~/server/utils/lot-log";
+import { getLotSnapshotLogTimeline } from "~~/server/utils/lot-log-snapshot";
 
 export const REPORT_MAX_LOG_ROWS = 39;
 
@@ -217,17 +217,8 @@ export const getLotReportData = async (lotId: number): Promise<LotReportData | n
         return null;
     }
 
-    const timeline = await getLotLogTimeline(lotId);
-    const allLogs = timeline
-        ? [...timeline.logs].sort((left, right) => {
-            const timeDiff = left.timestampThingspeak.getTime() - right.timestampThingspeak.getTime();
-            if (timeDiff !== 0) {
-                return timeDiff;
-            }
-
-            return left.logId - right.logId;
-        })
-        : [];
+    const timeline = await getLotSnapshotLogTimeline(lotId);
+    const allLogs = timeline ? timeline.logs : [];
 
     const dryerArea = await prisma.dryerArea.findUnique({
         where: {
@@ -238,7 +229,7 @@ export const getLotReportData = async (lotId: number): Promise<LotReportData | n
         },
     });
 
-    const latestMcLog = [...allLogs].reverse().find((log) => log.mc !== null);
+    const latestMcLog = allLogs.find((log) => log.mc !== null);
     const resolvedEndMc = lot.endMC ?? latestMcLog?.mc ?? null;
     const visibleLogs = allLogs.slice(0, REPORT_MAX_LOG_ROWS);
 
@@ -262,7 +253,7 @@ export const getLotReportData = async (lotId: number): Promise<LotReportData | n
         dryDown: formatDryDown(lot.initialMc, resolvedEndMc),
         dryingRate: formatDryingRate(lot.startTime, lot.endTime, lot.initialMc, resolvedEndMc),
         rows: visibleLogs.map((log) => ({
-            date: formatDate(log.timestampThingspeak),
+            date: formatDateTime(log.timestampThingspeak),
             hour: formatElapsedHour(lot.startTime, log.timestampThingspeak),
             minute: formatElapsedMinute(lot.startTime, log.timestampThingspeak),
             tempTop: formatDecimal(log.tempTop),

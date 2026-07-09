@@ -1,5 +1,5 @@
 import { prisma } from "~~/server/utils/prisma";
-import { getLotLogTimeline } from "~~/server/utils/lot-log";
+import { getLotSnapshotLogTimeline } from "~~/server/utils/lot-log-snapshot";
 import { ZodError, z } from "zod";
 import { requireAuthUser } from "~~/server/utils/auth";
 import { isLimitedAreaRole } from "~~/server/utils/rbac";
@@ -15,7 +15,7 @@ export default defineEventHandler(async (event) => {
         const user = await requireAuthUser(event);
         const query = querySchema.parse(getQuery(event));
 
-        const timeline = await getLotLogTimeline(query.lot_id);
+        const timeline = await getLotSnapshotLogTimeline(query.lot_id);
 
         if (!timeline) {
             setResponseStatus(event, 404);
