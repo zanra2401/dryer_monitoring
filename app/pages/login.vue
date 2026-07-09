@@ -17,7 +17,6 @@ const form = reactive({
 });
 const loading = ref(false);
 const showPassword = ref(false);
-const authBypass = computed(() => config.public.authBypass);
 
 const requestedRedirect = computed(() => {
   const redirect = route.query.redirect;
@@ -100,14 +99,9 @@ const submitLogin = async () => {
             </div>
 
             <div class="rounded-lg border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900">
-              <div class="mb-6 flex items-start justify-between gap-4">
-                <div>
-                  <h2 class="text-xl font-semibold">Login</h2>
-                  <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Masuk dengan akun yang sudah terdaftar.</p>
-                </div>
-                <UBadge v-if="authBypass" color="warning" variant="soft">
-                  Bypass
-                </UBadge>
+              <div class="mb-6">
+                <h2 class="text-xl font-semibold">Login</h2>
+                <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Masuk dengan akun yang sudah terdaftar.</p>
               </div>
 
               <form class="space-y-4" @submit.prevent="submitLogin">

@@ -7,13 +7,10 @@ export default defineNuxtConfig({
     'nuxt-auth-utils',
   ],
   runtimeConfig: {
-    authBypass: process.env.NUXT_AUTH_BYPASS !== 'false',
     session: {
       password: process.env.NUXT_SESSION_PASSWORD || 'dryer-monitoring-dev-session-secret-minimum-32-chars',
     },
-    public: {
-      authBypass: (process.env.NUXT_PUBLIC_AUTH_BYPASS ?? process.env.NUXT_AUTH_BYPASS) !== 'false',
-    },
+    public: {},
   },
   css: ['~/assets/css/main.css'],
   icon: {

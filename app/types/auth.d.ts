@@ -7,7 +7,6 @@ declare module "#auth-utils" {
         fullName: string;
         role: Role;
         areaIds: number[];
-        bypass?: boolean;
     }
 
     interface UserSession {

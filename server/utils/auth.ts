@@ -7,22 +7,6 @@ export type AuthUser = {
     fullName: string;
     role: Role;
     areaIds: number[];
-    bypass?: boolean;
-};
-
-const bypassUser: AuthUser = {
-    userId: 0,
-    username: "bypass-admin",
-    fullName: "Bypass Admin",
-    role: "ADMIN",
-    areaIds: [],
-    bypass: true,
-};
-
-export const isAuthBypassEnabled = (event: H3Event) => {
-    const config = useRuntimeConfig(event);
-
-    return config.authBypass;
 };
 
 export const toAuthUser = (user: {
@@ -53,10 +37,6 @@ export const getCurrentAuthUser = async (event: H3Event) => {
 
     if (session.user) {
         return session.user as AuthUser;
-    }
-
-    if (isAuthBypassEnabled(event)) {
-        return bypassUser;
     }
 
     return null;

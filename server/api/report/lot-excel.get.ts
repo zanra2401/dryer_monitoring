@@ -72,12 +72,12 @@ export default defineEventHandler(async (event) => {
         setCellValue(worksheet, "G6", `: ${report.startTime || ""}`);
         setCellValue(worksheet, "G7", `: ${report.downTime || ""}`);
         setCellValue(worksheet, "G8", `: ${report.stopTime || ""}`);
-        setCellValue(worksheet, "I6", `: ${report.mcStart || ""}`);
-        setCellValue(worksheet, "I7", `: ${report.mcDown || ""}`);
-        setCellValue(worksheet, "I8", `: ${report.mcEnd || ""}`);
-        setCellValue(worksheet, "K6", `: ${report.totalDrying || ""}`);
-        setCellValue(worksheet, "K7", `: ${report.dryDown || ""}`);
-        setCellValue(worksheet, "K8", `: ${report.dryingRate || ""}`);
+        setCellValue(worksheet, "J6", `: ${report.mcStart || ""}`);
+        setCellValue(worksheet, "J7", `: ${report.mcDown || ""}`);
+        setCellValue(worksheet, "J8", `: ${report.mcEnd || ""}`);
+        setCellValue(worksheet, "L6", `: ${report.totalDrying || ""}`);
+        setCellValue(worksheet, "L7", `: ${report.dryDown || ""}`);
+        setCellValue(worksheet, "L8", `: ${report.dryingRate || ""}`);
 
         for (let index = 0; index < REPORT_MAX_LOG_ROWS; index += 1) {
             const rowNumber = BODY_ROW_START + index;

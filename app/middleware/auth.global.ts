@@ -1,6 +1,4 @@
 export default defineNuxtRouteMiddleware(async (to) => {
-    const config = useRuntimeConfig();
-    const authBypass = config.public.authBypass;
     const { getDefaultRouteForRole, isAllowedRouteForRole, isRoleMappedRoute } = await import("~/utils/authRoute");
     const { loggedIn, user, fetch } = useUserSession();
 
@@ -10,19 +8,10 @@ export default defineNuxtRouteMiddleware(async (to) => {
         if (loggedIn.value) {
             return navigateTo(getDefaultRouteForRole(user.value?.role));
         }
-
-        if (authBypass) {
-            return;
-        }
-
         return;
     }
 
     if (!loggedIn.value) {
-        if (authBypass) {
-            return;
-        }
-
         return navigateTo({
             path: "/login",
             query: {

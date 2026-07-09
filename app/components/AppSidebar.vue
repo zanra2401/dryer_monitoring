@@ -47,7 +47,7 @@ function getItems(state: 'collapsed' | 'expanded') {
 }
 
 const user = computed(() => {
-  const name = sessionUser.value?.fullName || sessionUser.value?.username || "Bypass Admin"
+  const name = sessionUser.value?.fullName || sessionUser.value?.username || ""
 
   return {
     label: name,
