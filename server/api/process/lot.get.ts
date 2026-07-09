@@ -16,18 +16,8 @@ export default defineEventHandler(async (event) => {
                 });
             }
 
-            const logs = await prisma.log.findMany({
-                where: {
-                    lotId: lot?.lotId,
-                },
-                orderBy: {
-                    logId: 'asc',
-                },
-            });
-
             return {
                 lot: lot,
-                log: logs
             };
         });
 

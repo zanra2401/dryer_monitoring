@@ -1,12 +1,17 @@
 <script setup lang="ts">
     import ActionControlModal from './ActionControlModal.vue';
     import type { LotLog } from './Process.vue';
+    import { useDryerAuth } from '~/composable/useDryerAuth';
+
     const toast = useToast();
     const props = defineProps<{
         binNumber: string;
         lotNumber: string;
         lot: LotLog;
     }>();
+    const router = useRouter();
+    const { user: sessionUser } = useDryerAuth();
+    const isClient = computed(() => sessionUser.value?.role === 'CLIENT');
 
     // State untuk mengelola modal operasi kendali
     const isControlModalOpen = ref(false)
@@ -18,7 +23,6 @@
     isControlModalOpen.value = true
     }
 
-    // Fungsi eksekutor saat modal dikonfirmasi
     const executeControlAction = async (payload: { action: 'down' | 'stop', timestamp: string }) => {
     
     // 1. Validasi String Kosong
@@ -39,7 +43,7 @@
 
     try {
         if (payload.action == 'down') {
-          const { data, error } = await useFetch(`/api/dryarea/process/down_air`, {
+          await $fetch(`/api/dryarea/process/down_air`, {
             method: 'PUT',
             body: {
               lot_id: props.lot.lotId,
@@ -47,12 +51,8 @@
             }
           })
 
-          if (error.value) {
-            toast.add({
-              title: 'Gagal Set Down',
-              color: 'error'
-            })
-          }
+          // Memicu re-fetch di komponen induk (refreshNuxtData dari useFetch setup)
+          await refreshNuxtData(`lot-${props.lotNumber}`)
 
           toast.add({
             title: 'Berhasil Set Down',
@@ -60,10 +60,30 @@
           })
 
         } else {
-          return
+          await $fetch(`/api/dryarea/process/end`, {
+            method: 'PUT',
+            body: {
+              lot_id: props.lot.lotId,
+              time: safeIsoString
+            }
+          });
+
+          toast.add({
+              title: 'Berhasil Set Stop',
+              color: 'success'
+          })
+
+          // Redirect ke halaman Bin setelah Lot selesai
+          await navigateTo(`/dryer/${props.lot.areaId}/bin/${props.binNumber}/start`)
         }
+
     } catch (error) {
         console.error('Terjadi kegagalan transmisi data:', error)
+        toast.add({
+            title: 'Gagal',
+            description: 'Terjadi kegagalan transmisi data' + error,
+            color: 'error'
+        })
     }
     }
     const formatCompactDateTime = (isoString?: string | null | undefined) => {
@@ -96,7 +116,7 @@
     const diffHours = (stop - start) / 3600000;
     
     // Validasi absolut: Mencegah nilai negatif jika operator salah memasukkan tanggal
-    return diffHours > 0 ? diffHours : null;
+    return diffHours > 0 ? Math.round(diffHours) : null;
     };
 
     // 2. Fungsi Dry Down
@@ -115,25 +135,19 @@
     // Validasi pencegahan pembagian dengan nol (Division by Zero)
     if (totalDryingHours == null || dryDownValue == null || dryDownValue === 0) return null;
     
-    return totalDryingHours / dryDownValue;
+    return Number((totalDryingHours / dryDownValue).toFixed(2));
     };
 
     const undo_down_air = async () => {
         try {
-            const { data, error } = await useFetch(`/api/dryarea/process/undo_downair`, {
+            await $fetch(`/api/dryarea/process/undo_downair`, {
                 method: 'PUT',
                 body: {
                     lot_id: props.lot.lotId
                 }
             })
 
-            if (error.value) {
-                toast.add({
-                    title: 'Gagal Undo Down',
-                    color: 'error'
-                })
-                return;
-            }
+            await refreshNuxtData(`lot-${props.lotNumber}`)
 
             toast.add({
                 title: 'Berhasil Undo Down',
@@ -141,6 +155,10 @@
             })
         } catch (error) {
             console.error('Terjadi kegagalan transmisi data:', error)
+            toast.add({
+                title: 'Gagal Undo Down',
+                color: 'error'
+            })
         }
     }
 </script>
@@ -150,14 +168,22 @@
     <template #header>
       <div class="flex items-center justify-between">
         <div>
+          <UButton
+            variant="ghost"
+            icon="i-heroicons-arrow-left"
+            class="text-gray-500 hover:bg-gray-100 rounded-none -my-1"
+            @click="router.back()"
+          />
           <h2 class="text-xl font-bold">Bin {{ binNumber }}</h2>
           <p class="text-gray-500">Lot {{ lotNumber }}</p>
+          <UBadge color="neutral" class="rounded">{{ lot.hybrid }}</UBadge>
+          <UBadge color="neutral" class="rounded ml-2">{{ lot.quality }}</UBadge>
         </div>
-        <UBadge color="success">{{ lot.status }}</UBadge>
+        <UBadge :color="getColorClassNuxt(lot.status)">{{ lot.status }}</UBadge> 
       </div>
     </template>
 
-    <div class="mb-5 flex gap-2">
+    <div class="mb-5 flex gap-2" v-if="!isClient">
       <UButton v-if="lot.downAirAt == null"
         color="warning" 
         class="rounded-none"
@@ -165,7 +191,7 @@
       >
         Set Down
       </UButton>
-      <UButton  v-else
+      <UButton  v-else-if="!lot.endTime"
         color="warning" 
         class="rounded-none"
         @click="undo_down_air()"
@@ -174,6 +200,7 @@
       </UButton>
 
       <UButton 
+        v-if="!lot.endTime"
         color="error" 
         class="rounded-none"
         @click="openControlModal('stop')"
@@ -184,7 +211,7 @@
 
     <div class="flex flex-col gap-6">
       
-      <div class="grid grid-cols-4 gap-4">
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
         <div>
           <div class="text-xs text-gray-500">Net To Bin</div>
           <div class="font-medium">{{ lot.netToBin ?? "-" }}</div>
@@ -203,7 +230,7 @@
         </div>
       </div>
 
-      <div class="grid grid-cols-4 gap-4">
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
         <div>
           <div class="text-xs text-gray-500">Time Stop</div>
           <div class="font-medium font-mono text-sm">{{ formatCompactDateTime(lot.endTime) }}</div>
@@ -222,7 +249,7 @@
         </div>
       </div>
 
-      <div class="grid grid-cols-3 gap-4">
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div>
           <div class="text-xs text-gray-500">Total Drying</div>
           <div class="font-medium">{{ calculateTotalDrying(lot.startTime, lot.endTime) ?? "-" }}</div>

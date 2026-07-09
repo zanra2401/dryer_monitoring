@@ -4,6 +4,7 @@ import type { LogRow } from "~/composable/useLogList";
 type LogFormData = {
     log_id?: number | null;
     lot_id: number | null;
+    is_standalone_mc_log: boolean;
     timestamp_thingspeak: string;
     status_bin: string;
     temp_top: number | null;
@@ -17,6 +18,7 @@ type LogFormData = {
 
 const logFormSchema = z.object({
     lot_id: z.number().int().positive("Lot is required").nullable(),
+    is_standalone_mc_log: z.boolean(),
     timestamp_thingspeak: z.string().trim().min(1, "Timestamp is required"),
     status_bin: z.string().trim().min(1, "Status bin is required"),
     temp_top: z.number().nullable(),
@@ -74,6 +76,7 @@ const toApiDate = (value: string) => {
 const makeEmptyForm = (): LogFormData => ({
     log_id: null,
     lot_id: null,
+    is_standalone_mc_log: true,
     timestamp_thingspeak: "",
     status_bin: "",
     temp_top: null,
@@ -106,6 +109,7 @@ export const useLogCRUD = (refreshLogData: () => Promise<unknown> = async () => 
         update_data.value = {
             log_id: log.logId,
             lot_id: log.lotId,
+            is_standalone_mc_log: log.isStandaloneMcLog,
             timestamp_thingspeak: toDateTimeLocal(log.timestampThingspeak),
             status_bin: log.statusBin,
             temp_top: log.tempTop === null ? null : Number(log.tempTop),
@@ -129,16 +133,16 @@ export const useLogCRUD = (refreshLogData: () => Promise<unknown> = async () => 
                 throw new Error("Lot is required");
             }
 
+            if (parsed.mc === null) {
+                throw new Error("MC is required");
+            }
+
             const result = await $fetch("/api/log/log", {
                 method: "POST",
                 body: {
                     lot_id: parsed.lot_id,
                     timestamp_thingspeak: toApiDate(parsed.timestamp_thingspeak),
                     status_bin: parsed.status_bin.trim(),
-                    temp_top: parsed.temp_top,
-                    rh_top: parsed.rh_top,
-                    temp_bottom: parsed.temp_bottom,
-                    rh_bottom: parsed.rh_bottom,
                     mc: parsed.mc,
                     checker_name: normalizeOptionalText(parsed.checker_name),
                     remark: normalizeOptionalText(parsed.remark),
@@ -174,10 +178,6 @@ export const useLogCRUD = (refreshLogData: () => Promise<unknown> = async () => 
                     log_id: logId,
                     timestamp_thingspeak: toApiDate(parsed.timestamp_thingspeak),
                     status_bin: parsed.status_bin.trim(),
-                    temp_top: parsed.temp_top,
-                    rh_top: parsed.rh_top,
-                    temp_bottom: parsed.temp_bottom,
-                    rh_bottom: parsed.rh_bottom,
                     mc: parsed.mc,
                     checker_name: normalizeOptionalText(parsed.checker_name),
                     remark: normalizeOptionalText(parsed.remark),

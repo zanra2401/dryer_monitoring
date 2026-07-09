@@ -1,5 +1,7 @@
 import { prisma } from "~~/server/utils/prisma";
 import { ZodError, z } from "zod";
+import { requireAuthUser } from "~~/server/utils/auth";
+import { isLimitedAreaRole } from "~~/server/utils/rbac";
 
 const normalizeNumberArray = (value: unknown) => {
     if (value === undefined || value === null || value === "") {
@@ -48,13 +50,35 @@ const querySchema = z.object({
 
 export default defineEventHandler(async (event) => {
     try {
+        const user = await requireAuthUser(event);
         const query = querySchema.parse(getQuery(event));
 
         const limit = query.limit ?? 10;
         const offset = query.offset ?? 0;
-        const areaIds = query.area_ids && query.area_ids.length > 0
-            ? [...new Set(query.area_ids)]
-            : undefined;
+
+        let areaIds: number[] | undefined = undefined;
+        if (isLimitedAreaRole(user.role)) {
+            const allowed = user.areaIds;
+            if (query.area_ids && query.area_ids.length > 0) {
+                areaIds = query.area_ids.filter((id) => allowed.includes(id));
+                if (areaIds.length === 0) {
+                    areaIds = [-1]; // Force empty result if user is querying areas they don't have access to
+                }
+            } else if (query.area_id) {
+                if (allowed.includes(query.area_id)) {
+                    areaIds = [query.area_id];
+                } else {
+                    areaIds = [-1];
+                }
+            } else {
+                areaIds = allowed.length > 0 ? allowed : [-1];
+            }
+        } else {
+            areaIds = query.area_ids && query.area_ids.length > 0
+                ? [...new Set(query.area_ids)]
+                : undefined;
+        }
+
         const binNumbers = query.bin_numbers && query.bin_numbers.length > 0
             ? [...new Set(query.bin_numbers)]
             : undefined;

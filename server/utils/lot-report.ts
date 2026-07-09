@@ -1,4 +1,5 @@
 import { prisma } from "~~/server/utils/prisma";
+import { getLotLogTimeline } from "~~/server/utils/lot-log";
 
 export const REPORT_MAX_LOG_ROWS = 39;
 
@@ -61,14 +62,44 @@ const formatDate = (value: Date | string | null | undefined) => {
     return `${pad(date.getDate())}/${pad(date.getMonth() + 1)}/${date.getFullYear()}`;
 };
 
-const formatHour = (value: Date | string | null | undefined) => {
-    const date = asDate(value);
-    return date ? pad(date.getHours()) : "";
+const formatElapsedHour = (
+    startValue: Date | string | null | undefined,
+    currentValue: Date | string | null | undefined,
+) => {
+    const start = asDate(startValue);
+    const current = asDate(currentValue);
+
+    if (!start || !current) {
+        return "";
+    }
+
+    const totalMinutes = Math.floor((current.getTime() - start.getTime()) / 60000);
+
+    if (!Number.isFinite(totalMinutes) || totalMinutes < 0) {
+        return "";
+    }
+
+    return pad(Math.floor(totalMinutes / 60));
 };
 
-const formatMinute = (value: Date | string | null | undefined) => {
-    const date = asDate(value);
-    return date ? pad(date.getMinutes()) : "";
+const formatElapsedMinute = (
+    startValue: Date | string | null | undefined,
+    currentValue: Date | string | null | undefined,
+) => {
+    const start = asDate(startValue);
+    const current = asDate(currentValue);
+
+    if (!start || !current) {
+        return "";
+    }
+
+    const totalMinutes = Math.floor((current.getTime() - start.getTime()) / 60000);
+
+    if (!Number.isFinite(totalMinutes) || totalMinutes < 0) {
+        return "";
+    }
+
+    return pad(totalMinutes % 60);
 };
 
 const formatDateTime = (value: Date | string | null | undefined) => {
@@ -144,7 +175,7 @@ const formatDryDown = (startMc: DecimalLike, endMc: DecimalLike) => {
         return "";
     }
 
-    return formatDecimal(start - end);
+    return formatDecimal(end - start);
 };
 
 const formatDryingRate = (
@@ -163,9 +194,9 @@ const formatDryingRate = (
     }
 
     const durationHours = (end.getTime() - start.getTime()) / 3600000;
-    const dryDown = initial - final;
+    const dryDown = final - initial;
 
-    if (!Number.isFinite(durationHours) || durationHours <= 0 || !Number.isFinite(dryDown) || dryDown <= 0) {
+    if (!Number.isFinite(durationHours) || durationHours <= 0 || !Number.isFinite(dryDown) || dryDown === 0) {
         return "";
     }
 
@@ -180,23 +211,23 @@ export const getLotReportData = async (lotId: number): Promise<LotReportData | n
         where: {
             lotId,
         },
-        include: {
-            logs: {
-                orderBy: [
-                    {
-                        timestampThingspeak: "asc",
-                    },
-                    {
-                        logId: "asc",
-                    },
-                ],
-            },
-        },
     });
 
     if (!lot) {
         return null;
     }
+
+    const timeline = await getLotLogTimeline(lotId);
+    const allLogs = timeline
+        ? [...timeline.logs].sort((left, right) => {
+            const timeDiff = left.timestampThingspeak.getTime() - right.timestampThingspeak.getTime();
+            if (timeDiff !== 0) {
+                return timeDiff;
+            }
+
+            return left.logId - right.logId;
+        })
+        : [];
 
     const dryerArea = await prisma.dryerArea.findUnique({
         where: {
@@ -207,9 +238,9 @@ export const getLotReportData = async (lotId: number): Promise<LotReportData | n
         },
     });
 
-    const latestMcLog = [...lot.logs].reverse().find((log) => log.mc !== null);
+    const latestMcLog = [...allLogs].reverse().find((log) => log.mc !== null);
     const resolvedEndMc = lot.endMC ?? latestMcLog?.mc ?? null;
-    const visibleLogs = lot.logs.slice(0, REPORT_MAX_LOG_ROWS);
+    const visibleLogs = allLogs.slice(0, REPORT_MAX_LOG_ROWS);
 
     return {
         lotId: lot.lotId,
@@ -232,8 +263,8 @@ export const getLotReportData = async (lotId: number): Promise<LotReportData | n
         dryingRate: formatDryingRate(lot.startTime, lot.endTime, lot.initialMc, resolvedEndMc),
         rows: visibleLogs.map((log) => ({
             date: formatDate(log.timestampThingspeak),
-            hour: formatHour(log.timestampThingspeak),
-            minute: formatMinute(log.timestampThingspeak),
+            hour: formatElapsedHour(lot.startTime, log.timestampThingspeak),
+            minute: formatElapsedMinute(lot.startTime, log.timestampThingspeak),
             tempTop: formatDecimal(log.tempTop),
             tempBottom: formatDecimal(log.tempBottom),
             rhTop: formatDecimal(log.rhTop),
@@ -241,7 +272,7 @@ export const getLotReportData = async (lotId: number): Promise<LotReportData | n
             mc: formatDecimal(log.mc),
             remarks: log.remark ?? log.checkerName ?? "",
         })),
-        totalLogCount: lot.logs.length,
-        overflowLogCount: Math.max(lot.logs.length - REPORT_MAX_LOG_ROWS, 0),
+        totalLogCount: allLogs.length,
+        overflowLogCount: Math.max(allLogs.length - REPORT_MAX_LOG_ROWS, 0),
     };
 };

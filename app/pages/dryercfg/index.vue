@@ -1,12 +1,13 @@
 <script setup lang="ts">
 import { h, resolveComponent } from "vue";
-import type { TableColumn } from "@nuxt/ui";
-import type { Row } from "@tanstack/vue-table";
+import type { DropdownMenuItem, TableColumn } from "@nuxt/ui";
+import type { ColumnPinningState, Row } from "@tanstack/vue-table";
 import { useRouter } from "vue-router";
 import AppSidebar from "~/components/AppSidebar.vue";
 import { useBinOptions } from "~/composable/useBinOptions";
 import { useDryerAreaOptions } from "~/composable/useDryerAreaOptions";
 import { useLotCRUD } from "~/composable/useLotCRUD";
+import { useDryerAuth } from "~/composable/useDryerAuth";
 import {
   LOT_PAGE_SIZE_OPTIONS,
   LOT_STATUSES,
@@ -25,6 +26,7 @@ const ALL_BIN_FILTER_VALUE = "__ALL_BIN_FILTER__" as const;
 
 const router = useRouter();
 const toast = useToast();
+const { user: sessionUser } = useDryerAuth();
 
 const {
   current_data,
@@ -95,6 +97,9 @@ const selectedAreaIds = ref<number[]>([]);
 const selectedStatuses = ref<LotStatus[]>([]);
 const selectedBinNumbers = ref<number[]>([]);
 const pageSize = ref<LotPageSize>(10);
+const lotTableColumnPinning = ref<ColumnPinningState>({
+  right: ["actions"],
+});
 const isCreateOpen = ref(false);
 const isDeleteOpen = ref(false);
 const isCreateConfirmOpen = ref(false);
@@ -151,7 +156,6 @@ const areaFilterLabel = computed(() => {
   if (selectedAreaIds.value.length === 0) {
     return "All areas";
   }
-
   if (selectedAreaIds.value.length === 1) {
     return dryerAreas.value.find((item) => item.value === selectedAreaIds.value[0])?.label ?? `Area #${selectedAreaIds.value[0]}`;
   }
@@ -522,8 +526,7 @@ watch(
 
 function getRowItems(row: Row<LotRow>) {
   const lot = row.original;
-
-  return [
+  const items: DropdownMenuItem[] = [
     {
       type: "label",
       label: "Actions",
@@ -535,15 +538,20 @@ function getRowItems(row: Row<LotRow>) {
         router.push(`/dryercfg/lot/${lot.lotId}`);
       },
     },
-    {
+  ];
+
+  if (sessionUser.value?.role === 'ADMIN') {
+    items.push({
       label: "Delete",
       icon: "i-lucide-trash-2",
       color: "error",
       onSelect() {
         openDeleteModal(lot);
       },
-    },
-  ];
+    });
+  }
+
+  return items;
 }
 
 const columns: TableColumn<LotRow>[] = [
@@ -629,8 +637,8 @@ const columns: TableColumn<LotRow>[] = [
     id: "actions",
     meta: {
       class: {
-        th: "text-right",
-        td: "text-right",
+        th: "sticky right-0 z-20 w-12 min-w-12 bg-default text-right shadow-[-12px_0_16px_-16px_rgba(15,23,42,0.45)]",
+        td: "sticky right-0 z-20 w-12 min-w-12 bg-default text-right shadow-[-12px_0_16px_-16px_rgba(15,23,42,0.45)]",
       },
     },
     cell: ({ row }) => h(
@@ -680,6 +688,7 @@ onMounted(async () => {
         </div>
 
         <UButton
+          v-if="sessionUser?.role === 'ADMIN'"
           icon="i-lucide-plus"
           label="Create Lot"
           color="primary"
@@ -772,17 +781,15 @@ onMounted(async () => {
           </div>
         </div>
 
-        <div class="w-full max-w-full overflow-x-auto overflow-y-hidden overscroll-x-contain">
-          <div class="inline-block min-w-[108rem] align-top">
-            <UTable
-              :data="tableData"
-              :columns="columns"
-              :loading="listLoading"
-              empty="No lots found"
-              class="min-h-80"
-            />
-          </div>
-        </div>
+        <UTable
+          v-model:column-pinning="lotTableColumnPinning"
+          :data="tableData"
+          :columns="columns"
+          :loading="listLoading"
+          empty="No lots found"
+          class="min-h-80 w-full max-w-full overscroll-x-contain"
+          :ui="{ base: 'min-w-[108rem]' }"
+        />
 
         <div class="border-t border-default p-4">
           <div class="mx-auto flex w-full max-w-4xl flex-wrap items-center justify-center gap-2">

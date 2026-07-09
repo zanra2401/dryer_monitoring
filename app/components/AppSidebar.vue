@@ -1,12 +1,13 @@
 <script setup lang="ts">
 import type { DropdownMenuItem, NavigationMenuItem } from '@nuxt/ui'
 import { useDryerAuth } from "~/composable/useDryerAuth";
+import Header from "~/components/Header.vue";
 
 const open = ref(true)
 
 const colorMode = useColorMode()
 const { user: sessionUser, logout } = useDryerAuth()
-
+const isClient = computed(() => sessionUser.value?.role === 'CLIENT')
 
 function getItems(state: 'collapsed' | 'expanded') {
   const role = sessionUser.value?.role
@@ -21,7 +22,7 @@ function getItems(state: 'collapsed' | 'expanded') {
     ] satisfies NavigationMenuItem[]
   }
 
-  return [
+  const baseItems = [
     {
       label: 'Lots',
       icon: 'i-lucide-package-search',
@@ -32,12 +33,17 @@ function getItems(state: 'collapsed' | 'expanded') {
       icon: 'i-lucide-inbox',
       to: '/dryercfg/dry-areas',
     },
-    {
+  ]
+
+  if (role !== 'MANAGER') {
+    baseItems.push({
       label: 'Users',
       icon: 'i-lucide-users',
       to: '/dryercfg/users',
-    },
-  ] satisfies NavigationMenuItem[]
+    })
+  }
+
+  return baseItems satisfies NavigationMenuItem[]
 }
 
 const user = computed(() => {
@@ -107,7 +113,19 @@ const props = withDefaults(defineProps<{
 </script>
 
 <template>
-  <div class="flex min-h-screen min-w-0 flex-1">
+  <div v-if="isClient" class="w-full max-w-full overflow-x-hidden min-h-screen bg-gray-50 flex flex-col">
+    <Header />
+    <div v-if="props.loading" class="flex flex-1 items-center justify-center min-h-[60vh]">
+      <GridLoader />
+    </div>
+    <div v-else class="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
+      <div class="min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden p-4">
+        <slot />
+      </div>
+    </div>
+  </div>
+
+  <div v-else class="flex min-h-screen min-w-0 flex-1">
     <USidebar
       v-model:open="open"
       collapsible="icon"

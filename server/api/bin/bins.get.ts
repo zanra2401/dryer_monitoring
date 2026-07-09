@@ -1,42 +1,103 @@
 import { LotStatus } from "~/generated/prisma/enums";
+import * as z from "zod";
+import { prisma } from "~~/server/utils/prisma";
+import { logger } from "~~/server/utils/pino";
+import { requireAuthUser } from "~~/server/utils/auth";
+import { isLimitedAreaRole } from "~~/server/utils/rbac";
+
+// 1. Validasi Input Keamanan Tinggi
+const querySchema = z.object({
+    area_id: z.coerce.number().min(1, "Parameter area_id tidak valid"),
+});
 
 export default defineEventHandler(async (event) => {
     try {
-        const area_id = parseInt(getQuery(event).area_id as string);
-        const result = await prisma.$transaction(async (prisma) => {
-            const bin = await prisma.bin.findMany({
-               where: { areaId: area_id },
-            });
+        const user = await requireAuthUser(event);
+        const rawQuery = getQuery(event);
+        const { area_id } = querySchema.parse(rawQuery);
 
-            const lot = await prisma.lot.findMany({
-                where: { areaId: area_id, status: { not: LotStatus.DRIED }},
-            });
-
-            const binWithLot = bin.map((b) => {
-                const occupiedLot = lot.find((l) => l.binNumber === b.binNumber);
-                return {
-                    ...b,
-                    occupiedBy: occupiedLot ? occupiedLot.lotNumber : null,
-                    netToBin: occupiedLot ? occupiedLot.netToBin : null,
-                    initialMc: occupiedLot ? occupiedLot.initialMc : null,
-                    hybrid: occupiedLot ? occupiedLot.hybrid : null,
-                    quality: occupiedLot ? occupiedLot.quality : null,
-                    startTime: occupiedLot ? occupiedLot.startTime : null,  
-                };
-            });
-
-            return binWithLot;
-        });
-
-        if (!result) {
+        if (isLimitedAreaRole(user.role) && !user.areaIds.includes(area_id)) {
             throw createError({
-                statusCode: 404,
-                statusMessage: "Bin not found",
+                statusCode: 403,
+                statusMessage: "Anda tidak memiliki hak akses untuk area pengeringan ini.",
             });
         }
 
-        return { success: true, data: result };
+        // 2. Eksekusi Pembacaan Paralel Tersinkronisasi (Concurrent Reads)
+        // Array transaction jauh lebih efisien untuk operasi baca daripada interactive callback
+        const [bins, activeLots] = await prisma.$transaction([
+            prisma.bin.findMany({
+                where: { areaId: area_id },
+                include: {
+                    dryerArea: true,
+                    binLogs: {
+                        orderBy: { timestampThingspeak: 'desc' },
+                        take: 1
+                    }
+                },
+            }),
+            prisma.lot.findMany({
+                where: { areaId: area_id, status: { not: LotStatus.DRIED } },
+                include: {
+                    mcLogs: {
+                        orderBy: { createdAt: 'desc' },
+                        take: 1
+                    }
+                }
+            })
+        ]);
+
+        if (!bins || bins.length === 0) {
+            throw createError({
+                statusCode: 404,
+                statusMessage: "Data Bin tidak ditemukan pada area tersebut.",
+            });
+        }
+
+        // 4. Pemetaan Objek Presisi Tinggi
+        const binWithLot = bins.map((bin) => {
+            const occupiedLot = activeLots.find((lot) => lot.binNumber === bin.binNumber);
+            
+            // Ekstrak log terakhir dari relasi array
+            const latestLog = bin.binLogs?.[0] || null;
+            const latestMcLog = occupiedLot?.mcLogs?.[0] || null;
+
+            // Pastikan binLogs tidak ikut terekspos berlebihan di level root object
+            const { binLogs, ...binData } = bin;
+
+            return {
+                ...binData,
+                // Menggunakan Optional Chaining dan Nullish Coalescing (??) untuk efisiensi sintaks
+                occupiedBy: occupiedLot?.lotNumber ?? null,
+                netToBin: occupiedLot?.netToBin ?? null,
+                initialMc: occupiedLot?.initialMc ?? null,
+                hybrid: occupiedLot?.hybrid ?? null,
+                quality: occupiedLot?.quality ?? null,
+                startTime: occupiedLot?.startTime ?? null,
+                
+                // Menyematkan data sensor terakhir langsung ke dalam respons Bin
+                latestLog: latestLog ? {
+                    logId: latestLog.binLogId,
+                    timestamp: latestLog.timestampThingspeak,
+                    status: latestLog.statusBin,
+                    tempTop: latestLog.tempTop,
+                    rhTop: latestLog.rhTop,
+                    tempBottom: latestLog.tempBottom,
+                    rhBottom: latestLog.rhBottom,   
+                    mc: latestMcLog?.mc ?? null
+                } : null,
+            };
+        });
+
+        return { success: true, data: binWithLot, dryerArea: bins[0]?.dryerArea ?? null };
+
     } catch (error: unknown) {
-        return error;
+        // 5. Standardisasi Respons Galat (Mencegah Kebocoran)
+        if (error instanceof z.ZodError) {
+            throw createError({ statusCode: 400, statusMessage: "Parameter HTTP tidak lengkap atau salah tipe data." });
+        }
+
+        logger.error({ context: 'api', error }, "[api] Gagal memuat matriks Bin dan Lot.");
+        throw createError({ statusCode: 500, statusMessage: "Terjadi kesalahan komputasi pada peladen." });
     }
 });

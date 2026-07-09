@@ -3,6 +3,10 @@ import ExcelJS from "exceljs";
 import { z, ZodError } from "zod";
 import { getLotReportData, REPORT_MAX_LOG_ROWS } from "~~/server/utils/lot-report";
 
+import { prisma } from "~~/server/utils/prisma";
+import { requireAuthUser } from "~~/server/utils/auth";
+import { isLimitedAreaRole } from "~~/server/utils/rbac";
+
 const querySchema = z.object({
     lot_id: z.coerce.number().int().positive(),
 });
@@ -17,7 +21,28 @@ const setCellValue = (worksheet: ExcelJS.Worksheet, cell: string, value: string)
 
 export default defineEventHandler(async (event) => {
     try {
+        const user = await requireAuthUser(event);
         const query = querySchema.parse(getQuery(event));
+
+        const lot = await prisma.lot.findUnique({
+            where: { lotId: query.lot_id },
+            select: { areaId: true }
+        });
+
+        if (!lot) {
+            setResponseStatus(event, 404);
+            return {
+                error: "Lot not found",
+            };
+        }
+
+        if (isLimitedAreaRole(user.role) && !user.areaIds.includes(lot.areaId)) {
+            setResponseStatus(event, 403);
+            return {
+                error: "Insufficient permission for this area",
+            };
+        }
+
         const report = await getLotReportData(query.lot_id);
 
         if (!report) {

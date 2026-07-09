@@ -1,59 +1,208 @@
 <script setup lang="ts">
+import { ref } from 'vue';
+import { VueDatePicker } from '@vuepic/vue-datepicker';
+import '@vuepic/vue-datepicker/dist/main.css'
+import * as z from 'zod';
+import { useRouter, useRoute } from 'vue-router';
 
-const props = defineProps({
-    areaId: {
-        type: Number,
-        required: true
-    },
-    binNumber: {
-        type: String,
-        required: true
-    }
+const route = useRoute();
+const router = useRouter();
+
+// 1. Definisi Antarmuka Props yang Ketat
+const props = defineProps<{
+    areaId: number
+    binNumber: string
+}>();
+
+const toast = useToast();
+
+// 2. Definisi Struktur Tipe Payload untuk Keamanan Tipe (Type-Safety)
+interface LotInitializationPayload {
+    lot_number: string | undefined;
+    hybrid: string | undefined;
+    quality: string | undefined;
+    net_to_bin: number | undefined;
+    initial_mc: number | undefined;
+    depth: number | undefined;
+    start_time: Date | undefined;
+}
+
+const isSubmitting = ref(false);
+
+const schemaInitialization = z.object({
+    lot_number: z.string().min(1, "Lot Number tidak boleh kosong"),
+    hybrid: z.string().min(1, "Spesifikasi Hybrid tidak boleh kosong"),
+    quality: z.string().min(1, "Metrik Kualitas tidak boleh kosong"),
+    net_to_bin: z.number().positive("Net to Bin harus lebih besar dari 0"),
+    initial_mc: z.number().nonnegative("Initial MC harus bernilai positif atau nol"),
+    depth: z.number().positive("Depth harus lebih besar dari 0"),
+    start_time: z.date().refine(date => date !== null, { message: "Waktu Inisialisasi tidak boleh kosong" })
 });
 
-const date = new Date("2026-07-01T04:12:20Z");
-
-const lot_data = ref({
-    lot_number: '1212',
-    hybrid: '12',
-    quality: '12',
-    net_to_bin: 200,
-    initial_mc: 20,
-    start_time: date.toISOString(),
-    area_id: props.areaId,
-    bin_number: props.binNumber
+// 3. Inisialisasi State dengan tipe eksplisit
+const lot_data = ref<LotInitializationPayload>({
+    lot_number: undefined,
+    hybrid: undefined,
+    quality: undefined,
+    net_to_bin: undefined,
+    initial_mc: undefined,
+    depth: undefined,
+    start_time: undefined
 });
 
 const startDrying = async () => {
-        const normalizedStartTime = new Date(lot_data.value.start_time).toISOString();
+    // Validasi pencegahan transmisi dengan waktu kosong
+    if (!lot_data.value.start_time) {
+        toast.add({
+            title: 'Validasi Gagal',
+            description: 'Parameter Waktu Inisialisasi tidak boleh dibiarkan kosong.',
+            color: 'warning',
+            icon: 'i-heroicons-exclamation-triangle'
+        });
+        return;
+    }
 
-        console.log(lot_data.value);
-        const { data, error } = await useFetch('/api/dryarea/process/start', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: {
-                ...lot_data.value,
-                start_time: normalizedStartTime,
-            }
+    isSubmitting.value = true;
+    
+    try {
+        // Konversi objek Date ke format absolut ISO 8601 UTC
+        const normalizedStartTime = lot_data.value.start_time.toISOString();
+        schemaInitialization.parse({
+            ...lot_data.value,
+            start_time: lot_data.value.start_time
         });
 
-        if (error.value) {
-            console.error('Error starting drying process:', error.value);
-        } else {
-            console.log('Drying process started successfully:', data.value);
-        }
-};
+        const payload = {
+            ...lot_data.value,
+            area_id: props.areaId,
+            bin_number: parseInt(props.binNumber, 10),
+            start_time: normalizedStartTime,
+        };
 
+        // KOREKSI FATAL: Penggunaan $fetch natif untuk interaksi sisi klien (Client-Side Interactivity)
+        const response = await $fetch('/api/dryarea/process/start', {
+            method: 'POST',
+            body: payload
+        });
+
+        toast.add({
+            title: 'Operasi Tervalidasi',
+            description: 'Proses pengeringan telah berhasil didaftarkan ke dalam sistem.',
+            color: 'success',
+            icon: 'i-heroicons-check-circle'
+        });
+
+        // Redirect ke halaman Lot yang baru dibuat
+        await navigateTo(`/dryer/${props.areaId}/bin/${props.binNumber}/${lot_data.value.lot_number}`);
+        
+    } catch (err: any) {
+        if (err instanceof z.ZodError) {
+            // Penanganan galat validasi Zod
+            const errorMessages = err.issues.map(issue => issue.message).join(", ");
+            toast.add({
+                title: 'Validasi Gagal',
+                description: errorMessages,
+                color: 'error',
+                icon: 'i-heroicons-x-circle'
+            });
+        }
+        console.error('Kesalahan eksekusi API/Klien:', err);
+        
+        // Ekstraksi pesan galat dari backend jika tersedia
+        const errorMessage = err.data?.message || err.message || 'Terjadi anomali saat inisialisasi pengeringan.';
+        
+        toast.add({
+            title: 'Kegagalan Transmisi',
+            color: 'error',
+            icon: 'i-heroicons-x-circle'
+        });
+    } finally {
+        isSubmitting.value = false;
+    }
+};
 </script>
 
 <template>
-    <input v-model="lot_data.lot_number" placeholder="Lot Number"/>
-    <input v-model="lot_data.hybrid" placeholder="Hybrid" />
-    <input v-model="lot_data.quality" placeholder="quality" />
-    <input v-model="lot_data.net_to_bin" placeholder="net_to_bin" />
-    <input v-model="lot_data.initial_mc" placeholder="initial mc" />
-    <input v-model="lot_data.start_time" placeholder="start time" />
-    <button @click="startDrying">Mulai</button>
+    <UCard  class="max-w-md rounded-none shadow-sm border border-gray-200">
+        
+        <template #header>
+
+            <div class="items-center flex">
+                <UButton class="rounded-none p-1" variant="ghost" color="primary" @click="router.back()">
+                    <UIcon name="i-lucide-arrow-left" class="w-5 h-5 mr-2" />
+                </UButton>
+                <div>
+                    <h3 class="text-lg font-bold text-gray-800 ">
+                        Inisialisasi Parameter Lot
+                    </h3>
+                    <p class="text-xs text-gray-500">Konfigurasi data awal untuk proses pengeringan</p>
+                </div>
+            </div>
+        </template>
+
+        <div class="flex flex-col gap-5">
+            
+            <div class="flex flex-col gap-1.5">
+                <label class="text-sm font-semibold text-gray-700">Lot Number</label>
+                <UInput v-model="lot_data.lot_number" placeholder="Masukkan Lot Number" class="rounded-none" />
+            </div>
+            
+            <div class="flex flex-col gap-1.5">
+                <label class="text-sm font-semibold text-gray-700">Spesifikasi Hybrid</label>
+                <UInput v-model="lot_data.hybrid" placeholder="Masukkan Spesifikasi Hybrid" class="rounded-none" />
+            </div>
+            
+            <div class="flex flex-col gap-1.5">
+                <label class="text-sm font-semibold text-gray-700">Metrik Kualitas</label>
+                <UInput v-model="lot_data.quality" placeholder="Masukkan Metrik Kualitas" class="rounded-none" />
+            </div>
+            
+            <div class="grid grid-cols-2 gap-4">
+                <div class="flex flex-col gap-1.5">
+                    <label class="text-sm font-semibold text-gray-700">Net to Bin (kg)</label>
+                    <UInput v-model.number="lot_data.net_to_bin" type="number" placeholder="Kuantitas Net" class="rounded-none" />
+                </div>
+                
+                <div class="flex flex-col gap-1.5">
+                    <label class="text-sm font-semibold text-gray-700">Depth (meter)</label>
+                    <UInput v-model.number="lot_data.depth" type="number" placeholder="Kedalaman" class="rounded-none" />
+                </div>
+            </div>
+            
+            <div class="flex flex-col gap-1.5">
+                <label class="text-sm font-semibold text-gray-700">Initial Moisture Content (MC) %</label>
+                <UInput v-model.number="lot_data.initial_mc" type="number" step="0.1" placeholder="Nilai Initial MC" class="rounded-none" />
+            </div>
+            
+            <div class="flex flex-col gap-1.5">
+                <label class="text-sm font-semibold text-gray-700">
+                    Waktu Inisialisasi <span class="text-red-500">*</span>
+                </label>
+                <VueDatePicker
+                    v-model="lot_data.start_time"
+                    :teleport="true"
+                    :is-24="true"
+                    format="dd/MM/yyyy HH:mm"
+                    placeholder="Tentukan Waktu Aktual"
+                    auto-apply
+                    input-class-name="w-full border border-gray-300 p-2 text-sm text-gray-900 focus:ring-2 focus:ring-primary-500 outline-none rounded-none shadow-sm"
+                />
+            </div>
+
+        </div>
+
+        <template #footer>
+            <div class="flex justify-end">
+                <UButton 
+                    :loading="isSubmitting" 
+                    @click="startDrying" 
+                    color="primary" 
+                    class="rounded-none shadow-sm font-bold w-full justify-center"
+                >
+                    Inisialisasi Proses
+                </UButton>
+            </div>
+        </template>
+        
+    </UCard>
 </template>

@@ -1,5 +1,8 @@
 import { prisma } from "~~/server/utils/prisma";
+import { getLotLogTimeline } from "~~/server/utils/lot-log";
 import { ZodError, z } from "zod";
+import { requireAuthUser } from "~~/server/utils/auth";
+import { isLimitedAreaRole } from "~~/server/utils/rbac";
 
 const querySchema = z.object({
     lot_id: z.coerce.number().int().positive(),
@@ -9,44 +12,25 @@ const querySchema = z.object({
 
 export default defineEventHandler(async (event) => {
     try {
+        const user = await requireAuthUser(event);
         const query = querySchema.parse(getQuery(event));
 
-        const existingLot = await prisma.lot.findUnique({
-            where: {
-                lotId: query.lot_id,
-            },
-            select: {
-                lotId: true,
-            },
-        });
+        const timeline = await getLotLogTimeline(query.lot_id);
 
-        if (!existingLot) {
+        if (!timeline) {
             setResponseStatus(event, 404);
             return { error: "Lot not found" };
         }
 
+        if (isLimitedAreaRole(user.role) && !user.areaIds.includes(timeline.lot.areaId)) {
+            setResponseStatus(event, 403);
+            return { error: "Insufficient permission to access logs for this lot" };
+        }
+
         const limit = query.limit ?? 10;
         const offset = query.offset ?? 0;
-        const where = {
-            lotId: query.lot_id,
-        };
-
-        const [result, totalCount] = await Promise.all([
-            prisma.log.findMany({
-                where,
-                skip: offset,
-                take: limit,
-                orderBy: [
-                    {
-                        timestampThingspeak: "desc",
-                    },
-                    {
-                        logId: "desc",
-                    },
-                ],
-            }),
-            prisma.log.count({ where }),
-        ]);
+        const totalCount = timeline.logs.length;
+        const result = timeline.logs.slice(offset, offset + limit);
 
         return { success: true, data: result, totalCount };
     } catch (error) {
@@ -55,6 +39,7 @@ export default defineEventHandler(async (event) => {
             setResponseStatus(event, 400);
             return { error: "Invalid query parameter" };
         }
+        if ((error as any).statusCode) throw error;
         setResponseStatus(event, 500);
         return { error: "Internal Server Error" };
     }

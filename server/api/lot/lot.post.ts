@@ -1,5 +1,6 @@
 import { prisma } from "~~/server/utils/prisma";
 import { ZodError, z } from "zod";
+import { requireAuthRole } from "~~/server/utils/auth";
 
 const bodySchema = z.object({
     lot_number: z.string().trim().min(1, "lot_number is required"),
@@ -21,7 +22,13 @@ const bodySchema = z.object({
 
 export default defineEventHandler(async (event) => {
     try {
+        const sessionUser = await requireAuthRole(event, ["ADMIN", "OPERATOR"]);
         const body = bodySchema.parse(await readBody(event));
+
+        if (sessionUser.role === "OPERATOR" && !sessionUser.areaIds.includes(body.area_id)) {
+            setResponseStatus(event, 403);
+            return { error: "Insufficient permission for this area" };
+        }
 
         const [user, bin, activeLot, sameLotNumber] = await Promise.all([
             body.created_by
@@ -86,7 +93,7 @@ export default defineEventHandler(async (event) => {
                     status: lotStatus,
                     downAirAt: body.down_air_at ?? null,
                     downMC: body.down_mc ?? null,
-                    createdBy: body.created_by ?? null,
+                    createdBy: body.created_by ?? (sessionUser.userId > 0 ? sessionUser.userId : null),
                     binNumber: body.bin_number,
                     areaId: body.area_id,
                     startTime: body.start_time ?? new Date(),
@@ -120,6 +127,7 @@ export default defineEventHandler(async (event) => {
             setResponseStatus(event, 400);
             return { error: "Invalid request body" };
         }
+        if ((error as any).statusCode) throw error;
         setResponseStatus(event, 500);
         return { error: "Internal Server Error" };
     }

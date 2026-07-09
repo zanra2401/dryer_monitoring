@@ -1,5 +1,6 @@
 import { prisma } from "~~/server/utils/prisma";
 import { ZodError, z } from "zod";
+import { requireAuthRole } from "~~/server/utils/auth";
 
 const bodySchema = z.object({
     lot_id: z.coerce.number().int().positive(),
@@ -21,6 +22,7 @@ const bodySchema = z.object({
 
 export default defineEventHandler(async (event) => {
     try {
+        const sessionUser = await requireAuthRole(event, ["ADMIN", "OPERATOR"]);
         const body = bodySchema.parse(await readBody(event));
 
         const existingLot = await prisma.lot.findUnique({
@@ -30,6 +32,13 @@ export default defineEventHandler(async (event) => {
         if (!existingLot) {
             setResponseStatus(event, 404);
             return { error: "Lot not found" };
+        }
+
+        if (sessionUser.role === "OPERATOR") {
+            if (!sessionUser.areaIds.includes(existingLot.areaId) || (body.area_id !== undefined && !sessionUser.areaIds.includes(body.area_id))) {
+                setResponseStatus(event, 403);
+                return { error: "Insufficient permission for this area" };
+            }
         }
 
         const nextBinNumber = body.bin_number ?? existingLot.binNumber;
@@ -145,6 +154,7 @@ export default defineEventHandler(async (event) => {
             setResponseStatus(event, 400);
             return { error: "Invalid request body" };
         }
+        if ((error as any).statusCode) throw error;
         setResponseStatus(event, 500);
         return { error: "Internal Server Error" };
     }

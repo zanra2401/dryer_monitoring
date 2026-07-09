@@ -1,40 +1,47 @@
 <script setup lang="ts">
-import { ref, h, resolveComponent } from 'vue'
+import { ref, h, resolveComponent, computed } from 'vue'
 import OperatorEntryModal from '~/components/bin/OperatorEntry.vue'
 import type { LotLog } from './Process.vue';
 import type { TableRow } from '@nuxt/ui';
+import { useDryerAuth } from '~/composable/useDryerAuth';
+
 // 1. Resolusi Komponen Eksternal
 // Dalam Virtual DOM TanStack, kita tidak dapat memanggil <UBadge> secara langsung. 
 // Komponen harus di-resolve secara eksplisit agar dapat dikenali oleh mesin Vue.
 // 1. Pastikan Anda tetap mengimpor fungsi 'h' dan 'resolveComponent' dari 'vue'
 const UBadge = resolveComponent('UBadge')
 const toast = useToast();
+const { user: sessionUser } = useDryerAuth();
+const isClient = computed(() => sessionUser.value?.role === 'CLIENT');
 
-export interface  Log {
-  logId: number,
-  timestampThingspeak: string,
-  tempTop: number,
-  tempBottom: number,
-  rhTop: number,
-  rhBottom: number,
+export interface Log {
+  // logId dihapus karena data ini adalah hasil komputasi interval 30-menit, bukan baris tabel mentah
+  time: string,
+  tempTop: number | null,
+  tempBottom: number | null,
+  rhTop: number | null,
+  rhBottom: number | null,
   mc: number | null,
-  status: string,
-  remark: string | null
+  statusBin: string,
+  remark?: string | null
 }
 
 
 const props = defineProps<{
-  logs: Log[]
+  logs: Log[],
+  countLog: number,
+  lotId: number,
+  lotNumber: string
 }>()
 
 // 2. Definisi Matriks Kolom yang Dikompresi
 const columns = [
   { 
-    accessorKey: 'timestampThingspeak', 
+    accessorKey: 'time', 
     header: 'Waktu',
     cell: ({ row }: any) => {
       // Rekayasa pemformatan tanggal agar ringkas: "07/07 12:00"
-      const rawDate = new Date(row.getValue('timestampThingspeak'))
+      const rawDate = new Date(row.getValue('time'))
       const shortDate = rawDate.toLocaleDateString('id-ID', { day: '2-digit', month: '2-digit' })
       const shortTime = rawDate.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })
       
@@ -67,7 +74,7 @@ const columns = [
     header: 'MC (%)',
     cell: ({ row }: any) => {
       const mc = Number(row.getValue('mc'))
-      if (mc !== null && mc !== undefined) {
+      if (mc !== null && mc !== undefined && !isNaN(mc)) {
         return h('span', { class: 'font-mono text-sm font-bold text-gray-900' }, mc.toFixed(1))
       }
       return h('span', { class: 'text-xs text-gray-400 italic' }, 'Kosong')
@@ -88,7 +95,7 @@ const columns = [
         color: color,
         variant: 'subtle',
         class: 'rounded-none' 
-      }, () => status)
+      }, () => status || 'UNKNOWN')
     }
   }
 ]
@@ -100,35 +107,54 @@ const selectedRowData = ref<Log | null>(null)
 // Dalam TanStack Table, 'row' yang diklik mengandung metadata kompleks.
 // Anda HARUS menggunakan referensi `row.original` untuk mendapatkan entitas data aslinya.
 const handleRowSelect = (e: Event, row: TableRow<Log>) => {
+  if (isClient.value) return; // Client is read-only
   console.log(row) // Debug: Pastikan data asli berhasil diekstraksi
   selectedRowData.value = { ...row.original } 
   isModalOpen.value = true
 }
 
-const saveOperatorData = (updatedLog: Log) => {
-  const { data, error } = useFetch(`/api/dryarea/process/monitoring_mc`, {
-    method: 'PUT',
-    body: {
-      log_id: updatedLog.logId,
-      mc: updatedLog.mc,
-      remark: updatedLog.remark
-    }
-  })
+const saveOperatorData = async (updatedLog: Log) => {
+  try {
+    // Jika baris sudah memiliki MC (bukan null/undefined/NaN), gunakan PUT untuk update
+    // Jika MC masih kosong, gunakan POST untuk membuat data baru
+    const isUpdate = updatedLog.mc !== null && updatedLog.mc !== undefined && !isNaN(Number(updatedLog.mc))
+    const method = isUpdate ? 'PUT' : 'POST'
 
-  if (error.value) {
+    await $fetch(`/api/dryarea/process/monitoring_mc`, {
+      method: method,
+      body: {
+        lot_id: props.lotId,
+        target_time: updatedLog.time || new Date().toISOString(),
+        mc: Number(updatedLog.mc),
+        remark: updatedLog.remark || ''
+      }
+    })
+
+    await refreshNuxtData(`lot-${props.lotNumber}`)
+    await refreshNuxtData(`report-${props.lotNumber}`)
+
+    toast.add({
+      title: isUpdate ? 'Berhasil Memperbarui MC' : 'Berhasil Menyimpan MC Baru',
+      color: 'success'
+    })
+  } catch (error) {
+    console.error('Terjadi kegagalan transmisi data:', error)
     toast.add({
       title: 'Gagal Menyimpan Data Operator',
       color: 'error'
     })
-    return;
   }
-
-  toast.add({
-    title: 'Berhasil Menyimpan Data Operator',
-    color: 'success'
-  })
-  return;
 }
+
+const page = ref(1) 
+const itemsPerPage = 15
+
+const paginatedLogs = computed(() => {
+  const start = (page.value - 1) * itemsPerPage;
+  const end = start + itemsPerPage;
+  return props.logs.slice(start, end);
+})
+
 </script>
 
 <template>
@@ -136,20 +162,26 @@ const saveOperatorData = (updatedLog: Log) => {
     <template #header>
       <div class="flex items-center justify-between">
         <h3 class="text-lg font-bold">Log Telemetri Sensor</h3>
-        <span class="text-xs text-gray-500">Klik baris untuk mengisi MC</span>
+        <span v-if="!isClient" class="text-xs text-gray-500">Klik baris untuk mengisi MC</span>
       </div>
     </template>
     
     <UTable 
-      :data="props.logs" 
+      :data="paginatedLogs" 
       :columns="columns"
-      class="cursor-pointer hover:bg-gray-50 transition-colors"
-      @select="(e: Event, row: TableRow<Log>) => handleRowSelect(e, row)"
+      :class="[!isClient ? 'cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800' : '']"
+      class="transition-colors"
+      @select="(e: Event, row: TableRow<Log>) => !isClient && handleRowSelect(e, row)"
     />
   </UCard>
 
+  <div class="w-full flex justify-center items-center mb-6">
+    <UPagination v-model="page" :total="props.logs.length" :items-per-page="itemsPerPage" />
+  </div>
+
   <OperatorEntryModal 
-    v-model="isModalOpen"
+    v-if="!isClient"
+    v-model="isModalOpen" 
     :selected-data="selectedRowData"
     @save="saveOperatorData"
   />

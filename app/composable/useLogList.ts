@@ -6,6 +6,7 @@ export type LogDecimalValue = number | string | null;
 export type LogRow = {
     logId: number;
     lotId: number;
+    isStandaloneMcLog: boolean;
     timestampThingspeak: string;
     statusBin: string;
     tempTop: LogDecimalValue;

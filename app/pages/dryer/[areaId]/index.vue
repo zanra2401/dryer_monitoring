@@ -1,45 +1,109 @@
 <script setup lang="ts">
-    import { useBin } from '~/composable/dryer_page/useBin';
+    import GridLoader from '~/components/GridLoader.vue';
     import Header from '~/components/Header.vue';
+    import { useDryerAuth } from '~/composable/useDryerAuth';
+    
     const route = useRoute();
     const toast = useToast();
+    const { user: sessionUser } = useDryerAuth();
     const areaId = parseInt(route.params.areaId as string);
-    const { bins, fetch_bins } = useBin();  
-    fetch_bins(areaId, toast);
+
+    const isLimited = sessionUser.value?.role === 'OPERATOR' || sessionUser.value?.role === 'CLIENT';
+    if (isLimited && sessionUser.value?.areaIds && !sessionUser.value.areaIds.includes(areaId)) {
+        navigateTo('/dryer');
+    }
+
+    // Kueri Pembacaan (GET) menggunakan useFetch di top-level untuk SSR Hydration
+    const { data: bins, error } = await useFetch('/api/bin/bins', {
+        key: `bins-area-${areaId}`, // Kunci khusus untuk Auto-Refresh Nuxt
+        method: 'GET',
+        query: { area_id: areaId }
+    });
+
+    if (error.value) {
+        toast.add({
+            title: "Gagal memuat data: " + (error.value?.statusMessage || "Unknown error"),
+            color: "error" 
+        });
+    }
 </script>
 <template>
-    <div v-if="bins == null">
-        LOADING
+    <div v-if="bins == null" class="w-full h-screen flex justify-center items-center">
+        <GridLoader />
     </div>  
     <div v-else>
         <Header />
-        <div class="grid min-h-screen p-2 grid-cols-3 md:grid-cols-6 lg:grid-cols-8 gap-2">
-            <NuxtLink
-                v-for="(data, idx) in bins.data"
-                :key="data.binNummber"
-                class="rounded-lg border p-2"
-                :class="[
-                    getCardClassByStatus(data),
-                    'cursor-pointer transition-colors aspect-square hover:border-blue-300 dark:hover:border-blue-500' 
-                ]"
-                :to="`/dryer/${areaId}/bin/${data.binNumber}/${data.occupiedBy}`"
-            >
-                <div class="mb-1 text-xs font-bold">{{ data.binNumber || '-' }} <span class="font-medium">
-                    {{ data.binStatus || '-' }}
-                </span></div>
-
-                <div class="mb-1 space-y-0.5 text-[11px]">
-                    <div class="truncate font-medium">{{ data.occupiedBy || '-' }}</div>
-                    <div class="flex items-center gap-1">
-                        <span class="truncate">{{ data.hybrid || '-' }}</span>
-                        <span class="truncate">{{ data.netToBin || '-' }}</span>
-                    </div>
-                </div>
-
-                <div class="truncate text-[10px]">
-                    {{ Math.floor((Date.now() - new Date(data.startTime).getTime()) / (1000 * 60 * 60)) }} Hrs                
-                </div>
+        <div class="flex items-center justify-between p-2">
+            <div class="flex items-center">
+                <a class="p-2 flex items-center" href="/dryer">
+                    <UIcon name="i-lucide-move-left" class="w-4 h-4 mr-1" />
+                </a>
+                <b>
+                    {{ bins.dryerArea?.name || 'Unknown Area' }}
+                </b>
+            </div>
+            <NuxtLink :to="`/dryer/${areaId}/dried`">
+                <UButton 
+                    color="neutral" 
+                    variant="subtle" 
+                    class="rounded-none text-xs"
+                >
+                    <UIcon name="i-lucide-archive" class="w-3.5 h-3.5 mr-1" />
+                    Riwayat Dried
+                </UButton>
             </NuxtLink>
         </div>
+        <div class="grid min-h-screen p-2 grid-cols-3 md:grid-cols-6 lg:grid-cols-8 gap-3">
+        <NuxtLink
+            v-for="(data, idx) in bins.data"
+            :key="data.binNumber"
+            :to="`/dryer/${areaId}/bin/${data.binNumber}/${data.occupiedBy ?? 'start'}`"
+            class="flex flex-col border p-0 cursor-pointer transition-colors rounded-sm   aspect-square hover:shadow-md shadow-sm"
+            :class="[
+                // Perbaikan Fatal 1: Mengakses properti status, bukan seluruh objek
+                getCardClassByStatus(data.binStatus) 
+            ]"
+        >
+            <div class="p-1 border-b flex items-center justify-between text-[10px] font-bold bg-white/50 dark:bg-black/20">
+                <div class="flex-1 text-blue-600 dark:text-blue-400 flex justify-center border-r border-inherit">
+                    {{ data.latestLog?.tempTop?.toFixed(2) ?? '-' }} C
+                </div>
+                <div class="flex-1 text-green-600 dark:text-green-400 flex justify-center"> 
+                    {{ data.latestLog?.rhTop?.toFixed(2) ?? '-' }} %
+                </div>
+            </div>
+
+            <div class="p-1.5 flex-1 flex flex-col justify-center">
+                <div class="mb-1 text-xs font-bold flex justify-between items-center">
+                    <span>{{ data.binNumber || '-' }}</span>
+                    <span class="text-[9px] uppercase tracking-wider font-bold px-1 py-0.5 border rounded-none bg-white/60 dark:bg-black/30">
+                        {{ data.binStatus || 'IDLE' }}
+                    </span>
+                </div>
+    
+                <div class="mb-1 space-y-0.5 text-[11px]">
+                    <div class="truncate font-medium">{{ data.occupiedBy || '-' }}</div>
+                    <div class="flex items-center gap-1 opacity-90">
+                        <span class="truncate">{{ data.hybrid || '-' }}</span>
+                        <span>•</span>
+                        <span class="truncate">{{ data.netToBin || '-' }} kg</span>
+                    </div>
+                </div>
+    
+                <div class="truncate text-[10px] font-mono mt-auto pt-1 border-t border-inherit/30">
+                    {{ data.startTime ? Math.floor((Date.now() - new Date(data.startTime).getTime()) / (1000 * 60 * 60)) + ' Hrs' : '-' }}                
+                </div>
+            </div>
+
+            <div class="p-1 border-t flex items-center justify-between text-[10px] font-bold bg-white/50 dark:bg-black/20">
+                <div class="flex-1 text-blue-600 dark:text-blue-400 flex justify-center border-r border-inherit">
+                    {{ data.latestLog?.tempBottom?.toFixed(2) ?? '-' }} C
+                </div>
+                <div class="flex-1 text-green-600 dark:text-green-400 flex justify-center"> 
+                    {{ data.latestLog?.rhBottom?.toFixed(2) ?? '-' }} %
+                </div>
+            </div>
+        </NuxtLink>
+    </div>
     </div>
 </template> 

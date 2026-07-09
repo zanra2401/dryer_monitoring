@@ -73,23 +73,31 @@ const thinkspeaks = {
             throw error; 
         }
     },
+    get_feeds_by_time: async (channelId: number, apiKey: string, time: any) => {
+        // 1. Inisialisasi pengontrol pembatalan jaringan
+        const controller = new AbortController();
+        
+        // 2. Tetapkan batas waktu absolut (10.000 milidetik = 10 detik)
+        const timeoutId = setTimeout(() => controller.abort(), 10000);
 
-    get_feeds_by_time: async function (channel_id: string, api_key: string, time: any) {
         try {
-            const url = `https://api.thingspeak.com/channels/${channel_id}/feeds.json?api_key=${api_key}&start=${time.start_time}&end=${time.end_time}&timezone=Asia/Jakarta`;
-            console.info(`[thinkspeaks] url=${url}`);
-            const response = await fetch(url);
+            const response = await fetch(`https://api.thingspeak.com/channels/${channelId}/feeds.json?api_key=${apiKey}&start=${time.start_time}&end=${time.end_time}&timezone=Asia/Jakarta`, {
+                signal: controller.signal // Tautkan sinyal pembatalan
+            }); 
+
             if (!response.ok) {
-                throw createError({
-                    statusCode: response.status,
-                    statusMessage: `Failed to fetch feeds for channel ${channel_id}`,
-                });
+                throw new Error(`Galat HTTP: ${response.status}`);
             }
-            const data = await response.json();
-            
-            return data;
-        } catch (error) {
-            throw error; 
+
+            return await response.json();
+        } catch (error: unknown) {
+            if (error instanceof Error && error.name === 'AbortError') {
+                throw new Error("Waktu tunggu API ThingSpeak habis (Timeout).");
+            }
+            throw error;
+        } finally {
+            // 3. Bersihkan memori penanda waktu
+            clearTimeout(timeoutId);
         }
     }
 }

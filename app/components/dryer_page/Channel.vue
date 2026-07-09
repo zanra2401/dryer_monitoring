@@ -1,6 +1,7 @@
 <script setup lang="ts">
     import { useChannelList } from '~/composable/dryer_page/useChannelList';
     import { useCRUDChannel } from '~/composable/dryer_page/useCRUDChannel';
+    import { useDryerAuth } from '~/composable/useDryerAuth';
     const { channel_list, error, fetch_channel_list } = useChannelList();
 
     import { h, resolveComponent } from 'vue'
@@ -24,6 +25,15 @@
     });
 
     const { refresh_channels, delete_channel, edit_state, edit_data, change_edit_state, update_channel } = useCRUDChannel();
+    const { user: sessionUser } = useDryerAuth();
+    const isReadOnly = computed(() => sessionUser.value?.role !== 'ADMIN');
+
+    const visibleColumns = computed(() => {
+        if (isReadOnly.value) {
+            return columns.filter((col) => col.id !== 'actions');
+        }
+        return columns;
+    });
 
     type Channel = {
         channelId: string
@@ -123,7 +133,7 @@
 </script>
 
 <template>
-    <UTable :data="channel_list.data" :columns="columns" class="flex-1" />
+    <UTable :data="channel_list.data" :columns="visibleColumns" class="flex-1" />
 
     <UModal v-model:open="edit_state" title="Edit Channel" @close="change_edit_state(false)" @confirm="update_channel(parseInt(props.areaId), toast)">
         <template #body>

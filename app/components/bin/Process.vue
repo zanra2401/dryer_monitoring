@@ -27,13 +27,15 @@ ChartJS.register(
 )
 
 // Koreksi 1: Pendefinisian Interface presisi untuk menghindari 'any'
-interface SensorData {
-  data?: any
-  time?: string[]
-  tempTop?: number[]
-  rhTop?: number[]
-  tempBottom?: number[]
-  rhBottom?: number[]
+interface ReportData {
+  time: string
+  tempTop: number | null
+  rhTop: number | null
+  tempBottom: number | null
+  rhBottom: number | null
+  mc: number | null
+  statusBin: string
+  dataPoints: number
 }
 
 export interface LotLog {
@@ -58,13 +60,14 @@ const props = defineProps<{
   areaId: number
   binNumber: string
   lotNumber: string
-  data: SensorData,
-  lot: LotLog
+  reportData: ReportData[],
+  lot: LotLog,
+  countLog: number
 }>()
 
 const labels = computed(() =>
-  (props.data?.time ?? []).map((time: string) => {
-    const date = new Date(time)
+  (props.reportData ?? []).map((d: ReportData) => {
+    const date = new Date(d.time)
     return date.toLocaleTimeString([], {
       hour: '2-digit',
       minute: '2-digit',
@@ -72,6 +75,8 @@ const labels = computed(() =>
     })
   })
 )
+
+const router = useRouter();
 
 // Koreksi 2: Anotasi tipe yang jelas pada fungsi pabrikan metrik
 const createChartData = (
@@ -111,8 +116,8 @@ const createChartData = (
 // Analisis fungsional: Mengasumsikan grafik utama menampilkan data 'Top' sebagai data sekilas.
 const chartData = computed(() =>
   createChartData(
-    props.data?.tempTop ?? [],
-    props.data?.rhTop ?? [],
+    (props.reportData ?? []).map(d => d.tempTop ?? 0),
+    (props.reportData ?? []).map(d => d.rhTop ?? 0),
     'Temperature Overview',
     'Humidity Overview'
   )
@@ -120,8 +125,8 @@ const chartData = computed(() =>
 
 const topChart = computed(() =>
   createChartData(
-    props.data?.tempTop ?? [],
-    props.data?.rhTop ?? [],
+    (props.reportData ?? []).map(d => d.tempTop ?? 0),
+    (props.reportData ?? []).map(d => d.rhTop ?? 0),
     'Temperature Top',
     'Humidity Top'
   )
@@ -129,8 +134,8 @@ const topChart = computed(() =>
 
 const bottomChart = computed(() =>
   createChartData(
-    props.data?.tempBottom ?? [],
-    props.data?.rhBottom ?? [],
+    (props.reportData ?? []).map(d => d.tempBottom ?? 0),
+    (props.reportData ?? []).map(d => d.rhBottom ?? 0),
     'Temperature Bottom',
     'Humidity Bottom'
   )
@@ -199,7 +204,6 @@ const options: ChartOptions<'line'> = {
         </UCard>
       </template>
     </UCarousel>
-
-    <PanelLog :logs="data?.data" />
+    <PanelLog :logs="reportData" :countLog="countLog" :lotId="props.lot.lotId" :lotNumber="props.lotNumber" />
   </div>
 </template>
