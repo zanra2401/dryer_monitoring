@@ -1,3 +1,4 @@
+import { requireAuthUser } from "~~/server/utils/auth";
 import * as z from "zod";
 import { prisma } from "~~/server/utils/prisma";
 import { logger } from "~~/server/utils/pino";
@@ -9,23 +10,30 @@ const listQuerySchema = z.object({
 
 export default defineEventHandler(async (event) => {
     try {
+        const user = await requireAuthUser(event);
         const query = listQuerySchema.parse(getQuery(event));
 
         const limit = query.limit ?? 10;
         const offset = query.offset ?? 0;
+        const areaFilter = user.role === "OPERATOR" || user.role === "CLIENT"
+            ? {
+                areaId: {
+                    in: user.areaIds,
+                },
+            }
+            : undefined;
 
         const result = await prisma.dryerArea.findMany({
+            where: areaFilter,
             skip: offset,
             take: limit,
-            include: {
-                bins: {
-                    select: {
-                        binStatus: true
-                    }
-                }
-            }
+            orderBy: {
+                areaId: "asc",
+            },
         });
-        const totalCount = await prisma.dryerArea.count();
+        const totalCount = areaFilter
+            ? await prisma.dryerArea.count({ where: areaFilter })
+            : await prisma.dryerArea.count();
 
         if (!result) {
             throw createError({

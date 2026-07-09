@@ -1,5 +1,7 @@
 import { prisma } from "~~/server/utils/prisma";
+import { isLogInsideLotRange } from "~~/server/utils/lot-log";
 import { ZodError, z } from "zod";
+import { requireAuthRole } from "~~/server/utils/auth";
 
 const bodySchema = z.object({
     lot_id: z.coerce.number().int().positive(),
@@ -7,6 +9,7 @@ const bodySchema = z.object({
 
 export default defineEventHandler(async (event) => {
     try {
+        await requireAuthRole(event, ["ADMIN"]);
         const body = bodySchema.parse(await readBody(event));
 
         const existingLot = await prisma.lot.findUnique({
@@ -19,17 +22,50 @@ export default defineEventHandler(async (event) => {
         }
 
         const result = await prisma.$transaction(async (tx) => {
-            await tx.log.deleteMany({
+            const relatedBinLogs = await tx.binLog.findMany({
+                where: {
+                    binNumber: existingLot.binNumber,
+                    areaId: existingLot.areaId,
+                    timestampThingspeak: existingLot.endTime
+                        ? {
+                            gte: existingLot.startTime,
+                            lte: existingLot.endTime,
+                        }
+                        : {
+                            gte: existingLot.startTime,
+                        },
+                },
+                select: {
+                    binLogId: true,
+                    timestampThingspeak: true,
+                },
+            });
+
+            await tx.lotMcLog.deleteMany({
                 where: {
                     lotId: body.lot_id,
                 },
             });
 
+            const binLogIdsToDelete = relatedBinLogs
+                .filter((binLog) => isLogInsideLotRange(binLog.timestampThingspeak, existingLot))
+                .map((binLog) => binLog.binLogId);
+
+            if (binLogIdsToDelete.length > 0) {
+                await tx.binLog.deleteMany({
+                    where: {
+                        binLogId: {
+                            in: binLogIdsToDelete,
+                        },
+                    },
+                });
+            }
+
             await tx.bin.updateMany({
                 where: {
                     binNumber: existingLot.binNumber,
                     areaId: existingLot.areaId,
-                    occupiedBy: body.lot_id,
+                    occupiedBy: existingLot.lotNumber,
                 },
                 data: {
                     occupiedBy: null,
@@ -51,6 +87,7 @@ export default defineEventHandler(async (event) => {
             setResponseStatus(event, 400);
             return { error: "Invalid request body" };
         }
+        if ((error as any).statusCode) throw error;
         setResponseStatus(event, 500);
         return { error: "Internal Server Error" };
     }

@@ -1,6 +1,8 @@
 <script setup lang="ts">
     import ActionControlModal from './ActionControlModal.vue';
     import type { LotLog } from './Process.vue';
+    import { useDryerAuth } from '~/composable/useDryerAuth';
+
     const toast = useToast();
     const props = defineProps<{
         binNumber: string;
@@ -8,6 +10,9 @@
         lot: LotLog;
     }>();
     const router = useRouter();
+    const { user: sessionUser } = useDryerAuth();
+    const isClient = computed(() => sessionUser.value?.role === 'CLIENT');
+
     // State untuk mengelola modal operasi kendali
     const isControlModalOpen = ref(false)
     const activeControlAction = ref<'down' | 'stop' | null>(null)
@@ -200,7 +205,7 @@
       </div>
     </template>
 
-    <div class="mb-5 flex gap-2">
+    <div class="mb-5 flex gap-2" v-if="!isClient">
       <UButton v-if="lot.downAirAt == null"
         color="warning" 
         class="rounded-none"

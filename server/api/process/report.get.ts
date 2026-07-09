@@ -1,6 +1,8 @@
 import * as z from "zod";
 import { prisma } from "~~/server/utils/prisma"; 
 import { logger } from "~~/server/utils/pino"; 
+import { requireAuthUser } from "~~/server/utils/auth";
+import { isLimitedAreaRole } from "~~/server/utils/rbac";
 
 const reportQuerySchema = z.object({
     lot_number: z.string().min(1, "Nomor Lot wajib diisi"),
@@ -8,6 +10,7 @@ const reportQuerySchema = z.object({
 
 export default defineEventHandler(async (event) => {
     try {
+        const user = await requireAuthUser(event);
         const query = getQuery(event);
         const { lot_number } = reportQuerySchema.parse(query);
 
@@ -27,6 +30,10 @@ export default defineEventHandler(async (event) => {
 
         if (!lot) {
             throw createError({ statusCode: 404, statusMessage: "Data Lot tidak ditemukan." });
+        }
+
+        if (isLimitedAreaRole(user.role) && !user.areaIds.includes(lot.areaId)) {
+            throw createError({ statusCode: 403, statusMessage: "Izin tidak cukup untuk mengakses laporan lot di area ini." });
         }
 
         const startTime = new Date(lot.startTime);

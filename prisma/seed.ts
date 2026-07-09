@@ -2,6 +2,7 @@ import "dotenv/config";
 import { PrismaMariaDb } from "@prisma/adapter-mariadb";
 import { PrismaClient } from '../app/generated/prisma/client.ts';
 import { BinStatus, LotStatus } from '../app/generated/prisma/enums.ts';
+import { hashUserPassword } from "../server/utils/password";
 
 const adapter = new PrismaMariaDb({
   host: process.env.DATABASE_HOST,
@@ -18,10 +19,14 @@ async function main() {
     // 1. Buat atau ambil User
     const adminUser = await prisma.user.upsert({
         where: { username: 'admin' },
-        update: {},
+        update: {
+            password: await hashUserPassword('password123'),
+            fullName: 'Administrator',
+            role: 'ADMIN'
+        },
         create: {
             username: 'admin',
-            password: 'password123', // idealnya di-hash
+            password: await hashUserPassword('password123'),
             fullName: 'Administrator',
             role: 'ADMIN'
         }

@@ -2,6 +2,7 @@ import * as z from "zod";
 import { Prisma } from "~/generated/prisma/client";
 import { prisma } from "~~/server/utils/prisma";
 import { logger } from "~~/server/utils/pino";
+import { requireAuthRole } from "~~/server/utils/auth";
 
 // Skema validasi Zod
 const mcSchema = z.object({
@@ -13,6 +14,7 @@ const mcSchema = z.object({
 
 export default defineEventHandler(async (event) => {
     try {
+        const user = await requireAuthRole(event, ["ADMIN", "OPERATOR"]);
         const body = await readBody(event);
         
         // Validasi payload
@@ -25,6 +27,10 @@ export default defineEventHandler(async (event) => {
 
         if (!lot) {
             throw createError({ statusCode: 404, statusMessage: "Data Lot tidak ditemukan." });
+        }
+
+        if (user.role === "OPERATOR" && !user.areaIds.includes(lot.areaId)) {
+            throw createError({ statusCode: 403, statusMessage: "Izin tidak cukup untuk memodifikasi lot di area ini." });
         }
 
         // Buat log MC baru (Append-Only)

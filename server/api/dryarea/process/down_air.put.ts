@@ -3,6 +3,8 @@ import { BinStatus } from "~/generated/prisma/enums";
 import { logger } from "~~/server/utils/pino";
 import { LotStatus } from "~/generated/prisma/enums";
 import * as z from "zod";
+import { requireAuthRole } from "~~/server/utils/auth";
+import { prisma } from "~~/server/utils/prisma";
 
 const schema = z.object({
     lot_id: z.number().int().positive("ID Lot harus bernilai positif"),
@@ -11,12 +13,25 @@ const schema = z.object({
 
 export default defineEventHandler(async (event) => {
     try {
+        const user = await requireAuthRole(event, ["ADMIN", "OPERATOR"]);
         const body = await readBody(event);
         const { time, lot_id } = schema.parse(body);
 
+        const existingLot = await prisma.lot.findUnique({
+            where: { lotId: lot_id }
+        });
+
+        if (!existingLot) {
+            throw createError({ statusCode: 404, statusMessage: "Lot tidak ditemukan." });
+        }
+
+        if (user.role === "OPERATOR" && !user.areaIds.includes(existingLot.areaId)) {
+            throw createError({ statusCode: 403, statusMessage: "Izin tidak cukup untuk memodifikasi lot di area ini." });
+        }
+
         console.log("time", new Date(time));
-        const result = await prisma.$transaction(async (prisma) => {
-            const updateLot = await prisma.lot.update({
+        const result = await prisma.$transaction(async (tx) => {
+            const updateLot = await tx.lot.update({
                 where: {
                     lotId: lot_id,
                 },
@@ -29,7 +44,7 @@ export default defineEventHandler(async (event) => {
                 }
             }); 
 
-            const updateBin = await prisma.bin.updateMany({
+            await tx.bin.updateMany({
                 where: {
                     occupiedBy: updateLot.lotNumber,
                     binStatus: BinStatus.UPAIR, 

@@ -10,7 +10,7 @@ export const isGlobalRole = (role: Role) => {
     return role === "ADMIN" || role === "MANAGER";
 };
 
-export const isSingleAreaRole = (role: Role) => {
+export const isLimitedAreaRole = (role: Role) => {
     return role === "OPERATOR" || role === "CLIENT";
 };
 
@@ -21,8 +21,8 @@ export const normalizeAreaIds = (areaIds: number[] = []) => {
 export const validateRoleAreaAccess = (role: Role, areaIds: number[]) => {
     const normalizedAreaIds = normalizeAreaIds(areaIds);
 
-    if (isSingleAreaRole(role) && normalizedAreaIds.length !== 1) {
-        return `${role} must have exactly one dryer area`;
+    if (isLimitedAreaRole(role) && normalizedAreaIds.length < 1) {
+        return `${role} must have at least one dryer area`;
     }
 
     return null;

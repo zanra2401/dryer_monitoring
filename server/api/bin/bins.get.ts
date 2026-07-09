@@ -2,6 +2,8 @@ import { LotStatus } from "~/generated/prisma/enums";
 import * as z from "zod";
 import { prisma } from "~~/server/utils/prisma";
 import { logger } from "~~/server/utils/pino";
+import { requireAuthUser } from "~~/server/utils/auth";
+import { isLimitedAreaRole } from "~~/server/utils/rbac";
 
 // 1. Validasi Input Keamanan Tinggi
 const querySchema = z.object({
@@ -10,8 +12,16 @@ const querySchema = z.object({
 
 export default defineEventHandler(async (event) => {
     try {
+        const user = await requireAuthUser(event);
         const rawQuery = getQuery(event);
         const { area_id } = querySchema.parse(rawQuery);
+
+        if (isLimitedAreaRole(user.role) && !user.areaIds.includes(area_id)) {
+            throw createError({
+                statusCode: 403,
+                statusMessage: "Anda tidak memiliki hak akses untuk area pengeringan ini.",
+            });
+        }
 
         // 2. Eksekusi Pembacaan Paralel Tersinkronisasi (Concurrent Reads)
         // Array transaction jauh lebih efisien untuk operasi baca daripada interactive callback

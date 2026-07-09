@@ -1,4 +1,5 @@
 import { prisma } from "~~/server/utils/prisma";
+import { requireAuthRole } from "~~/server/utils/auth";
 import { ZodError, z } from "zod";
 
 const bodySchema = z.object({
@@ -6,6 +7,8 @@ const bodySchema = z.object({
 });
 
 export default defineEventHandler(async (event) => {
+    await requireAuthRole(event, ["ADMIN"]);
+
     try {
         const body = bodySchema.parse(await readBody(event));
 

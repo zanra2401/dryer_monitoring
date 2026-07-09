@@ -1,5 +1,7 @@
 <script setup lang="ts">
     import { useCRUDChannel } from '~/composable/dryer_page/useCRUDChannel';
+    import { useDryerAuth } from '~/composable/useDryerAuth';
+
     const props = defineProps({
         areaId: {
             type: String,
@@ -8,6 +10,7 @@
     });
 
     const toast = useToast()
+    const { user: sessionUser } = useDryerAuth();
 
     const { api_keys, post_channels, channels, change_create_state, create_state } = useCRUDChannel();
 </script>
@@ -16,7 +19,7 @@
     <b>
         Channels
     </b>
-    <UButton color="neutral"  @click="() => {change_create_state(true)}" class="cursor-pointer" >Add Channel</UButton>
+    <UButton v-if="sessionUser?.role === 'ADMIN'" color="neutral"  @click="() => {change_create_state(true)}" class="cursor-pointer" >Add Channel</UButton>
     <UModal v-model:open="create_state" title="Add Channel" @close="(false)" >
         <template #body>
             <div>

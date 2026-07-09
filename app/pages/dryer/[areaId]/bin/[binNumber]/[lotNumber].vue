@@ -3,12 +3,21 @@
     import Process from '~/components/bin/Process.vue';
     import GridLoader from '~/components/GridLoader.vue';
     import Header from '~/components/Header.vue';
+    import { useDryerAuth } from '~/composable/useDryerAuth';
+
+    const router = useRouter();
+    const { user: sessionUser } = useDryerAuth();
 
     const toast = useToast();
     const route = useRoute();
     const lotNumber = route.params.lotNumber as string;
     const areaId = parseInt(route.params.areaId as string);
     const binNumber = route.params.binNumber as string;
+
+    const isLimited = sessionUser.value?.role === 'OPERATOR' || sessionUser.value?.role === 'CLIENT';
+    if (isLimited && sessionUser.value?.areaIds && !sessionUser.value.areaIds.includes(areaId)) {
+        navigateTo('/dryer');
+    }
 
     // Kueri Pembacaan (GET) menggunakan useFetch di top-level untuk SSR Hydration
     // Karena kita tidak dapat memanggil composable di dalam aksi, kita letakkan ini di top-level
@@ -48,7 +57,13 @@
     <div v-else class="w-full max-w-full overflow-x-hidden min-h-screen bg-gray-50 dark:bg-gray-950">
         <Header/>
         <main class="p-4 w-full max-w-full overflow-x-hidden">
-            <Init v-if="lotNumber == 'start'" :areaId="areaId" :lotNumber="lotNumber" :binNumber="binNumber" />
+            <div v-if="lotNumber == 'start' && sessionUser?.role === 'CLIENT'" class="p-8 text-center text-gray-500 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-sm rounded-none">
+                <UIcon name="i-lucide-lock-keyhole" class="w-12 h-12 mx-auto mb-3 text-gray-400" />
+                <p class="text-sm font-medium">Bin ini kosong.</p>
+                <p class="text-xs text-gray-400 mt-1 mb-4">Client tidak memiliki izin untuk memulai pengeringan.</p>
+                <UButton color="neutral" variant="subtle" class="rounded-none text-xs" @click="router.back()">Kembali</UButton>
+            </div>
+            <Init v-else-if="lotNumber == 'start'" :areaId="areaId" :lotNumber="lotNumber" :binNumber="binNumber" />
             <div v-else class="w-full max-w-full overflow-x-hidden">
                 <div v-if="!reportData">Memuat Visualisasi Data...</div>
                 <ClientOnly v-else>

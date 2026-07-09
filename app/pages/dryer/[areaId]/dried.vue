@@ -3,11 +3,19 @@
     import GridLoader from '~/components/GridLoader.vue';
     import Header from '~/components/Header.vue';
 
+    import { useDryerAuth } from '~/composable/useDryerAuth';
+
     const route = useRoute();
     const router = useRouter();
+    const { user: sessionUser } = useDryerAuth();
     const areaId = parseInt(route.params.areaId as string);
     const UButton = resolveComponent('UButton')
     const UIcon = resolveComponent('UIcon')
+
+    const isLimited = sessionUser.value?.role === 'OPERATOR' || sessionUser.value?.role === 'CLIENT';
+    if (isLimited && sessionUser.value?.areaIds && !sessionUser.value.areaIds.includes(areaId)) {
+        navigateTo('/dryer');
+    }
 
     const page = ref(1);
     const itemsPerPage = 15;
