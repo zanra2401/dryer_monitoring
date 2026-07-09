@@ -41,7 +41,7 @@ export default defineEventHandler(async (event) => {
                 },
             }),
             prisma.lot.findMany({
-                where: { areaId: area_id, status: { not: LotStatus.DRIED } },
+                where: { areaId: area_id, status: { not: LotStatus.COMPLETED } },
                 include: {
                     mcLogs: {
                         orderBy: { createdAt: 'desc' },

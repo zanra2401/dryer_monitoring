@@ -1,6 +1,6 @@
 export const getCardClassByStatus = (status_bin: string) => {
     switch (status_bin) {
-        case 'DRIED':
+        case 'COMPLETED':
             return 'border-red-500 bg-red-200 text-red-950 dark:border-red-600 dark:bg-red-900/20 dark:text-red-100';
         case 'DOWNAIR':
             return 'border-blue-500 bg-blue-200 text-blue-950 dark:border-blue-600 dark:bg-blue-900/20 dark:text-blue-100';
@@ -13,7 +13,7 @@ export const getCardClassByStatus = (status_bin: string) => {
 
 export const getColor = (status_bin: string) => {
     switch (status_bin) {
-        case 'DRIED':
+        case 'COMPLETED':
             return 'text-red-500 dark:text-red-400';
         case 'DOWNAIR':
             return 'text-blue-500 dark:text-blue-400';
@@ -26,7 +26,7 @@ export const getColor = (status_bin: string) => {
 
 export const getBgColor = (status_bin: string) => {
     switch (status_bin) {
-        case 'DRIED':
+        case 'COMPLETED':
             return 'bg-red-500 dark:bg-red-400';
         case 'DOWNAIR':
             return 'bg-blue-500 dark:bg-blue-400';
@@ -39,7 +39,7 @@ export const getBgColor = (status_bin: string) => {
 
 export const getColorClassNuxt = (status_bin: string) => {
     switch (status_bin) {
-        case 'DRIED':
+        case 'COMPLETED':
             return 'error';
         case 'DOWNAIR':
             return 'info';

@@ -31,28 +31,51 @@ const props = defineProps<{
   logs: Log[],
   countLog: number,
   lotId: number,
-  lotNumber: string
+  lotNumber: string,
+  startTime: string
 }>()
 
 // 2. Definisi Matriks Kolom yang Dikompresi
 const columns = [
-  { 
-    accessorKey: 'time', 
-    header: 'Waktu',
-    cell: ({ row }: any) => {
-      // Rekayasa pemformatan tanggal agar ringkas: "07/07 12:00"
-      const rawDate = new Date(row.getValue('time'))
-      const shortDate = rawDate.toLocaleDateString('id-ID', { day: '2-digit', month: '2-digit' })
-      const shortTime = rawDate.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })
+    {
+    id: 'jam',
+    header: 'Jam',
+    cell: ({ row }: { row: any }) => {
+      const logTime = new Date(row.getValue('time')).getTime();
+      const start = new Date(props.startTime).getTime();
+      const diffMs = logTime - start;
       
-      return h('span', { class: 'text-sm font-medium text-gray-700 dark:text-gray-300' }, `${shortDate} ${shortTime}`)
+      if (diffMs < 0 || isNaN(diffMs)) {
+        return h('span', { class: 'text-sm font-medium text-gray-500 italic' }, '-');
+      }
+
+      const diffMins = Math.floor(diffMs / (1000 * 60));
+      const hours = Math.floor(diffMins / 60);
+      return h('span', { class: 'text-sm font-bold text-blue-600 dark:text-blue-400' }, `${hours}`);
+    }
+  },
+  {
+    id: 'menit',
+    header: 'Menit',
+    cell: ({ row }: { row: any }) => {
+      const logTime = new Date(row.getValue('time')).getTime();
+      const start = new Date(props.startTime).getTime();
+      const diffMs = logTime - start;
+      
+      if (diffMs < 0 || isNaN(diffMs)) {
+        return h('span', { class: 'text-sm font-medium text-gray-500 italic' }, '-');
+      }
+
+      const diffMins = Math.floor(diffMs / (1000 * 60));
+      const minutes = diffMins % 60;
+      return h('span', { class: 'text-sm font-bold text-cyan-600 dark:text-cyan-400' }, `${minutes}`);
     }
   },
   { 
     // Menggunakan 'id' kustom karena kolom ini mensintesis dua data (tempTop & tempBottom)
     id: 'tempCombined', 
     header: 'T (T/B) °C',
-    cell: ({ row }: any) => {
+    cell: ({ row }: { row: any }) => {
       const top = Number(row.original.tempTop).toFixed(2)
       const bottom = Number(row.original.tempBottom).toFixed(2)
       // Penggunaan font-mono wajib dipertahankan untuk konsistensi pelurusan angka desimal
@@ -63,16 +86,27 @@ const columns = [
     // Menggunakan 'id' kustom untuk (rhTop & rhBottom)
     id: 'rhCombined', 
     header: 'RH (T/B) %',
-    cell: ({ row }: any) => {
+    cell: ({ row }: { row: any }) => {
       const top = Number(row.original.rhTop).toFixed(2)
       const bottom = Number(row.original.rhBottom).toFixed(2)
       return h('span', { class: 'font-mono text-sm' }, `${top}/${bottom}`)
     }
   },
   { 
+    accessorKey: 'time', 
+    header: 'Waktu',
+    cell: ({ row }: { row: any }) => {
+      // Rekayasa pemformatan tanggal agar ringkas: "07/07 12:00"
+      const rawDate = new Date(row.getValue('time'))
+      const shortDate = rawDate.toLocaleDateString('id-ID', { day: '2-digit', month: '2-digit' })
+      const shortTime = rawDate.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })
+      return h('span', { class: 'font-mono text-sm' }, `${shortDate} ${shortTime}`);
+    }
+  },  
+  { 
     accessorKey: 'mc', 
     header: 'MC (%)',
-    cell: ({ row }: any) => {
+    cell: ({ row }: { row: any }) => {
       const mc = Number(row.getValue('mc'))
       if (mc !== null && mc !== undefined && !isNaN(mc)) {
         return h('span', { class: 'font-mono text-sm font-bold text-gray-900 dark:text-white' }, mc.toFixed(1))
@@ -83,7 +117,7 @@ const columns = [
   { 
     accessorKey: 'statusBin', 
     header: 'Status Bin',
-    cell: ({ row }: any) => {
+    cell: ({ row }: { row: any }) => {
       const status = row.getValue('statusBin') as string
       
       let color = 'neutral'

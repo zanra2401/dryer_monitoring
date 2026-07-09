@@ -66,7 +66,7 @@
           // Optimistic UI Update untuk Set Stop
           const { data: lotState } = useNuxtData(`lot-${props.lotNumber}`)
           if (lotState.value && lotState.value.data && lotState.value.data.lot) {
-              lotState.value.data.lot.status = 'DRIED'
+              lotState.value.data.lot.status = 'COMPLETED'
               lotState.value.data.lot.endTime = safeIsoString
           }
 

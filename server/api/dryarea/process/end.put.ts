@@ -46,7 +46,7 @@ export default defineEventHandler(async (event) => {
             const updateLot = await tx.lot.update({
                 where: { lotId: lot_id },
                 data: {
-                    status: LotStatus.DRIED,
+                    status: LotStatus.COMPLETED,
                     endTime: endTimeStr,
                     endMC: mcLog?.mc ?? null,
                 },

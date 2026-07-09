@@ -77,13 +77,13 @@ const {
 const statusLabels: Record<LotStatus, string> = {
   UPAIR: "Up Air",
   DOWNAIR: "Down Air",
-  DRIED: "Dried",
+  COMPLETED: "COMPLETED",
 };
 
 const statusColors: Record<LotStatus, "warning" | "info" | "success"> = {
   UPAIR: "warning",
   DOWNAIR: "info",
-  DRIED: "success",
+  COMPLETED: "success",
 };
 const numberInputProps = {
   locale: "en-US",

@@ -40,10 +40,10 @@ const querySchema = z.object({
         normalizeNumberArray,
         z.array(z.coerce.number().int().positive()).optional(),
     ),
-    status: z.enum(["UPAIR", "DOWNAIR", "DRIED"]).optional(),
+    status: z.enum(["UPAIR", "DOWNAIR", "COMPLETED"]).optional(),
     statuses: z.preprocess(
         normalizeStringArray,
-        z.array(z.enum(["UPAIR", "DOWNAIR", "DRIED"])).optional(),
+        z.array(z.enum(["UPAIR", "DOWNAIR", "COMPLETED"])).optional(),
     ),
     search: z.string().trim().min(1).optional(),
 });

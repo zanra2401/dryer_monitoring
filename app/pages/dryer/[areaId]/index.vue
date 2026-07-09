@@ -42,14 +42,14 @@
                     {{ bins.dryerArea?.name || 'Unknown Area' }}
                 </b>
             </div>
-            <NuxtLink :to="`/dryer/${areaId}/dried`">
+            <NuxtLink :to="`/dryer/${areaId}/COMPLETED`">
                 <UButton 
                     color="neutral" 
                     variant="subtle" 
                     class="rounded-none text-xs"
                 >
                     <UIcon name="i-lucide-archive" class="w-3.5 h-3.5 mr-1" />
-                    Riwayat Dried
+                    Riwayat COMPLETED
                 </UButton>
             </NuxtLink>
         </div>

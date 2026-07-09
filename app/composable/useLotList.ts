@@ -1,4 +1,4 @@
-export const LOT_STATUSES = ["UPAIR", "DOWNAIR", "DRIED"] as const;
+export const LOT_STATUSES = ["UPAIR", "DOWNAIR", "COMPLETED"] as const;
 export const LOT_PAGE_SIZE_OPTIONS = [10, 25, 50] as const;
 
 export type LotStatus = (typeof LOT_STATUSES)[number];

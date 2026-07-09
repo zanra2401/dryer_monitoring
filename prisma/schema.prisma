@@ -16,13 +16,12 @@ enum BinStatus {
   EMPTY
   UPAIR
   DOWNAIR
-  DRIED
 }
 
 enum LotStatus {
   UPAIR
   DOWNAIR
-  DRIED
+ COMPLETED
 }
 
 model User {
