@@ -134,7 +134,6 @@ export default defineEventHandler(async (event) => {
 
         return { success: true, data: result };
     } catch (error) {
-        console.log(error);
         if (error instanceof ZodError) {
             setResponseStatus(event, 400);
             return { error: "Invalid request body" };

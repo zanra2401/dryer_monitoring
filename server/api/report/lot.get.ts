@@ -40,7 +40,7 @@ export default defineEventHandler(async (event) => {
             data,
         };
     } catch (error) {
-        console.log(error);
+         
 
         if (error instanceof ZodError) {
             setResponseStatus(event, 400);

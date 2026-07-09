@@ -29,7 +29,7 @@ export default defineEventHandler(async (event) => {
             throw createError({ statusCode: 403, statusMessage: "Izin tidak cukup untuk memodifikasi lot di area ini." });
         }
 
-        console.log("time", new Date(time));
+         
         const result = await prisma.$transaction(async (tx) => {
             const updateLot = await tx.lot.update({
                 where: {

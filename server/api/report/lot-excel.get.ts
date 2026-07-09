@@ -102,7 +102,7 @@ export default defineEventHandler(async (event) => {
 
         return buffer;
     } catch (error) {
-        console.log(error);
+         
 
         if (error instanceof ZodError) {
             setResponseStatus(event, 400);

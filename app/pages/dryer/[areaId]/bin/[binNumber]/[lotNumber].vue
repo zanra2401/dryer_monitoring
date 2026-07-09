@@ -44,7 +44,7 @@
         key: `report-${lotNumber}`
     });
 
-    console.log('Data Laporan:', reportResponse.value?.data || []);
+     
 
     const reportData = computed(() => (reportResponse.value?.data || []) as any[]);
 

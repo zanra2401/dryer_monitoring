@@ -100,7 +100,7 @@ export default defineEventHandler(async (event) => {
         setResponseStatus(event, 201);
         return { success: true, data: result };
     } catch (error) {
-        console.log(error);
+         
         if (error instanceof ZodError) {
             setResponseStatus(event, 400);
             return { error: "Invalid request body" };

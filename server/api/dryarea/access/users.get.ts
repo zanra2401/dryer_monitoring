@@ -116,7 +116,7 @@ export default defineEventHandler(async (event) => {
             },
         };
     } catch (error) {
-        console.log(error);
+         
         if (error instanceof ZodError) {
             setResponseStatus(event, 400);
             return { error: "Invalid query parameter" };
