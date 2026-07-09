@@ -24,11 +24,11 @@
     const offset = computed(() => (page.value - 1) * itemsPerPage);
 
     const { data: lotsResponse, error } = await useFetch<any>('/api/lot/lots', {
-        key: `dried-lots-area-${areaId}`,
+        key: `COMPLETED-lots-area-${areaId}`,
         method: 'GET',
         query: { 
             area_id: areaId, 
-            status: 'DRIED',
+            status: 'COMPLETED',
             limit: limit,
             offset: offset 
         },
@@ -136,10 +136,10 @@
         <Header />
         <div class="flex items-center justify-between p-2">
             <div class="flex items-center">
-                <a :href="`/dryer/${areaId}`" class="p-2 flex items-center">
+                <NuxtLink :to="`/dryer/${areaId}`" class="p-2 flex items-center">
                     <UIcon name="i-lucide-move-left" class="w-4 h-4 mr-1" />
-                </a>
-                <b>Riwayat Lot Selesai (Dried)</b>
+                </NuxtLink>
+                <b>Riwayat Lot Selesai (COMPLETED)</b>
             </div>
             <UBadge color="neutral" variant="subtle" class="rounded-none">
                 Total: {{ lotsResponse?.totalCount || 0 }}

@@ -2,8 +2,9 @@
     import { h, resolveComponent } from 'vue'
     import type { TableColumn } from '@nuxt/ui'
     import type { Row } from '@tanstack/vue-table'
-
     import { useBin } from '~/composable/dryer_page/useBin';
+    import BinProcessViewer from './BinProcessViewer.vue';
+
     const UButton = resolveComponent('UButton')
     const UDropdownMenu = resolveComponent('UDropdownMenu')
     const props = defineProps({
@@ -14,6 +15,11 @@
     });
 
     const toast = useToast();
+
+    // State untuk View Process
+    const isViewerOpen = ref(false);
+    const viewerLot = ref('');
+    const viewerBin = ref('');
 
     type Bin = {
         binNumber: string
@@ -114,15 +120,26 @@
     ]
 
     function getRowItems(row: Row<Bin>) {
-    return [                    
-        {
-            label: 'View',
-            onSelect() {
-                console.log("View");
-            }
-        },
-
-    ]
+        const items = [];
+        
+        if (row.getValue('binStatus') !== 'IDLE' && row.getValue('occupiedBy')) {
+            items.push({
+                label: 'View Process',
+                icon: 'i-lucide-activity',
+                onSelect() {
+                    viewerLot.value = row.getValue('occupiedBy') as string;
+                    viewerBin.value = row.getValue('binNumber') as string;
+                    isViewerOpen.value = true;
+                }
+            });
+        } else {
+            items.push({
+                label: 'Tidak ada proses aktif',
+                disabled: true
+            });
+        }
+        
+        return items;
     }
 
     const { bins, fetch_bins } = useBin();   
@@ -130,6 +147,33 @@
 </script>
 
 <template>
-    <UTable v-if="bins != null" :data="bins.data" :columns="columns" class="flex-1" />
+    <div class="space-y-4">
+        <div class="rounded-lg border border-default bg-default">
+            <div class="overflow-x-auto">
+                <UTable v-if="bins != null" :data="bins.data" :columns="columns" class="min-w-[520px]">
+                    <template #empty-state>
+                        <div class="flex flex-col items-center justify-center py-12">
+                            <UIcon name="i-lucide-box" class="w-12 h-12 text-gray-400 mb-3" />
+                            <h3 class="text-base font-semibold text-gray-900 dark:text-white">Belum Ada Bin</h3>
+                            <p class="text-sm text-gray-500 dark:text-gray-400">Bin akan muncul otomatis setelah Anda menambahkan Channel telemetri.</p>
+                        </div>
+                    </template>
+                </UTable>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Fullscreen Viewer -->
+    <UModal v-model:open="isViewerOpen" fullscreen>
+        <template #content>
+            <BinProcessViewer 
+                v-if="isViewerOpen"
+                :areaId="props.areaId"
+                :binNumber="viewerBin"
+                :lotNumber="viewerLot"
+                @close="isViewerOpen = false"
+            />
+        </template>
+    </UModal>
 </template>
 

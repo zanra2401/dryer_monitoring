@@ -31,28 +31,51 @@ const props = defineProps<{
   logs: Log[],
   countLog: number,
   lotId: number,
-  lotNumber: string
+  lotNumber: string,
+  startTime: string
 }>()
 
 // 2. Definisi Matriks Kolom yang Dikompresi
 const columns = [
-  { 
-    accessorKey: 'time', 
-    header: 'Waktu',
-    cell: ({ row }: any) => {
-      // Rekayasa pemformatan tanggal agar ringkas: "07/07 12:00"
-      const rawDate = new Date(row.getValue('time'))
-      const shortDate = rawDate.toLocaleDateString('id-ID', { day: '2-digit', month: '2-digit' })
-      const shortTime = rawDate.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })
+    {
+    id: 'jam',
+    header: 'Jam',
+    cell: ({ row }: { row: any }) => {
+      const logTime = new Date(row.getValue('time')).getTime();
+      const start = new Date(props.startTime).getTime();
+      const diffMs = logTime - start;
       
-      return h('span', { class: 'text-sm font-medium text-gray-700' }, `${shortDate} ${shortTime}`)
+      if (diffMs < 0 || isNaN(diffMs)) {
+        return h('span', { class: 'text-sm font-medium text-gray-500 italic' }, '-');
+      }
+
+      const diffMins = Math.floor(diffMs / (1000 * 60));
+      const hours = Math.floor(diffMins / 60);
+      return h('span', { class: 'text-sm font-bold text-blue-600 dark:text-blue-400' }, `${hours}`);
+    }
+  },
+  {
+    id: 'menit',
+    header: 'Menit',
+    cell: ({ row }: { row: any }) => {
+      const logTime = new Date(row.getValue('time')).getTime();
+      const start = new Date(props.startTime).getTime();
+      const diffMs = logTime - start;
+      
+      if (diffMs < 0 || isNaN(diffMs)) {
+        return h('span', { class: 'text-sm font-medium text-gray-500 italic' }, '-');
+      }
+
+      const diffMins = Math.floor(diffMs / (1000 * 60));
+      const minutes = diffMins % 60;
+      return h('span', { class: 'text-sm font-bold text-cyan-600 dark:text-cyan-400' }, `${minutes}`);
     }
   },
   { 
     // Menggunakan 'id' kustom karena kolom ini mensintesis dua data (tempTop & tempBottom)
     id: 'tempCombined', 
     header: 'T (T/B) °C',
-    cell: ({ row }: any) => {
+    cell: ({ row }: { row: any }) => {
       const top = Number(row.original.tempTop).toFixed(2)
       const bottom = Number(row.original.tempBottom).toFixed(2)
       // Penggunaan font-mono wajib dipertahankan untuk konsistensi pelurusan angka desimal
@@ -63,27 +86,38 @@ const columns = [
     // Menggunakan 'id' kustom untuk (rhTop & rhBottom)
     id: 'rhCombined', 
     header: 'RH (T/B) %',
-    cell: ({ row }: any) => {
+    cell: ({ row }: { row: any }) => {
       const top = Number(row.original.rhTop).toFixed(2)
       const bottom = Number(row.original.rhBottom).toFixed(2)
       return h('span', { class: 'font-mono text-sm' }, `${top}/${bottom}`)
     }
   },
   { 
+    accessorKey: 'time', 
+    header: 'Waktu',
+    cell: ({ row }: { row: any }) => {
+      // Rekayasa pemformatan tanggal agar ringkas: "07/07 12:00"
+      const rawDate = new Date(row.getValue('time'))
+      const shortDate = rawDate.toLocaleDateString('id-ID', { day: '2-digit', month: '2-digit' })
+      const shortTime = rawDate.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })
+      return h('span', { class: 'font-mono text-sm' }, `${shortDate} ${shortTime}`);
+    }
+  },  
+  { 
     accessorKey: 'mc', 
     header: 'MC (%)',
-    cell: ({ row }: any) => {
+    cell: ({ row }: { row: any }) => {
       const mc = Number(row.getValue('mc'))
       if (mc !== null && mc !== undefined && !isNaN(mc)) {
-        return h('span', { class: 'font-mono text-sm font-bold text-gray-900' }, mc.toFixed(1))
+        return h('span', { class: 'font-mono text-sm font-bold text-gray-900 dark:text-white' }, mc.toFixed(1))
       }
-      return h('span', { class: 'text-xs text-gray-400 italic' }, 'Kosong')
+      return h('span', { class: 'text-xs text-gray-400 dark:text-gray-500 italic' }, 'Kosong')
     }
   },
   { 
     accessorKey: 'statusBin', 
     header: 'Status Bin',
-    cell: ({ row }: any) => {
+    cell: ({ row }: { row: any }) => {
       const status = row.getValue('statusBin') as string
       
       let color = 'neutral'
@@ -115,34 +149,49 @@ const handleRowSelect = (e: Event, row: TableRow<Log>) => {
 
 const saveOperatorData = async (updatedLog: Log) => {
   try {
-    // Jika baris sudah memiliki MC (bukan null/undefined/NaN), gunakan PUT untuk update
-    // Jika MC masih kosong, gunakan POST untuk membuat data baru
-    const isUpdate = updatedLog.mc !== null && updatedLog.mc !== undefined && !isNaN(Number(updatedLog.mc))
-    const method = isUpdate ? 'PUT' : 'POST'
+    // Mengecek apakah data SEBELUMNYA sudah memiliki MC (bukan dari input baru)
+    const originalMc = selectedRowData.value?.mc;
+    const isUpdate = originalMc !== null && originalMc !== undefined && !isNaN(Number(originalMc));
+    
+    let method = isUpdate ? 'PUT' : 'POST';
+    const payload = {
+      lot_id: props.lotId,
+      target_time: updatedLog.time || new Date().toISOString(),
+      mc: Number(updatedLog.mc),
+      remark: updatedLog.remark || ''
+    };
 
-    await $fetch(`/api/dryarea/process/monitoring_mc`, {
-      method: method,
-      body: {
-        lot_id: props.lotId,
-        target_time: updatedLog.time || new Date().toISOString(),
-        mc: Number(updatedLog.mc),
-        remark: updatedLog.remark || ''
+    try {
+      await $fetch(`/api/dryarea/process/monitoring_mc`, {
+        method: method,
+        body: payload
+      });
+    } catch (apiError: any) {
+      // Mekanisme Fallback: Jika kita mengira ini update (PUT) tapi server bilang 404, alihkan ke POST
+      if (apiError.response?.status === 404 && method === 'PUT') {
+        method = 'POST';
+        await $fetch(`/api/dryarea/process/monitoring_mc`, {  
+          method: method,
+          body: payload
+        });
+      } else {
+        throw apiError;
       }
-    })
+    }
 
-    await refreshNuxtData(`lot-${props.lotNumber}`)
-    await refreshNuxtData(`report-${props.lotNumber}`)
+    await refreshNuxtData(`lot-${props.lotNumber}`);
+    await refreshNuxtData(`report-${props.lotNumber}`);
 
     toast.add({
-      title: isUpdate ? 'Berhasil Memperbarui MC' : 'Berhasil Menyimpan MC Baru',
+      title: method === 'PUT' ? 'Berhasil Memperbarui MC' : 'Berhasil Menyimpan MC Baru',
       color: 'success'
-    })
+    });
   } catch (error) {
-    console.error('Terjadi kegagalan transmisi data:', error)
+    console.error('Terjadi kegagalan transmisi data:', error);
     toast.add({
       title: 'Gagal Menyimpan Data Operator',
       color: 'error'
-    })
+    });
   }
 }
 
@@ -158,15 +207,16 @@ const paginatedLogs = computed(() => {
 </script>
 
 <template>
-  <UCard class="rounded-none">
+  <UCard class="w-full min-w-0 rounded-none overflow-hidden" :ui="{ body: { padding: 'p-0 sm:p-0' } }">
     <template #header>
       <div class="flex items-center justify-between">
         <h3 class="text-lg font-bold">Log Telemetri Sensor</h3>
-        <span v-if="!isClient" class="text-xs text-gray-500">Klik baris untuk mengisi MC</span>
+        <span class="text-xs text-gray-500 dark:text-gray-400">Klik baris untuk mengisi MC</span>
       </div>
     </template>
     
     <UTable 
+      :key="`log-table-page-${page}`"
       :data="paginatedLogs" 
       :columns="columns"
       :class="[!isClient ? 'cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800' : '']"
@@ -174,9 +224,8 @@ const paginatedLogs = computed(() => {
       @select="(e: Event, row: TableRow<Log>) => !isClient && handleRowSelect(e, row)"
     />
   </UCard>
-
   <div class="w-full flex justify-center items-center mb-6">
-    <UPagination v-model="page" :total="props.logs.length" :items-per-page="itemsPerPage" />
+    <UPagination v-model:page="page" :total="props.logs.length" :items-per-page="itemsPerPage" />
   </div>
 
   <OperatorEntryModal 

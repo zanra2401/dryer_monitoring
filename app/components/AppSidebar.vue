@@ -137,7 +137,17 @@ const props = withDefaults(defineProps<{
       }"
     >
       <template #header>
-        <UIcon name="i-logos-nuxt-icon" class="size-8" />
+        <div class="flex items-center justify-between w-full">
+          <UIcon name="i-logos-nuxt-icon" class="size-8" />
+          <UButton
+            icon="i-lucide-x"
+            color="neutral"
+            variant="ghost"
+            class="md:hidden"
+            aria-label="Close sidebar"
+            @click="open = false"
+          />
+        </div>
       </template>
 
       <template #default="{ state }">
@@ -172,7 +182,7 @@ const props = withDefaults(defineProps<{
     <div class="flex min-w-0 flex-1 flex-col">
       <div class="h-(--ui-header-height) shrink-0 flex items-center px-4 border-b border-default">
         <UButton
-          icon="i-lucide-panel-left"
+          icon="i-lucide-menu"
           color="neutral"
           variant="ghost"
           aria-label="Toggle sidebar"

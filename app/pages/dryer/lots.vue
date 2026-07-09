@@ -100,7 +100,7 @@ const statusFilterItems = computed(() => {
     { value: ALL_STATUS_FILTER_VALUE, label: "All Statuses" },
     { value: "UPAIR" as const, label: "Up Air" },
     { value: "DOWNAIR" as const, label: "Down Air" },
-    { value: "DRIED" as const, label: "Dried" },
+    { value: "COMPLETED" as const, label: "COMPLETED" },
   ];
 });
 const statusFilterLabel = computed(() => {
@@ -256,13 +256,13 @@ const formatDateTime = (isoString?: string | null) => {
 const statusColors = {
   UPAIR: "success",
   DOWNAIR: "warning",
-  DRIED: "neutral",
+  COMPLETED: "neutral",
 } as const;
 
 const statusLabels = {
   UPAIR: "Up Air",
   DOWNAIR: "Down Air",
-  DRIED: "Dried",
+  COMPLETED: "COMPLETED",
 } as const;
 
 const tableData = computed(() => current_data.value?.data || []);

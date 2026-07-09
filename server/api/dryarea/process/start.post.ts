@@ -59,6 +59,7 @@ export default defineEventHandler(async (event) => {
                     quality: body.quality,
                     netToBin: body.net_to_bin,
                     initialMc: body.initial_mc,
+                    depth: body.depth,
                     startTime: startDate,
                     areaId: body.area_id,
                     binNumber: body.bin_number,

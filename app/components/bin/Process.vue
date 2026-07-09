@@ -65,8 +65,11 @@ const props = defineProps<{
   countLog: number
 }>()
 
+// Membalik array khusus untuk grafik agar sumbu X berjalan dari kiri (lama) ke kanan (baru)
+const chronologicalData = computed(() => [...(props.reportData ?? [])].reverse())
+
 const labels = computed(() =>
-  (props.reportData ?? []).map((d: ReportData) => {
+  chronologicalData.value.map((d: ReportData) => {
     const date = new Date(d.time)
     return date.toLocaleTimeString([], {
       hour: '2-digit',
@@ -78,32 +81,33 @@ const labels = computed(() =>
 
 const router = useRouter();
 
-// Koreksi 2: Anotasi tipe yang jelas pada fungsi pabrikan metrik
 const createChartData = (
-  temp: number[] = [],
-  rh: number[] = [],
-  titleTemp: string,
-  titleRh: string
+  data1: number[] = [],
+  data2: number[] = [],
+  title1: string,
+  title2: string,
+  color1: string,
+  color2: string
 ): ChartData<'line'> => ({
   labels: labels.value,
   datasets: [
     {
-      label: titleTemp,
-      data: temp,
-      borderColor: '#3b82f6',
-      backgroundColor: 'rgba(59,130,246,0.15)',
-      yAxisID: 'temp',
+      label: title1,
+      data: data1,
+      borderColor: color1,
+      backgroundColor: color1 + '33',
+      yAxisID: 'y',
       tension: 0.35,
       pointRadius: 0,
       pointHoverRadius: 5,
       borderWidth: 2
     },
     {
-      label: titleRh,
-      data: rh,
-      borderColor: '#22c55e',
-      backgroundColor: 'rgba(34,197,94,0.15)',
-      yAxisID: 'rh',
+      label: title2,
+      data: data2,
+      borderColor: color2,
+      backgroundColor: color2 + '33',
+      yAxisID: 'y',
       tension: 0.35,
       pointRadius: 0,
       pointHoverRadius: 5,
@@ -112,37 +116,7 @@ const createChartData = (
   ]
 })
 
-// Koreksi 3: Pendeklarasian 'chartData' untuk memperbaiki ReferenceError pada templat utama
-// Analisis fungsional: Mengasumsikan grafik utama menampilkan data 'Top' sebagai data sekilas.
-const chartData = computed(() =>
-  createChartData(
-    (props.reportData ?? []).map(d => d.tempTop ?? 0),
-    (props.reportData ?? []).map(d => d.rhTop ?? 0),
-    'Temperature Overview',
-    'Humidity Overview'
-  )
-)
-
-const topChart = computed(() =>
-  createChartData(
-    (props.reportData ?? []).map(d => d.tempTop ?? 0),
-    (props.reportData ?? []).map(d => d.rhTop ?? 0),
-    'Temperature Top',
-    'Humidity Top'
-  )
-)
-
-const bottomChart = computed(() =>
-  createChartData(
-    (props.reportData ?? []).map(d => d.tempBottom ?? 0),
-    (props.reportData ?? []).map(d => d.rhBottom ?? 0),
-    'Temperature Bottom',
-    'Humidity Bottom'
-  )
-)
-
-// Koreksi 4: Penambahan anotasi tipe untuk objek konfigurasi Chart
-const options: ChartOptions<'line'> = {
+const baseOptions: ChartOptions<'line'> = {
   responsive: true,
   maintainAspectRatio: false,
   interaction: {
@@ -150,32 +124,58 @@ const options: ChartOptions<'line'> = {
     intersect: false
   },
   plugins: {
-    legend: {
-      position: 'top'
-    }
-  },
+    legend: { position: 'top' }
+  }
+}
+
+const tempOptions: ChartOptions<'line'> = {
+  ...baseOptions,
   scales: {
-    temp: {
+    y: {
       type: 'linear',
       position: 'left',
-      title: {
-        display: true,
-        text: 'Temperature (°C)'
-      }
-    },
-    rh: {
-      type: 'linear',
-      position: 'right',
-      grid: {
-        drawOnChartArea: false
-      },
-      title: {
-        display: true,
-        text: 'Humidity (%)'
-      }
+      title: { display: true, text: 'Temperature (°C)' }
     }
   }
 }
+
+const rhOptions: ChartOptions<'line'> = {
+  ...baseOptions,
+  scales: {
+    y: {
+      type: 'linear',
+      position: 'left',
+      title: { display: true, text: 'Humidity (%)' }
+    }
+  }
+}
+
+const charts = computed(() => [
+  {
+    title: 'Temperature (Top vs Bottom)',
+    data: createChartData(
+      chronologicalData.value.map(d => d.tempTop ?? 0),
+      chronologicalData.value.map(d => d.tempBottom ?? 0),
+      'Temp Top',
+      'Temp Bottom',
+      '#ef4444', 
+      '#f97316'  
+    ),
+    options: tempOptions
+  },
+  {
+    title: 'Humidity (Top vs Bottom)',
+    data: createChartData(
+      chronologicalData.value.map(d => d.rhTop ?? 0),
+      chronologicalData.value.map(d => d.rhBottom ?? 0),
+      'RH Top',
+      'RH Bottom',
+      '#3b82f6', 
+      '#0ea5e9'  
+    ),
+    options: rhOptions
+  }
+])
 
 </script>
 
@@ -183,27 +183,20 @@ const options: ChartOptions<'line'> = {
   <div class="flex flex-col gap-6">
     <!-- Panel Utama -->
     <PanelProcess :binNumber="props.binNumber" :lotNumber="props.lotNumber" :lot="lot" />
-    <!-- Korsel Data Lanjutan (Top & Bottom) -->
-    <UCarousel
-      :items="[topChart, bottomChart]"
-      arrows
-      indicators
-      class="w-full"
-    >
-      <template #default="{ item, index }">
-        <UCard class="w-full rounded-none">
-          <template #header>
-            <div class="text-lg font-semibold">
-              {{ index === 0 ? 'Temperature & Humidity (Top)' : 'Temperature & Humidity (Bottom)' }}
-            </div>
-          </template>
-
-          <div class="h-80">
-            <Line :data="item" :options="options" />
+    <!-- Grafik Data Lanjutan -->
+    <div class="flex flex-col gap-6 w-full">
+      <UCard v-for="item in charts" :key="item.title" class="w-full rounded-none shadow-sm">
+        <template #header>
+          <div class="text-lg font-semibold">
+            {{ item.title }}
           </div>
-        </UCard>
-      </template>
-    </UCarousel>
-    <PanelLog :logs="reportData" :countLog="countLog" :lotId="props.lot.lotId" :lotNumber="props.lotNumber" />
+        </template>
+
+        <div class="h-80">
+          <Line :data="item.data" :options="item.options" />
+        </div>
+      </UCard>
+    </div>
+    <PanelLog :logs="reportData" :countLog="countLog" :lotId="props.lot.lotId" :lotNumber="props.lotNumber" :startTime="props.lot.startTime" />
   </div>
 </template>

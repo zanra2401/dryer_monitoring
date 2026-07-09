@@ -10,7 +10,6 @@ const log = {
         if (Number.isNaN(date.getTime())) {
             throw new Error("Invalid date time value");
         }
-        console.log(date);
         return date;
     },
     is_future_date: (dateTime: string | Date) => {
@@ -92,9 +91,6 @@ const log = {
 
             return new Prisma.Decimal(value);
         };
-        console.log("----------------------");
-        console.log(params.bin.fieldTempTop);
-        console.log(Number(params.bin.fieldTempTop));
         return {
             lotId: params.lotId,
             timestampThingspeak: log.to_valid_date(params.feed.created_at ?? params.feed.createdAt),

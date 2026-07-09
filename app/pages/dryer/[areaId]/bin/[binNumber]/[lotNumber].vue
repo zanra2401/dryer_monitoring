@@ -44,7 +44,7 @@
         key: `report-${lotNumber}`
     });
 
-    console.log('Data Laporan:', reportResponse.value?.data || []);
+     
 
     const reportData = computed(() => (reportResponse.value?.data || []) as any[]);
 
@@ -54,7 +54,7 @@
     <div v-if="(!lotResponse?.data || !binResponse?.data) && lotNumber != 'start'" class="w-full h-screen flex justify-center items-center">
         <GridLoader />
     </div>
-    <div v-else class="w-full max-w-full overflow-x-hidden min-h-screen bg-gray-50">
+    <div v-else class="w-full max-w-full overflow-x-hidden min-h-screen bg-gray-50 dark:bg-gray-950">
         <Header/>
         <main class="p-4 w-full max-w-full overflow-x-hidden">
             <div v-if="lotNumber == 'start' && sessionUser?.role === 'CLIENT'" class="p-8 text-center text-gray-500 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-sm rounded-none">

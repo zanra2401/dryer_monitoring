@@ -8,7 +8,7 @@ const bodySchema = z.object({
     quality: z.string().trim().min(1).optional().nullable(),
     net_to_bin: z.coerce.number().optional().nullable(),
     initial_mc: z.coerce.number().optional().nullable(),
-    status: z.enum(["UPAIR", "DOWNAIR", "DRIED"]).optional(),
+    status: z.enum(["UPAIR", "DOWNAIR", "COMPLETED"]).optional(),
     down_air_at: z.coerce.date().optional().nullable(),
     down_mc: z.coerce.number().optional().nullable(),
     created_by: z.coerce.number().int().positive().optional().nullable(),
@@ -80,7 +80,7 @@ export default defineEventHandler(async (event) => {
         }
 
         const lotStatus = body.status ?? "UPAIR";
-        const shouldOccupyBin = !body.end_time && ["UPAIR", "DOWNAIR", "DRIED"].includes(lotStatus);
+        const shouldOccupyBin = !body.end_time && ["UPAIR", "DOWNAIR", "COMPLETED"].includes(lotStatus);
 
         const result = await prisma.$transaction(async (tx) => {
             const createdLot = await tx.lot.create({
@@ -122,7 +122,7 @@ export default defineEventHandler(async (event) => {
         setResponseStatus(event, 201);
         return { success: true, data: result };
     } catch (error) {
-        console.log(error);
+         
         if (error instanceof ZodError) {
             setResponseStatus(event, 400);
             return { error: "Invalid request body" };

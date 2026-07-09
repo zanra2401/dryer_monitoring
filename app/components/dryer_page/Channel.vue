@@ -121,9 +121,12 @@
                 }
             },
             {
-                label: 'Delete',
+                label: 'Hapus',
+                icon: 'i-lucide-trash-2',
                 onSelect() {
-                    delete_channel(parseInt(props.areaId), row.getValue('channelId'), toast);
+                    if (window.confirm(`Apakah Anda yakin ingin menghapus channel ID: ${row.getValue('channelId')}? Semua bin yang terhubung akan ikut terpengaruh.`)) {
+                        delete_channel(parseInt(props.areaId), row.getValue('channelId'), toast);
+                    }
                 }
             },
         ]
@@ -133,7 +136,13 @@
 </script>
 
 <template>
-    <UTable :data="channel_list.data" :columns="visibleColumns" class="flex-1" />
+    <div class="space-y-4">
+        <div class="rounded-lg border border-default bg-default">
+            <div class="overflow-x-auto">
+                <UTable :data="channel_list.data" :columns="visibleColumns" class="min-w-[520px]" />
+            </div>
+        </div>
+    </div>
 
     <UModal v-model:open="edit_state" title="Edit Channel" @close="change_edit_state(false)" @confirm="update_channel(parseInt(props.areaId), toast)">
         <template #body>

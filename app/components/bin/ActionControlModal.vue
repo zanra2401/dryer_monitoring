@@ -3,6 +3,8 @@ import { ref, computed } from 'vue'
 import { VueDatePicker } from '@vuepic/vue-datepicker';
 import '@vuepic/vue-datepicker/dist/main.css'
 
+const colorMode = useColorMode()
+
 const props = defineProps<{
   modelValue: boolean
   actionType: 'down' | 'stop' | null
@@ -61,35 +63,35 @@ const handleSubmit = () => {
       <template #header>
         <div class="flex items-center justify-between w-full">
         <div>
-            <h3 class="text-base font-bold text-gray-800">{{ config.title }}</h3>
+            <h3 class="text-base font-bold text-gray-900 dark:text-white">{{ config.title }}</h3>
         </div>
           <UButton 
             variant="ghost" 
             icon="i-heroicons-x-mark" 
-            class="text-gray-500 hover:bg-gray-100 rounded-none -my-1" 
+            class="text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-none -my-1" 
             @click="handleClose" 
           />
         </div>
       </template>
       <template #body>
           <div class="flex flex-col gap-4">
-            <p class="text-sm font-medium text-gray-600">
+            <p class="text-sm font-medium text-gray-600 dark:text-gray-400">
               {{ config.description }}
             </p>
     
             <div class="flex flex-col gap-1.5 mt-2">
-              <label class="text-sm font-semibold text-gray-700">
+              <label class="text-sm font-semibold text-gray-700 dark:text-gray-300">
                 Waktu Aktual Eksekusi <span class="text-red-500">*</span>
               </label>
               <VueDatePicker  
                 v-model="inputTimestamp"
                 type="datetime-local" 
-                class="w-full border border-gray-300 p-2 text-sm text-gray-900 focus:ring-2 focus:ring-blue-500 outline-none rounded-none"
+                :dark="colorMode.value === 'dark'"
+                class="w-full"
                 format="24hs"
                 :is-24="true"
                 placeholder="Tentukan Waktu Aktual"
                 auto-apply
-                input-class-name="w-full border border-gray-300 p-2 text-sm text-gray-900 focus:ring-2 focus:ring-blue-500 outline-none rounded-none"
               ></VueDatePicker>
             </div>
           </div>
@@ -99,8 +101,8 @@ const handleSubmit = () => {
         <div class="flex justify-end gap-3">
           <UButton 
             color="neutral" 
-            variant="solid" 
-            class="border border-gray-300 rounded-none shadow-sm hover:bg-gray-50" 
+            variant="outline" 
+            class="rounded-none shadow-sm dark:text-white" 
             
             @click="handleClose"
           >

@@ -9,7 +9,7 @@ const bodySchema = z.object({
     quality: z.string().trim().min(1).optional().nullable(),
     net_to_bin: z.coerce.number().optional().nullable(),
     initial_mc: z.coerce.number().optional().nullable(),
-    status: z.enum(["UPAIR", "DOWNAIR", "DRIED"]).optional(),
+    status: z.enum(["UPAIR", "DOWNAIR", "COMPLETED"]).optional(),
     down_air_at: z.coerce.date().optional().nullable(),
     down_mc: z.coerce.number().optional().nullable(),
     bin_number: z.coerce.number().int().positive().optional(),
@@ -99,7 +99,7 @@ export default defineEventHandler(async (event) => {
             areaId: nextAreaId,
         };
         const isSameBin = oldBinKey.binNumber === newBinKey.binNumber && oldBinKey.areaId === newBinKey.areaId;
-        const shouldOccupyBin = nextEndTime === null && ["UPAIR", "DOWNAIR", "DRIED"].includes(nextStatus);
+        const shouldOccupyBin = nextEndTime === null && ["UPAIR", "DOWNAIR", "COMPLETED"].includes(nextStatus);
 
         const result = await prisma.$transaction(async (tx) => {
             const updatedLot = await tx.lot.update({
@@ -149,7 +149,7 @@ export default defineEventHandler(async (event) => {
 
         return { success: true, data: result };
     } catch (error) {
-        console.log(error);
+         
         if (error instanceof ZodError) {
             setResponseStatus(event, 400);
             return { error: "Invalid request body" };

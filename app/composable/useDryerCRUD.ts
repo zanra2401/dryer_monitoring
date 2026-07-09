@@ -21,7 +21,7 @@ export const useDryerCRUD = (fetch_dryer: () => Promise<any>) => {
     });
 
     const edit_state = ref<boolean>(false);
-    const create_state = ref<boolean>(false);
+    const create_state = ref<boolean>(true);
 
     const update_edit_state = (area_id: number | null = null, name: string | null = null) => {
         if (area_id === null) {
@@ -37,14 +37,12 @@ export const useDryerCRUD = (fetch_dryer: () => Promise<any>) => {
 
     const create_dryer = async (toast: any) => {
         try {
-            const error_zod =  createDryerSchema.parse(create_data.value);
-            const { data, error } = await useFetch('/api/dryarea/dry_area', {
+            createDryerSchema.parse(create_data.value);
+            const response = await $fetch('/api/dryarea/dry_area', {
                 method: 'POST',
                 body: create_data.value,
             });
-            if (error.value) {
-                throw new Error(error.value?.statusMessage || "Unknown error");
-            }
+            
             fetch_dryer();
             create_state.value = false;
             create_data.value.name = null;
@@ -52,11 +50,12 @@ export const useDryerCRUD = (fetch_dryer: () => Promise<any>) => {
                 title: "Dryer created successfully",
                 color: "success",    
             });
-            return data;
-        } catch (err) {
+            return response;
+        } catch (err: any) {
             error.value = err;
             toast.add({
-                title: "Error deleting dryer: " + error.value?.message || "Unknown error",
+                title: "Error creating dryer",
+                description: err.data?.statusMessage || err.message || "Unknown error",
                 color: "error",    
             });
             return null;
@@ -65,15 +64,11 @@ export const useDryerCRUD = (fetch_dryer: () => Promise<any>) => {
 
     const update_dryer = async (toast: any) => {
         try {
-            const error_zod =  updateDryerSchema.parse(update_data.value);
-            const { data, error } = await useFetch('/api/dryarea/dry_area', {
+            updateDryerSchema.parse(update_data.value);
+            const response = await $fetch('/api/dryarea/dry_area', {
                 method: 'PUT',
                 body: update_data.value,
             });
-
-            if (error.value) {
-                throw new Error(error.value?.statusMessage || "Unknown error");
-            }
 
             fetch_dryer();
             toast.add({
@@ -81,12 +76,12 @@ export const useDryerCRUD = (fetch_dryer: () => Promise<any>) => {
                 color: "success",    
             });
             edit_state.value = false;
-            return data;
-        }   catch (err) {
+            return response;
+        }   catch (err: any) {
             error.value = err;
-            alert("Error updating dryer: " + error.value?.message || "Unknown error");
             toast.add({
-                title: "Error updating dryer: " + error.value?.message || "Unknown error",
+                title: "Error updating dryer",
+                description: err.data?.statusMessage || err.message || "Unknown error",
                 color: "error",    
             });
             return null;
@@ -95,22 +90,21 @@ export const useDryerCRUD = (fetch_dryer: () => Promise<any>) => {
 
     const delete_dryer = async (area_id: number, toast: any) => {
         try {
-            const { data, error } = await useFetch('/api/dryarea/dry_area', {
+            await $fetch('/api/dryarea/dry_area', {
                 method: 'DELETE',
                 body: { area_id },
             });
-            if (error.value) {
-                throw new Error(error.value?.statusMessage || "Unknown error");
-            }
+            
             fetch_dryer();
             toast.add({
                 title: "Dryer deleted successfully",
                 color: "success",    
             });
-        }   catch (err) {
+        }   catch (err: any) {
             error.value = err;
             toast.add({
-                title: "Error deleting dryer: " + error.value?.message || "Unknown error",
+                title: "Error deleting dryer",
+                description: err.data?.statusMessage || err.message || "Unknown error",
                 color: "error",    
             });
             return null;
