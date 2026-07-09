@@ -24,6 +24,7 @@ export default defineEventHandler(async (event) => {
                 include: {
                     dryerArea: true,
                     binLogs: {
+                        where: { tempTop: { not: null } },
                         orderBy: { timestampThingspeak: 'desc' },
                         take: 1
                     }

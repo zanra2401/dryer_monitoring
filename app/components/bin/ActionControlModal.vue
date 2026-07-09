@@ -3,6 +3,8 @@ import { ref, computed } from 'vue'
 import { VueDatePicker } from '@vuepic/vue-datepicker';
 import '@vuepic/vue-datepicker/dist/main.css'
 
+const colorMode = useColorMode()
+
 const props = defineProps<{
   modelValue: boolean
   actionType: 'down' | 'stop' | null
@@ -84,12 +86,12 @@ const handleSubmit = () => {
               <VueDatePicker  
                 v-model="inputTimestamp"
                 type="datetime-local" 
-                class="w-full border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 p-2 text-sm text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none rounded-none"
+                :dark="colorMode.value === 'dark'"
+                class="w-full"
                 format="24hs"
                 :is-24="true"
                 placeholder="Tentukan Waktu Aktual"
                 auto-apply
-                input-class-name="w-full border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 p-2 text-sm text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none rounded-none"
               ></VueDatePicker>
             </div>
           </div>
@@ -99,8 +101,8 @@ const handleSubmit = () => {
         <div class="flex justify-end gap-3">
           <UButton 
             color="neutral" 
-            variant="solid" 
-            class="border border-gray-300 dark:border-gray-700 rounded-none shadow-sm hover:bg-gray-50 dark:hover:bg-gray-800 dark:text-white" 
+            variant="outline" 
+            class="rounded-none shadow-sm dark:text-white" 
             
             @click="handleClose"
           >

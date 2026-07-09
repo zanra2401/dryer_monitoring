@@ -46,7 +46,7 @@
                 </UButton>
             </NuxtLink>
         </div>
-        <div class="grid min-h-screen p-2 sm:p-4 grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+        <div v-if="bins.data && bins.data.length > 0" class="grid min-h-screen p-2 sm:p-4 grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
         <NuxtLink
             v-for="(data, idx) in bins.data"
             :key="data.binNumber"
@@ -104,7 +104,7 @@
         </div>
         
         <!-- Empty State -->
-        <div v-if="bins.data && bins.data.length === 0" class="flex flex-col items-center justify-center py-20 px-4 text-center">
+        <div v-else class="flex flex-col items-center justify-center h-[70vh] px-4 text-center">
             <div class="p-4 bg-gray-100 dark:bg-gray-800 rounded-full mb-4">
                 <UIcon name="i-lucide-boxes" class="w-12 h-12 text-gray-400" />
             </div>

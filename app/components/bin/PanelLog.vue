@@ -109,34 +109,49 @@ const handleRowSelect = (e: Event, row: TableRow<Log>) => {
 
 const saveOperatorData = async (updatedLog: Log) => {
   try {
-    // Jika baris sudah memiliki MC (bukan null/undefined/NaN), gunakan PUT untuk update
-    // Jika MC masih kosong, gunakan POST untuk membuat data baru
-    const isUpdate = updatedLog.mc !== null && updatedLog.mc !== undefined && !isNaN(Number(updatedLog.mc))
-    const method = isUpdate ? 'PUT' : 'POST'
+    // Mengecek apakah data SEBELUMNYA sudah memiliki MC (bukan dari input baru)
+    const originalMc = selectedRowData.value?.mc;
+    const isUpdate = originalMc !== null && originalMc !== undefined && !isNaN(Number(originalMc));
+    
+    let method = isUpdate ? 'PUT' : 'POST';
+    const payload = {
+      lot_id: props.lotId,
+      target_time: updatedLog.time || new Date().toISOString(),
+      mc: Number(updatedLog.mc),
+      remark: updatedLog.remark || ''
+    };
 
-    await $fetch(`/api/dryarea/process/monitoring_mc`, {
-      method: method,
-      body: {
-        lot_id: props.lotId,
-        target_time: updatedLog.time || new Date().toISOString(),
-        mc: Number(updatedLog.mc),
-        remark: updatedLog.remark || ''
+    try {
+      await $fetch(`/api/dryarea/process/monitoring_mc`, {
+        method: method,
+        body: payload
+      });
+    } catch (apiError: any) {
+      // Mekanisme Fallback: Jika kita mengira ini update (PUT) tapi server bilang 404, alihkan ke POST
+      if (apiError.response?.status === 404 && method === 'PUT') {
+        method = 'POST';
+        await $fetch(`/api/dryarea/process/monitoring_mc`, {
+          method: method,
+          body: payload
+        });
+      } else {
+        throw apiError;
       }
-    })
+    }
 
-    await refreshNuxtData(`lot-${props.lotNumber}`)
-    await refreshNuxtData(`report-${props.lotNumber}`)
+    await refreshNuxtData(`lot-${props.lotNumber}`);
+    await refreshNuxtData(`report-${props.lotNumber}`);
 
     toast.add({
-      title: isUpdate ? 'Berhasil Memperbarui MC' : 'Berhasil Menyimpan MC Baru',
+      title: method === 'PUT' ? 'Berhasil Memperbarui MC' : 'Berhasil Menyimpan MC Baru',
       color: 'success'
-    })
+    });
   } catch (error) {
-    console.error('Terjadi kegagalan transmisi data:', error)
+    console.error('Terjadi kegagalan transmisi data:', error);
     toast.add({
       title: 'Gagal Menyimpan Data Operator',
       color: 'error'
-    })
+    });
   }
 }
 
