@@ -65,8 +65,11 @@ const props = defineProps<{
   countLog: number
 }>()
 
+// Membalik array khusus untuk grafik agar sumbu X berjalan dari kiri (lama) ke kanan (baru)
+const chronologicalData = computed(() => [...(props.reportData ?? [])].reverse())
+
 const labels = computed(() =>
-  (props.reportData ?? []).map((d: ReportData) => {
+  chronologicalData.value.map((d: ReportData) => {
     const date = new Date(d.time)
     return date.toLocaleTimeString([], {
       hour: '2-digit',
@@ -116,8 +119,8 @@ const createChartData = (
 // Analisis fungsional: Mengasumsikan grafik utama menampilkan data 'Top' sebagai data sekilas.
 const chartData = computed(() =>
   createChartData(
-    (props.reportData ?? []).map(d => d.tempTop ?? 0),
-    (props.reportData ?? []).map(d => d.rhTop ?? 0),
+    chronologicalData.value.map(d => d.tempTop ?? 0),
+    chronologicalData.value.map(d => d.rhTop ?? 0),
     'Temperature Overview',
     'Humidity Overview'
   )
@@ -125,8 +128,8 @@ const chartData = computed(() =>
 
 const topChart = computed(() =>
   createChartData(
-    (props.reportData ?? []).map(d => d.tempTop ?? 0),
-    (props.reportData ?? []).map(d => d.rhTop ?? 0),
+    chronologicalData.value.map(d => d.tempTop ?? 0),
+    chronologicalData.value.map(d => d.rhTop ?? 0),
     'Temperature Top',
     'Humidity Top'
   )
@@ -134,8 +137,8 @@ const topChart = computed(() =>
 
 const bottomChart = computed(() =>
   createChartData(
-    (props.reportData ?? []).map(d => d.tempBottom ?? 0),
-    (props.reportData ?? []).map(d => d.rhBottom ?? 0),
+    chronologicalData.value.map(d => d.tempBottom ?? 0),
+    chronologicalData.value.map(d => d.rhBottom ?? 0),
     'Temperature Bottom',
     'Humidity Bottom'
   )

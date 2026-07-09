@@ -34,15 +34,17 @@
     // 2. Normalisasi Zona Waktu (Resolusi Anomali UTC)
     // Membaca string lokal dan mengubahnya menjadi objek Date yang mengenali zona waktu sistem (WIB)
     const localDate = new Date(payload.timestamp)
-    
-    // Mengonversi ke standar ISO-8601 (otomatis dikonversi ke UTC absolut dengan huruf 'Z')
-    // Ini adalah format yang wajib diterima oleh Prisma
     const safeIsoString = localDate.toISOString() 
-
-    // console.log(`[INTEGRITAS TERJAGA] Eksekusi ${payload.action} disiapkan:`, safeIsoString)
 
     try {
         if (payload.action == 'down') {
+          // Optimistic UI Update: Mutasi cache lokal agar antarmuka berubah instan
+          const { data: lotState } = useNuxtData(`lot-${props.lotNumber}`)
+          if (lotState.value && lotState.value.data && lotState.value.data.lot) {
+              lotState.value.data.lot.status = 'DOWNAIR'
+              lotState.value.data.lot.downAirAt = safeIsoString
+          }
+
           await $fetch(`/api/dryarea/process/down_air`, {
             method: 'PUT',
             body: {
@@ -51,8 +53,9 @@
             }
           })
 
-          // Memicu re-fetch di komponen induk (refreshNuxtData dari useFetch setup)
+          // Memicu re-fetch di komponen induk (sinkronisasi memastikan data server konsisten)
           await refreshNuxtData(`lot-${props.lotNumber}`)
+          await refreshNuxtData(`report-${props.lotNumber}`)
 
           toast.add({
             title: 'Berhasil Set Down',
@@ -60,6 +63,13 @@
           })
 
         } else {
+          // Optimistic UI Update untuk Set Stop
+          const { data: lotState } = useNuxtData(`lot-${props.lotNumber}`)
+          if (lotState.value && lotState.value.data && lotState.value.data.lot) {
+              lotState.value.data.lot.status = 'DRIED'
+              lotState.value.data.lot.endTime = safeIsoString
+          }
+
           await $fetch(`/api/dryarea/process/end`, {
             method: 'PUT',
             body: {
@@ -84,6 +94,8 @@
             description: 'Terjadi kegagalan transmisi data' + error,
             color: 'error'
         })
+        // Jika gagal, tarik ulang dari server untuk me-rollback optimistic update
+        await refreshNuxtData(`lot-${props.lotNumber}`)
     }
     }
     const formatCompactDateTime = (isoString?: string | null | undefined) => {
@@ -140,6 +152,13 @@
 
     const undo_down_air = async () => {
         try {
+            // Optimistic UI Update untuk Undo Down
+            const { data: lotState } = useNuxtData(`lot-${props.lotNumber}`)
+            if (lotState.value && lotState.value.data && lotState.value.data.lot) {
+                lotState.value.data.lot.status = 'UPAIR'
+                lotState.value.data.lot.downAirAt = null
+            }
+
             await $fetch(`/api/dryarea/process/undo_downair`, {
                 method: 'PUT',
                 body: {
@@ -148,6 +167,7 @@
             })
 
             await refreshNuxtData(`lot-${props.lotNumber}`)
+            await refreshNuxtData(`report-${props.lotNumber}`)
 
             toast.add({
                 title: 'Berhasil Undo Down',
@@ -159,6 +179,8 @@
                 title: 'Gagal Undo Down',
                 color: 'error'
             })
+            // Rollback optimistic update if failed
+            await refreshNuxtData(`lot-${props.lotNumber}`)
         }
     }
 </script>
