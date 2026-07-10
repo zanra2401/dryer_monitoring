@@ -14,7 +14,14 @@ const adapter = new PrismaMariaDb({
 const prisma = new PrismaClient({ adapter });
 
 async function main() {
-    
+    const createdUser = await tx.user.create({
+        data: {
+            username: "admin",
+            password: await hashUserPassword("admin123"),
+            fullName: body.full_name,
+            role: body.role,
+        },
+    });
 }
 
 main()
