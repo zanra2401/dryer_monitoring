@@ -1,7 +1,8 @@
 import "dotenv/config";
 import { PrismaMariaDb } from "@prisma/adapter-mariadb";
-import { PrismaClient } from '../app/generated/prisma/client.ts';
-import { BinStatus, LotStatus } from '../app/generated/prisma/enums.ts';
+// Hapus ekstensi .ts untuk menghindari error resolusi modul
+import { PrismaClient } from '../app/generated/prisma/client';
+import { BinStatus, LotStatus } from '../app/generated/prisma/enums';
 import { hashUserPassword } from "../server/utils/password";
 
 const adapter = new PrismaMariaDb({
@@ -14,14 +15,19 @@ const adapter = new PrismaMariaDb({
 const prisma = new PrismaClient({ adapter });
 
 async function main() {
-    const createdUser = await tx.user.create({
+    // Gunakan 'prisma' alih-alih 'tx'
+    const createdUser = await prisma.user.create({
         data: {
             username: "admin",
             password: await hashUserPassword("admin123"),
-            fullName: body.full_name,
-            role: body.role,
+            // Gunakan nilai statis karena ini adalah proses seeding awal
+            fullName: "Administrator",
+            role: "ADMIN", // Sesuaikan dengan enum role database Anda
         },
     });
+
+    console.log(createdUser);   
+    console.log("Seed berhasil. User dibuat:", createdUser.username);
 }
 
 main()

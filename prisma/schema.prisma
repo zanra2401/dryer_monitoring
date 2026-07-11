@@ -66,7 +66,8 @@ model Channel {
   nummberOfBin  Int       @map("number_of_bin")
 
   dryerArea     DryerArea @relation(fields: [areaId], references: [areaId])
-  bins          Bin[]
+  binsTop       Bin[]     @relation("BinChannelTop")
+  binsBottom    Bin[]     @relation("BinChannelBottom")
 
   @@map("channels")
 }
@@ -74,16 +75,18 @@ model Channel {
 model Bin {
   binNumber       Int       @map("bin_number")
   areaId          Int       @map("area_id")
-  channelId       String    @map("channel_id")
-  fieldTempTop    String    @map("field_temp_top")
-  fieldRhTop      String    @map("field_rh_top")
-  fieldTempBottom String    @map("field_temp_bottom")
-  fieldRhBottom   String    @map("field_rh_bottom")
+  channelIdTop    String?   @map("channel_id_top")
+  channelIdBottom String?   @map("channel_id_bottom")
+  fieldTempTop    String?   @map("field_temp_top")
+  fieldRhTop      String?   @map("field_rh_top")
+  fieldTempBottom String?   @map("field_temp_bottom")
+  fieldRhBottom   String?   @map("field_rh_bottom")
   binStatus       BinStatus @default(EMPTY) @map("bin_status")
-  occupiedBy      String?      @map("occupied_by")
+  occupiedBy      String?   @map("occupied_by")
   
   dryerArea       DryerArea @relation(fields: [areaId], references: [areaId]) 
-  channel         Channel @relation(fields: [channelId], references: [channelId], onDelete: Cascade)
+  channelTop      Channel?  @relation("BinChannelTop", fields: [channelIdTop], references: [channelId], onDelete: SetNull)
+  channelBottom   Channel?  @relation("BinChannelBottom", fields: [channelIdBottom], references: [channelId], onDelete: SetNull)
   binLogs         BinLog[]
 
   @@id([binNumber, areaId])

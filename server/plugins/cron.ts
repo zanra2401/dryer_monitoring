@@ -28,13 +28,18 @@ interface FeedEntry {
 interface BinWithChannel {
     binNumber: number;
     areaId: number;
-    channelId: string | null;
+    channelIdTop: string | null;
+    channelIdBottom: string | null;
     binStatus: string;
-    fieldTempTop: string;
-    fieldRhTop: string;
-    fieldTempBottom: string;
-    fieldRhBottom: string;
-    channel: {
+    fieldTempTop: string | null;
+    fieldRhTop: string | null;
+    fieldTempBottom: string | null;
+    fieldRhBottom: string | null;
+    channelTop: {
+        apiKey: string;
+        [key: string]: any;
+    } | null;
+    channelBottom: {
         apiKey: string;
         [key: string]: any;
     } | null;
@@ -118,7 +123,7 @@ export default defineNitroPlugin((nitroApp) => {
         try {
             // 1. Kueri seluruh Bin beserta channel-nya
             const allBins = await prisma.bin.findMany({
-                include: { channel: true }
+                include: { channelTop: true, channelBottom: true }
             });
 
             logger.info({ context: 'cron' }, `[cron] Ditemukan ${allBins.length} bin untuk dipantau.`);
@@ -128,9 +133,9 @@ export default defineNitroPlugin((nitroApp) => {
 
             for (const bin of allBins) {
                 try {
-                    if (!bin.channel) {
+                    if (!bin.channelTop && !bin.channelBottom) {
                         logger.warn({ context: 'cron', binNumber: bin.binNumber, areaId: bin.areaId },
-                            `[cron] Bin ${bin.binNumber} Area ${bin.areaId} tidak memiliki konfigurasi channel.`);
+                            `[cron] Bin ${bin.binNumber} Area ${bin.areaId} tidak memiliki konfigurasi channel sama sekali.`);
                         continue;
                     }
 
@@ -169,12 +174,30 @@ export default defineNitroPlugin((nitroApp) => {
                     const startTimeFormatted = log.format_thingspeak_datetime(new Date(fetchStartMs));
                     const endTimeFormatted = log.format_thingspeak_datetime(now);
 
-                    const feedResponse = await thinkspeaks.get_feeds_by_time(
-                        Number(bin.channelId),
-                        bin.channel.apiKey,
-                        { start_time: startTimeFormatted, end_time: endTimeFormatted }
-                    );
-                    const feeds: FeedEntry[] = Array.isArray(feedResponse?.feeds) ? feedResponse.feeds : [];
+                    const feeds: FeedEntry[] = [];
+                    const channelIdsToFetch = new Set<string>();
+                    if (bin.channelIdTop) channelIdsToFetch.add(bin.channelIdTop);
+                    if (bin.channelIdBottom) channelIdsToFetch.add(bin.channelIdBottom);
+
+                    for (const cid of channelIdsToFetch) {
+                        const channelObj = bin.channelTop?.channelId === cid ? bin.channelTop : bin.channelBottom;
+                        if (!channelObj) continue;
+
+                        const feedResponse = await thinkspeaks.get_feeds_by_time(
+                            Number(cid),
+                            channelObj.apiKey,
+                            { start_time: startTimeFormatted, end_time: endTimeFormatted }
+                        );
+                        
+                        if (Array.isArray(feedResponse?.feeds)) {
+                            feeds.push(...feedResponse.feeds);
+                        }
+                        
+                        // Rate limit protection antar channel jika ada lebih dari 1
+                        if (channelIdsToFetch.size > 1) {
+                            await delay(THINGSPEAK_DELAY_MS);
+                        }
+                    }
 
                     // is_ephemeral: false saat recovery (kita tidak tahu status drier saat server mati)
                     const currentIsEphemeral = bin.binStatus === 'EMPTY';

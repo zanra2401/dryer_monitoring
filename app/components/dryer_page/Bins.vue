@@ -23,7 +23,8 @@
 
     type Bin = {
         binNumber: string
-        channelId: string
+        channelIdTop: string | null
+        channelIdBottom: string | null
         areaId: string
         fieldTempTop: number
         fieldTempBottom: number
@@ -42,10 +43,17 @@
         }
     },
     {
-        accessorKey: 'channelId',
-        header: 'Channel ID',
+        accessorKey: 'channels',
+        header: 'Channels',
         cell: ({ row }) => {
-        return row.getValue('channelId');
+            const top = row.original.channelIdTop;
+            const bottom = row.original.channelIdBottom;
+            
+            const badges = [];
+            if (top) badges.push(h('span', { class: 'inline-flex items-center rounded-md bg-blue-50 px-2 py-1 text-xs font-medium text-blue-700 ring-1 ring-inset ring-blue-700/10 mr-1' }, `Top: ${top}`));
+            if (bottom) badges.push(h('span', { class: 'inline-flex items-center rounded-md bg-green-50 px-2 py-1 text-xs font-medium text-green-700 ring-1 ring-inset ring-green-600/20' }, `Bot: ${bottom}`));
+            
+            return h('div', { class: 'flex' }, badges.length ? badges : h('span', { class: 'text-gray-400' }, '-'));
         }
     },
     {

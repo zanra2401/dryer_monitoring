@@ -54,69 +54,72 @@ export const useCRUDChannel = () => {
             return null;
         }
 
-        const { data, error } = await useFetch('/api/channel/channels', {
-            method: 'POST',
-            body: data_to_validate,
-        });
+        try {
+            const data = await $fetch('/api/channel/channels', {
+                method: 'POST',
+                body: data_to_validate,
+            });
 
-
-        if (error.value) {
             toast.add({
-                title: "Error creating channels: " + error.value?.statusMessage || "Unknown error",
+                title: "Channels created successfully",
+                color: "success" 
+            });
+
+            return data;
+        } catch (error: any) {
+            toast.add({
+                title: "Error creating channels: " + (error?.statusMessage || "Unknown error"),
                 color: "error" 
             });
             return null;
         }
+    };
 
-        toast.add({
-            title: "Channels created successfully",
-            color: "success" 
-        });
 
-        return data;
-    };    
 
 
     const refresh_channels = async (area_id: number, channel_id: string, toast: any) => {
-        const { data, error } = await useFetch('/api/channel/refresh_channel', {
-            method: 'POST',
-            body: { area_id, channel_id },
-        });
-
-        if (error.value) {
+        try {
+            const data = await $fetch('/api/channel/refresh_channel', {
+                method: 'POST',
+                body: { area_id, channel_id },
+            });
             toast.add({
-                title: "Error refreshing channels: " + error.value?.statusMessage || "Unknown error",
+                title: "Channels refreshed successfully",
+                color: "success" 
+            });
+            return data;
+        } catch (error: any) {
+            toast.add({
+                title: "Error refreshing channels: " + (error?.statusMessage || "Unknown error"),
                 color: "error" 
             });
             return null;
         }
 
-        toast.add({
-            title: "Channels refreshed successfully",
-            color: "success" 
-        });
-        return data;
+
     };
 
     const delete_channel = async (area_id: number, channel_id: string, toast: any) => {
-        const { data, error } = await useFetch('/api/channel/channel', {
-            method: 'DELETE',
-            body: { area_id, channel_id },
-        });
-
-        if (error.value) {
+        try {
+            const data = await $fetch('/api/channel/channel', {
+                method: 'DELETE',
+                body: { area_id, channel_id },
+            });
             toast.add({
-                title: "Error deleting channel: " + error.value?.statusMessage || "Unknown error",
+                title: "Channel deleted successfully",
+                color: "success" 
+            });
+            return data;
+        } catch (error: any) {
+            toast.add({
+                title: "Error deleting channel: " + (error?.statusMessage || "Unknown error"),
                 color: "error" 
             });
             return null;
         }
 
-        toast.add({
-            title: "Channel deleted successfully",
-            color: "success" 
-        });
-        return data;
+
     }
 
 
@@ -131,27 +134,28 @@ export const useCRUDChannel = () => {
     }
 
     const update_channel = async (area_id: number, toast: any) => {
-        const { data, error } = await useFetch('/api/channel/channel', {
-            method: 'PUT',
-            body: {
-                area_id: area_id,
-                channel_id: edit_data.value.channel_id,
-                api_key: edit_data.value.api_key,
-            },
-        });
-
-        if (error.value) {
+        try {
+            const data = await $fetch('/api/channel/channel', {
+                method: 'PUT',
+                body: {
+                    area_id: area_id,
+                    channel_id: edit_data.value.channel_id,
+                    api_key: edit_data.value.api_key,
+                },
+            });
             toast.add({
-                title: "Error updating channel: " + error.value?.statusMessage || "Unknown error",
+                title: "Channel updated successfully",
+                color: "success"
+            });
+            return data;
+        } catch (error: any) {
+            toast.add({
+                title: "Error updating channel: " + (error?.statusMessage || "Unknown error"),
                 color: "error" 
             });
             return null;
         }
-        toast.add({
-            title: "Channel updated successfully",
-            color: "success"
-        });
-        return data;
+
     }
 
     return {

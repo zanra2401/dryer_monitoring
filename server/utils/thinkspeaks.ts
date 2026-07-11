@@ -44,13 +44,20 @@ const thinkspeaks = {
                             bins[bin_group_key] = {
                                 "binNumber": parseInt(bin_group_key),
                                 "areaId": area_id,
-                                "channelId": channel_id,
                             }
                         }
     
-                        bins[bin_group_key]["field" + field_data[1]?.split("_").map(data => {
+                        const fieldName = "field" + field_data[1]?.split("_").map(data => {
                             return data.charAt(0).toUpperCase() + data.slice(1).toLowerCase();
-                        }).join("")] = key;
+                        }).join("");
+                        
+                        bins[bin_group_key][fieldName] = key;
+
+                        if (fieldName.toLowerCase().includes('top')) {
+                            bins[bin_group_key].channelIdTop = channel_id;
+                        } else if (fieldName.toLowerCase().includes('bottom')) {
+                            bins[bin_group_key].channelIdBottom = channel_id;
+                        }
                     });
         } catch (error) {
             console.error("Error fetching bin data:", error);
