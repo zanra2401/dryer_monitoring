@@ -1,29 +1,10 @@
 <script setup lang="ts">
-    import { ref } from 'vue';
     import { useDryerList } from '~/composable/useDryerList';
     import Header from '~/components/Header.vue';
     import GridLoader from '~/components/GridLoader.vue';
-    import { useDryerAuth } from '~/composable/useDryerAuth';
 
     const { current_data, fetch_dryer_list } = useDryerList();
     fetch_dryer_list();
-
-    const { user: sessionUser } = useDryerAuth();
-    const isSyncing = ref(false);
-    const toast = useToast();
-
-    const forceSync = async () => {
-        isSyncing.value = true;
-        try {
-            await $fetch('/api/system/force_fetch', { method: 'POST' });
-            toast.add({ title: 'Sinkronisasi telemetri berhasil!', color: 'success' });
-            await fetch_dryer_list(); // refresh active bin count etc
-        } catch (error: any) {
-            toast.add({ title: 'Gagal melakukan sinkronisasi manual', color: 'error' });
-        } finally {
-            isSyncing.value = false;
-        }
-    };
 </script>
 
 <template>
@@ -34,20 +15,7 @@
     </div>
     <div class="min-h-screeen" v-else>
         <Header />
-        
-        <div class="p-2 max-w-2xl mx-auto flex justify-end mt-2" v-if="sessionUser?.role === 'ADMIN' || sessionUser?.role === 'MANAGER'">
-            <UButton 
-                color="primary" 
-                variant="soft" 
-                icon="i-lucide-refresh-cw" 
-                size="sm"
-                :loading="isSyncing"
-                @click="forceSync"
-            >
-                Tarik Data Sekarang (Manual)
-            </UButton>
-        </div>
-
+        <br/>
         <div class="p-2">
             <NuxtLink :to="`/dryer/${dryer.areaId}`" class="w-full" v-for="dryer in current_data.data" :key="dryer.id">    
                 <div class="w-full max-w-2xl mx-auto rounded-lg cursor-pointer border-2 border-slate-200 bg-white p-4 text-left transition-all hover:border-blue-300 hover:shadow-md dark:border-slate-700 dark:bg-slate-800 dark:hover:border-blue-500 mb-3 flex items-center justify-between">
