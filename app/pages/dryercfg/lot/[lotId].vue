@@ -189,6 +189,15 @@ const formatNumber = (value: number | string | null) => {
   }).format(parsed);
 };
 
+const formatLogDecimal = (value: number | string | null) => {
+  if (value === null || value === undefined) {
+    return "0.00";
+  }
+
+  const parsed = Number(value);
+  return Number.isNaN(parsed) ? "0.00" : parsed.toFixed(2);
+};
+
 const formatDateTime = (value: string | null) => {
   if (!value) {
     return "-";
@@ -534,27 +543,27 @@ const logColumns: TableColumn<LogRow>[] = [
   {
     accessorKey: "tempTop",
     header: "Temp Top",
-    cell: ({ row }) => formatNumber(row.original.tempTop),
+    cell: ({ row }) => formatLogDecimal(row.original.tempTop),
   },
   {
     accessorKey: "rhTop",
     header: "RH Top",
-    cell: ({ row }) => formatNumber(row.original.rhTop),
+    cell: ({ row }) => formatLogDecimal(row.original.rhTop),
   },
   {
     accessorKey: "tempBottom",
     header: "Temp Bottom",
-    cell: ({ row }) => formatNumber(row.original.tempBottom),
+    cell: ({ row }) => formatLogDecimal(row.original.tempBottom),
   },
   {
     accessorKey: "rhBottom",
     header: "RH Bottom",
-    cell: ({ row }) => formatNumber(row.original.rhBottom),
+    cell: ({ row }) => formatLogDecimal(row.original.rhBottom),
   },
   {
     accessorKey: "mc",
     header: "MC",
-    cell: ({ row }) => formatNumber(row.original.mc),
+    cell: ({ row }) => formatLogDecimal(row.original.mc),
   },
   {
     accessorKey: "remark",

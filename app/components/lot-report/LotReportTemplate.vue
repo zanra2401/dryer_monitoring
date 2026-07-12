@@ -43,41 +43,29 @@ const rows = computed(() => {
         <col class="col-j">
         <col class="col-k">
         <col class="col-l">
-        <col class="col-m">
-        <col class="col-n">
-        <col class="col-o">
       </colgroup>
 
       <tbody>
         <tr>
-          <td colspan="14" class="blank-row" />
+          <td colspan="11" class="blank-row" />
         </tr>
 
         <tr>
-          <td />
-          <td class="toolbar-cell">
-            DOWNLOAD
-          </td>
-          <td colspan="6" />
-          <td class="toolbar-cell">
-            PRINT PDF
-          </td>
-          <td colspan="5" />
+          <td colspan="11" class="blank-row" />
         </tr>
 
         <tr>
-          <td colspan="14" class="blank-row" />
+          <td colspan="11" class="blank-row" />
         </tr>
 
         <tr>
-          <td colspan="10" class="report-title">
+          <td colspan="11" class="report-title">
             DRYING MONITORING REPORT
           </td>
-          <td colspan="4" />
         </tr>
 
         <tr>
-          <td colspan="14" class="blank-row" />
+          <td colspan="11" class="blank-row" />
         </tr>
 
         <tr class="summary-row">
@@ -99,6 +87,7 @@ const rows = computed(() => {
           <td class="summary-value summary-value-datetime">
             : {{ report.startTime || "" }}
           </td>
+          <td class="summary-gap" />
           <td class="summary-label">
             MC Start
           </td>
@@ -110,14 +99,6 @@ const rows = computed(() => {
           </td>
           <td class="summary-value">
             : {{ report.totalDrying || "" }}
-          </td>
-          <td />
-          <td />
-          <td class="formula-label">
-            Total Drying
-          </td>
-          <td class="formula-text">
-            =Date/Time Stop-Date/Time Start
           </td>
         </tr>
 
@@ -140,6 +121,7 @@ const rows = computed(() => {
           <td class="summary-value summary-value-datetime">
             : {{ report.downTime || "" }}
           </td>
+          <td class="summary-gap" />
           <td class="summary-label">
             MC Down
           </td>
@@ -151,14 +133,6 @@ const rows = computed(() => {
           </td>
           <td class="summary-value">
             : {{ report.dryDown || "" }}
-          </td>
-          <td />
-          <td />
-          <td class="formula-label">
-            Dry down
-          </td>
-          <td class="formula-text">
-            =MC End-MC Start
           </td>
         </tr>
 
@@ -181,6 +155,7 @@ const rows = computed(() => {
           <td class="summary-value summary-value-datetime">
             : {{ report.stopTime || "" }}
           </td>
+          <td class="summary-gap" />
           <td class="summary-label">
             MC End
           </td>
@@ -193,18 +168,10 @@ const rows = computed(() => {
           <td class="summary-value">
             : {{ report.dryingRate || "" }}
           </td>
-          <td />
-          <td />
-          <td class="formula-label">
-            Drying Rate
-          </td>
-          <td class="formula-text">
-            = Total Drying/Dry Down
-          </td>
         </tr>
 
         <tr>
-          <td colspan="14" class="blank-row" />
+          <td colspan="11" class="blank-row" />
         </tr>
 
         <tr>
@@ -229,7 +196,7 @@ const rows = computed(() => {
           <td colspan="2" rowspan="2" class="table-head">
             Remaks
           </td>
-          <td colspan="4" rowspan="2" class="table-head-spacer" />
+          <td rowspan="2" class="table-head-spacer" />
         </tr>
 
         <tr>
@@ -257,7 +224,7 @@ const rows = computed(() => {
           <td class="body-cell body-cell-small" />
           <td class="body-cell" />
           <td colspan="2" class="body-cell remarks-cell" />
-          <td colspan="4" class="body-spacer" />
+          <td class="body-spacer" />
         </tr>
 
         <tr v-for="(row, index) in rows" :key="index">
@@ -288,7 +255,7 @@ const rows = computed(() => {
           <td colspan="2" class="body-cell remarks-cell">
             {{ row.remarks }}
           </td>
-          <td colspan="4" class="body-spacer" />
+          <td class="body-spacer" />
         </tr>
       </tbody>
     </table>
@@ -300,12 +267,13 @@ const rows = computed(() => {
   width: 100%;
   overflow-x: auto;
   background: white;
+  font-family: Calibri, Arial, sans-serif;
 }
 
 .lot-report-table {
   border-collapse: collapse;
   table-layout: fixed;
-  width: 954px;
+  width: 762px;
   margin: 0 auto;
   background: white;
   color: #000;
@@ -314,10 +282,10 @@ const rows = computed(() => {
 .lot-report-table td {
   box-sizing: border-box;
   height: 14.45pt;
-  padding: 0 4px;
+  padding: 0 3px;
   vertical-align: middle;
   overflow: hidden;
-  line-height: 1;
+  line-height: 1.15;
 }
 
 .col-b { width: 52px; }
@@ -331,15 +299,6 @@ const rows = computed(() => {
 .col-j { width: 70px; }
 .col-k { width: 64px; }
 .col-l { width: 64px; }
-.col-m { width: 64px; }
-.col-n { width: 64px; }
-.col-o { width: 64px; }
-
-.toolbar-cell {
-  border: 1px solid #000;
-  font: 11pt Calibri, sans-serif;
-  text-align: center;
-}
 
 .blank-row {
   height: 14.45pt;
@@ -347,18 +306,20 @@ const rows = computed(() => {
 
 .report-title {
   height: 23.45pt !important;
-  font: 700 18pt Calibri, sans-serif;
+  overflow: visible !important;
+  font: 700 16pt/23.45pt Calibri, sans-serif;
   text-align: center;
 }
 
 .summary-row td {
   height: 14.45pt;
-  font: 8pt Arial, sans-serif;
+  font: 7pt/14.45pt Arial, sans-serif;
   white-space: nowrap;
 }
 
 .summary-label,
-.summary-value {
+.summary-value,
+.summary-gap {
   color: #000;
 }
 
@@ -367,17 +328,9 @@ const rows = computed(() => {
 }
 
 .summary-value-datetime {
-  white-space: normal;
-  line-height: 1.05;
-  font-size: 7.5pt;
-}
-
-.formula-label,
-.formula-text {
-  color: #f00;
-  font: 7pt Arial, sans-serif;
-  line-height: 1;
-  white-space: normal;
+  font-size: 6.2pt;
+  line-height: 14.45pt;
+  white-space: nowrap;
 }
 
 .table-head {
@@ -385,9 +338,9 @@ const rows = computed(() => {
   background: #c0c0c0;
   color: #000;
   text-align: center;
-  font: 700 7pt Arial, sans-serif;
+  font: 700 6.2pt/1.15 Arial, sans-serif;
   white-space: normal;
-  padding: 0 2px;
+  padding: 0 1px;
 }
 
 .table-head-rh {
@@ -399,8 +352,8 @@ const rows = computed(() => {
   background: #bfbfbf;
   color: #000;
   text-align: center;
-  font: 700 7pt Arial, sans-serif;
-  padding: 0 2px;
+  font: 700 6.2pt/1.15 Arial, sans-serif;
+  padding: 0 1px;
 }
 
 .table-head-spacer {
@@ -408,18 +361,25 @@ const rows = computed(() => {
   background: transparent;
 }
 
+.table-head,
+.table-subhead,
+.summary-row td,
+.body-cell {
+  box-sizing: border-box;
+}
+
 .body-cell {
   border: 1px solid #000;
-  font: 10pt Calibri, sans-serif;
+  font: 7.2pt/14.45pt Calibri, sans-serif;
   white-space: nowrap;
 }
 
 .body-cell-small {
-  font: 8pt Arial, sans-serif;
+  font: 6.6pt/14.45pt Arial, sans-serif;
 }
 
 .body-cell-date {
-  font: 8.5pt Arial, sans-serif;
+  font: 5.7pt/14.45pt Arial, sans-serif;
 }
 
 .body-cell-center {
@@ -434,6 +394,7 @@ const rows = computed(() => {
 .remarks-cell {
   text-align: center;
   white-space: nowrap;
+  font-size: 5.9pt;
 }
 
 .body-spacer {

@@ -75,158 +75,174 @@ export const useLotReportExport = () => {
 
     const export_pdf = async (report: LotReportData, filename: string) => {
         const { jsPDF } = await import("jspdf");
+
         const pdf = new jsPDF({
-            orientation: "landscape",
+            orientation: "portrait",
             unit: "mm",
             format: "a4",
             compress: true,
         });
 
         const pageWidth = pdf.internal.pageSize.getWidth();
-        const pageHeight = pdf.internal.pageSize.getHeight();
-        const marginX = 5;
-        const marginY = 5;
-        const designWidth = 282;
-        const designHeight = 200;
-        const scale = Math.min((pageWidth - marginX * 2) / designWidth, (pageHeight - marginY * 2) / designHeight);
-        const originX = (pageWidth - designWidth * scale) / 2;
-        const originY = (pageHeight - designHeight * scale) / 2;
-        const x = (value: number) => originX + value * scale;
-        const y = (value: number) => originY + value * scale;
-        const w = (value: number) => value * scale;
-
-        const tableCols: number[] = [26, 16, 16, 22, 22, 21, 21, 18, 29, 29];
-        const tableX = 0;
-        const tableY = 55;
-        const headerHeight = 12;
-        const rowHeight = 3.25;
+        const tableX = 6;
+        const tableY = 52;
+        const tableCols = [20, 14, 14, 20, 20, 20, 20, 16, 54];
         const tableWidth = tableCols.reduce((total, value) => total + value, 0);
+        const rowHeight = 4.35;
+        const headerTopHeight = 6.2;
+        const headerSubHeight = 4.4;
+        const headerHeight = headerTopHeight + headerSubHeight;
+        const rows = ensureRows(report.rows);
 
-        const colWidth = (index: number) => tableCols[index] ?? 0;
         const colLeft = (index: number) => tableX + tableCols.slice(0, index).reduce((total, value) => total + value, 0);
-        const cellText = (text: string, left: number, top: number, width: number, height: number, options: {
-            align?: "left" | "center" | "right";
-            fontSize?: number;
-            bold?: boolean;
-            color?: [number, number, number];
-            maxLines?: number;
-        } = {}) => {
-            const fontSize = options.fontSize ?? 7.5;
-            pdf.setFont("helvetica", options.bold ? "bold" : "normal");
-            pdf.setFontSize(fontSize * scale);
-            pdf.setTextColor(...(options.color ?? [0, 0, 0]));
+        const colWidth = (index: number) => tableCols[index] ?? 0;
 
-            const lines = pdf.splitTextToSize(text, w(width - 1.2)).slice(0, options.maxLines ?? 2);
-            const lineHeight = fontSize * 0.36 * scale;
-            const baseY = y(top) + (w(height) - lineHeight * (lines.length - 1)) / 2 + lineHeight * 0.35;
-            const textX = options.align === "center"
-                ? x(left + width / 2)
-                : options.align === "right"
-                    ? x(left + width - 0.8)
-                    : x(left + 0.8);
+        const setFont = (size: number, bold = false) => {
+            pdf.setFont("helvetica", bold ? "bold" : "normal");
+            pdf.setFontSize(size);
+            pdf.setTextColor(0, 0, 0);
+        };
 
-            pdf.text(lines, textX, baseY, {
-                align: options.align ?? "left",
+        const fitFontSize = (text: string, maxWidth: number, startSize: number, minSize = 3.2) => {
+            let size = startSize;
+
+            while (size > minSize) {
+                pdf.setFontSize(size);
+                if (pdf.getTextWidth(text) <= maxWidth) {
+                    return size;
+                }
+
+                size -= 0.2;
+            }
+
+            return minSize;
+        };
+
+        const drawText = (
+            textValue: string | number | null | undefined,
+            left: number,
+            top: number,
+            width: number,
+            height: number,
+            options: {
+                align?: "left" | "center" | "right";
+                fontSize?: number;
+                minFontSize?: number;
+                bold?: boolean;
+                padding?: number;
+            } = {},
+        ) => {
+            const text = textValue === null || textValue === undefined ? "" : String(textValue);
+            const padding = options.padding ?? 1;
+            const align = options.align ?? "left";
+            const startSize = options.fontSize ?? 6;
+            setFont(startSize, options.bold);
+            const finalSize = fitFontSize(text, Math.max(width - padding * 2, 1), startSize, options.minFontSize ?? 3.2);
+            setFont(finalSize, options.bold);
+
+            const x = align === "center"
+                ? left + width / 2
+                : align === "right"
+                    ? left + width - padding
+                    : left + padding;
+            const y = top + height / 2 + finalSize * 0.13;
+
+            pdf.text(text, x, y, {
+                align,
                 baseline: "middle",
             });
         };
 
-        const strokeRect = (left: number, top: number, width: number, height: number, fill?: [number, number, number]) => {
+        const drawCell = (
+            left: number,
+            top: number,
+            width: number,
+            height: number,
+            fill?: [number, number, number],
+        ) => {
             if (fill) {
                 pdf.setFillColor(...fill);
             }
 
             pdf.setDrawColor(0, 0, 0);
-            pdf.setLineWidth(0.18 * scale);
-            pdf.rect(x(left), y(top), w(width), w(height), fill ? "FD" : "S");
+            pdf.setLineWidth(0.18);
+            pdf.rect(left, top, width, height, fill ? "FD" : "S");
         };
 
         pdf.setFillColor(255, 255, 255);
-        pdf.rect(0, 0, pageWidth, pageHeight, "F");
-        pdf.setLineWidth(0.2 * scale);
+        pdf.rect(0, 0, pdf.internal.pageSize.getWidth(), pdf.internal.pageSize.getHeight(), "F");
 
-        strokeRect(17, 0, 26, 5);
-        cellText("DOWNLOAD", 17, 0, 26, 5, { align: "center", fontSize: 6.2 });
-        strokeRect(159, 0, 26, 5);
-        cellText("PRINT PDF", 159, 0, 26, 5, { align: "center", fontSize: 6.2 });
-
-        cellText("DRYING MONITORING REPORT", 0, 14, 220, 10, {
+        setFont(13, true);
+        pdf.text("DRYING MONITORING REPORT", pageWidth / 2, 25, {
             align: "center",
-            fontSize: 13.5,
-            bold: true,
-            maxLines: 1,
+            baseline: "middle",
         });
 
         const summaryRows = [
-            ["Bin No", report.binNumber ? String(report.binNumber) : "", "Status Quality", report.quality, "Date/Time Start", report.startTime, "MC Start", report.mcStart, "Total Drying", report.totalDrying],
+            ["Bin No", report.binNumber, "Status Quality", report.quality, "Date/Time Start", report.startTime, "MC Start", report.mcStart, "Total Drying", report.totalDrying],
             ["Lot No", report.lotNumber, "Net To Bin (Kg)", report.netToBin, "Date/Time Down", report.downTime, "MC Down", report.mcDown, "Dry down", report.dryDown],
             ["Varietas", report.hybrid, "Depth (Meter)", report.depthMeter, "Date/Time Stop", report.stopTime, "MC End", report.mcEnd, "Drying Rate", report.dryingRate],
         ];
-        const summaryY = 30;
+        const summaryY = 34;
+        const summaryGapY = 6.3;
         const summaryPairs: Array<[number, number, number]> = [
-            [0, 16, 36],
-            [42, 27, 28],
-            [82, 31, 34],
-            [150, 14, 15],
-            [188, 27, 29],
+            [6, 13, 27],
+            [45, 24, 25],
+            [82, 27, 34],
+            [126, 18, 23],
+            [158, 25, 25],
         ];
 
         summaryRows.forEach((row, rowIndex) => {
             summaryPairs.forEach(([left, labelWidth, valueWidth], pairIndex) => {
-                const label = row[pairIndex * 2] ?? "";
-                const value = row[pairIndex * 2 + 1] ?? "";
-                const isDateTimeValue = label.startsWith("Date/Time");
-                cellText(label, left, summaryY + rowIndex * 6.6, labelWidth, 5, { fontSize: 5.8, maxLines: 1 });
-                cellText(`: ${value}`, left + labelWidth, summaryY + rowIndex * 6.6, valueWidth, 5, {
-                    fontSize: isDateTimeValue ? 4.6 : 5.8,
-                    maxLines: 1,
+                const label = String(row[pairIndex * 2] ?? "");
+                const value = String(row[pairIndex * 2 + 1] ?? "");
+                const top = summaryY + rowIndex * summaryGapY;
+                drawText(label, left, top, labelWidth, 4.5, {
+                    fontSize: 5.2,
+                    minFontSize: 4.2,
+                    padding: 0,
+                });
+                drawText(`: ${value}`, left + labelWidth, top, valueWidth, 4.5, {
+                    fontSize: label.startsWith("Date/Time") ? 4.5 : 5.2,
+                    minFontSize: 3.4,
+                    padding: 0,
                 });
             });
         });
 
-        const formulas: Array<[string, string]> = [
-            ["Total Drying", "=Date/Time Stop-Date/Time Start"],
-            ["Dry down", "=MC End-MC Start"],
-            ["Drying Rate", "= Total Drying/Dry Down"],
-        ];
-
-        formulas.forEach(([label, formula], index) => {
-            cellText(label, 244, summaryY + index * 6.6, 18, 5, { fontSize: 5.3, color: [255, 0, 0], maxLines: 1 });
-            cellText(formula, 262, summaryY + index * 6.6, 20, 5, { fontSize: 4.3, color: [255, 0, 0], maxLines: 2 });
-        });
-
-        strokeRect(tableX, tableY, colWidth(0), headerHeight, [192, 192, 192]);
-        strokeRect(colLeft(1), tableY, colWidth(1), headerHeight, [192, 192, 192]);
-        strokeRect(colLeft(2), tableY, colWidth(2), headerHeight, [192, 192, 192]);
-        strokeRect(colLeft(3), tableY, colWidth(3) + colWidth(4), headerHeight / 2, [192, 192, 192]);
-        strokeRect(colLeft(5), tableY, colWidth(5) + colWidth(6), headerHeight / 2, [192, 192, 192]);
-        strokeRect(colLeft(7), tableY, colWidth(7), headerHeight, [192, 192, 192]);
-        strokeRect(colLeft(8), tableY, colWidth(8) + colWidth(9), headerHeight, [192, 192, 192]);
+        drawCell(tableX, tableY, colWidth(0), headerHeight, [192, 192, 192]);
+        drawCell(colLeft(1), tableY, colWidth(1), headerHeight, [192, 192, 192]);
+        drawCell(colLeft(2), tableY, colWidth(2), headerHeight, [192, 192, 192]);
+        drawCell(colLeft(3), tableY, colWidth(3) + colWidth(4), headerTopHeight, [192, 192, 192]);
+        drawCell(colLeft(5), tableY, colWidth(5) + colWidth(6), headerTopHeight, [192, 192, 192]);
+        drawCell(colLeft(7), tableY, colWidth(7), headerHeight, [192, 192, 192]);
+        drawCell(colLeft(8), tableY, colWidth(8), headerHeight, [192, 192, 192]);
 
         for (let index = 3; index <= 6; index += 1) {
-            strokeRect(colLeft(index), tableY + headerHeight / 2, colWidth(index), headerHeight / 2, [191, 191, 191]);
+            drawCell(colLeft(index), tableY + headerTopHeight, colWidth(index), headerSubHeight, [191, 191, 191]);
         }
 
-        cellText("Date/Time", tableX, tableY, colWidth(0), headerHeight, { align: "center", bold: true, fontSize: 5.2, maxLines: 1 });
-        cellText("Hour", colLeft(1), tableY, colWidth(1), headerHeight, { align: "center", bold: true, fontSize: 5.2, maxLines: 1 });
-        cellText("Minute", colLeft(2), tableY, colWidth(2), headerHeight, { align: "center", bold: true, fontSize: 5.2, maxLines: 1 });
-        cellText("Suhu (C)", colLeft(3), tableY, colWidth(3) + colWidth(4), headerHeight / 2, { align: "center", bold: true, fontSize: 5, maxLines: 1 });
-        cellText("RH (%)", colLeft(5), tableY, colWidth(5) + colWidth(6), headerHeight / 2, { align: "center", bold: true, fontSize: 5, maxLines: 1 });
-        cellText("MC (%)", colLeft(7), tableY, colWidth(7), headerHeight, { align: "center", bold: true, fontSize: 5.2, maxLines: 1 });
-        cellText("Remarks", colLeft(8), tableY, colWidth(8) + colWidth(9), headerHeight, { align: "center", bold: true, fontSize: 5.2, maxLines: 1 });
+        drawText("Date/Time", tableX, tableY, colWidth(0), headerHeight, { align: "center", bold: true, fontSize: 4.8, padding: 0.5 });
+        drawText("Hour", colLeft(1), tableY, colWidth(1), headerHeight, { align: "center", bold: true, fontSize: 4.8, padding: 0.5 });
+        drawText("Minute", colLeft(2), tableY, colWidth(2), headerHeight, { align: "center", bold: true, fontSize: 4.8, padding: 0.5 });
+        drawText("Suhu (C)", colLeft(3), tableY, colWidth(3) + colWidth(4), headerTopHeight, { align: "center", bold: true, fontSize: 4.8, padding: 0.5 });
+        drawText("RH (%)", colLeft(5), tableY, colWidth(5) + colWidth(6), headerTopHeight, { align: "center", bold: true, fontSize: 4.8, padding: 0.5 });
+        drawText("MC (%)", colLeft(7), tableY, colWidth(7), headerHeight, { align: "center", bold: true, fontSize: 4.8, padding: 0.5 });
+        drawText("Remarks", colLeft(8), tableY, colWidth(8), headerHeight, { align: "center", bold: true, fontSize: 4.8, padding: 0.5 });
+
         ["Top", "Down", "Top", "Down"].forEach((label, index) => {
-            cellText(label, colLeft(index + 3), tableY + headerHeight / 2, colWidth(index + 3), headerHeight / 2, {
+            drawText(label, colLeft(index + 3), tableY + headerTopHeight, colWidth(index + 3), headerSubHeight, {
                 align: "center",
                 bold: true,
-                fontSize: 5.4,
-                maxLines: 1,
+                fontSize: 4.7,
+                padding: 0.5,
             });
         });
 
-        const rows = ensureRows(report.rows);
         rows.forEach((row, rowIndex) => {
             const top = tableY + headerHeight + rowIndex * rowHeight;
-            const values: string[] = [
+            const values = [
                 row.date,
                 row.hour,
                 row.minute,
@@ -239,24 +255,20 @@ export const useLotReportExport = () => {
             ];
 
             tableCols.forEach((width, index) => {
-                if (index === 9) {
-                    return;
-                }
-
                 const left = colLeft(index);
-                const mergedWidth = index === 8 ? colWidth(8) + colWidth(9) : width;
-                strokeRect(left, top, mergedWidth, rowHeight);
-                cellText(values[index] ?? "", left, top, mergedWidth, rowHeight, {
+                drawCell(left, top, width, rowHeight);
+                drawText(values[index], left, top, width, rowHeight, {
                     align: index === 0 ? "left" : "center",
-                    fontSize: index === 0 ? 4.6 : index === 8 ? 4.8 : 5,
-                    maxLines: 1,
+                    fontSize: index === 0 ? 4 : index === 8 ? 4.2 : 5.1,
+                    minFontSize: index === 8 ? 2.8 : 3,
+                    padding: index === 8 ? 0.6 : 0.8,
                 });
             });
         });
 
         pdf.setDrawColor(0, 0, 0);
-        pdf.setLineWidth(0.35 * scale);
-        pdf.rect(x(tableX), y(tableY), w(tableWidth), w(headerHeight + rows.length * rowHeight), "S");
+        pdf.setLineWidth(0.32);
+        pdf.rect(tableX, tableY, tableWidth, headerHeight + rows.length * rowHeight, "S");
         pdf.save(`${sanitizeFilename(filename)}.pdf`);
     };
 

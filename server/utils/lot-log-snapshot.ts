@@ -15,6 +15,7 @@ export type LotSnapshotLogRow = {
   remark: string | null;
   sourceBinLogId: number | null;
   sourceTimestampThingspeak: Date | null;
+  dataPoints: number;
 };
 
 export const SYNTHETIC_PREFIX_MULTIPLIER = 10_000_000_000_000;
@@ -31,6 +32,17 @@ export const parseSyntheticLogId = (logId: number) => {
     const lotId = Math.floor(logId / SYNTHETIC_PREFIX_MULTIPLIER);
     const timestampMs = logId % SYNTHETIC_PREFIX_MULTIPLIER;
     return { lotId, timestampMs, timestamp: new Date(timestampMs) };
+};
+
+const average = (values: Array<number | null>) => {
+    const validValues = values.filter((value): value is number => value !== null);
+
+    if (validValues.length === 0) {
+        return null;
+    }
+
+    const total = validValues.reduce((sum, value) => sum + value, 0);
+    return Number((total / validValues.length).toFixed(2));
 };
 
 export async function getLotSnapshotLogTimeline(lotId: number) {
@@ -93,29 +105,52 @@ export async function getLotSnapshotLogTimeline(lotId: number) {
     const INTERVAL_MS = 30 * 60 * 1000; // 30 mins
     const startMs = startTime.getTime();
     const endMs = endTime.getTime();
+    const getIntervalKey = (timestamp: Date) => {
+        const ts = timestamp.getTime();
+
+        if (ts < startMs) {
+            return null;
+        }
+
+        const diff = ts - startMs;
+        const index = Math.floor(diff / INTERVAL_MS);
+        return startMs + (index * INTERVAL_MS);
+    };
+
+    const binLogMap = new Map<number, typeof binLogs>();
+    for (const log of binLogs) {
+        const key = getIntervalKey(log.timestampThingspeak);
+
+        if (key === null) {
+            continue;
+        }
+
+        if (!binLogMap.has(key)) {
+            binLogMap.set(key, []);
+        }
+
+        binLogMap.get(key)!.push(log);
+    }
+
+    const mcLogMap = new Map<number, typeof mcLogs[number]>();
+    for (const log of mcLogs) {
+        const key = getIntervalKey(log.createdAt);
+
+        if (key !== null) {
+            mcLogMap.set(key, log);
+        }
+    }
 
     const logs: LotSnapshotLogRow[] = [];
     let currentMs = startMs;
 
     while (currentMs <= endMs) {
-        const nextMs = currentMs + INTERVAL_MS;
-
-        // Filter bin logs in this [currentMs, nextMs) slot
-        const slotBinLogs = binLogs.filter(
-            (log) => log.timestampThingspeak.getTime() >= currentMs && log.timestampThingspeak.getTime() < nextMs
-        );
+        const slotBinLogs = binLogMap.get(currentMs) ?? [];
         const latestBinLog = slotBinLogs[slotBinLogs.length - 1] ?? null;
-
-        // Filter MC logs in this [currentMs, nextMs) slot
-        const slotMcLogs = mcLogs.filter(
-            (log) => log.createdAt.getTime() >= currentMs && log.createdAt.getTime() < nextMs
-        );
-        const latestMcLog = slotMcLogs[slotMcLogs.length - 1] ?? null;
+        const latestMcLog = mcLogMap.get(currentMs) ?? null;
 
         let statusBin = "UPAIR";
-        if (lot.status === "DRIED" && lot.endTime && currentMs >= new Date(lot.endTime).getTime()) {
-            statusBin = "DRIED";
-        } else if (lot.downAirAt) {
+        if (lot.downAirAt) {
             const downAirMs = new Date(lot.downAirAt).getTime();
             statusBin = currentMs >= downAirMs ? "DOWNAIR" : "UPAIR";
         }
@@ -126,15 +161,16 @@ export async function getLotSnapshotLogTimeline(lotId: number) {
             isStandaloneMcLog: false,
             timestampThingspeak: new Date(currentMs),
             statusBin,
-            tempTop: latestBinLog?.tempTop ?? null,
-            rhTop: latestBinLog?.rhTop ?? null,
-            tempBottom: latestBinLog?.tempBottom ?? null,
-            rhBottom: latestBinLog?.rhBottom ?? null,
+            tempTop: average(slotBinLogs.map((log) => log.tempTop)),
+            rhTop: average(slotBinLogs.map((log) => log.rhTop)),
+            tempBottom: average(slotBinLogs.map((log) => log.tempBottom)),
+            rhBottom: average(slotBinLogs.map((log) => log.rhBottom)),
             mc: latestMcLog?.mc ?? null,
             checkerName: latestMcLog?.checkerName ?? null,
             remark: latestMcLog?.remark ?? latestBinLog?.remark ?? null,
             sourceBinLogId: latestBinLog?.binLogId ?? null,
             sourceTimestampThingspeak: latestBinLog?.timestampThingspeak ?? null,
+            dataPoints: slotBinLogs.length,
         });
 
         currentMs += INTERVAL_MS;

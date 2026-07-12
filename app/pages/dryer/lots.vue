@@ -79,7 +79,7 @@ const isInitialLoading = ref(true);
 const searchInput = ref("");
 
 // Area Filter Selection
-const areaFilterModel = ref<Array<{ value: number; label: string }>>([]);
+const areaFilterModel = ref<number[]>([]);
 const areaFilterItems = computed(() => {
   return [
     { value: ALL_AREA_FILTER_VALUE, label: "All Areas" },
@@ -89,12 +89,14 @@ const areaFilterItems = computed(() => {
 const areaFilterLabel = computed(() => {
   if (areaFilterModel.value.length === 0) return "All areas";
   if (areaFilterModel.value.length === dryerAreas.value.length) return "All areas";
-  if (areaFilterModel.value.length === 1) return areaFilterModel.value[0].label;
+  if (areaFilterModel.value.length === 1) {
+    return dryerAreas.value.find((area) => area.value === areaFilterModel.value[0])?.label ?? "1 area";
+  }
   return `${areaFilterModel.value.length} areas`;
 });
 
 // Status Filter Selection
-const statusFilterModel = ref<Array<{ value: LotStatus; label: string }>>([]);
+const statusFilterModel = ref<LotStatus[]>([]);
 const statusFilterItems = computed(() => {
   return [
     { value: ALL_STATUS_FILTER_VALUE, label: "All Statuses" },
@@ -106,12 +108,14 @@ const statusFilterItems = computed(() => {
 const statusFilterLabel = computed(() => {
   if (statusFilterModel.value.length === 0) return "All statuses";
   if (statusFilterModel.value.length === LOT_STATUSES.length) return "All statuses";
-  if (statusFilterModel.value.length === 1) return statusFilterModel.value[0].label;
+  if (statusFilterModel.value.length === 1) {
+    return statusLabels[statusFilterModel.value[0]];
+  }
   return `${statusFilterModel.value.length} statuses`;
 });
 
 // Bin Filter Selection
-const binFilterModel = ref<Array<{ value: number; label: string }>>([]);
+const binFilterModel = ref<number[]>([]);
 const binFilterItems = computed(() => {
   return [
     { value: ALL_BIN_FILTER_VALUE, label: "All Bins" },
@@ -121,7 +125,9 @@ const binFilterItems = computed(() => {
 const binFilterLabel = computed(() => {
   if (binFilterModel.value.length === 0) return "All bins";
   if (binFilterModel.value.length === filterBinOptions.value.length) return "All bins";
-  if (binFilterModel.value.length === 1) return binFilterModel.value[0].label;
+  if (binFilterModel.value.length === 1) {
+    return filterBinOptions.value.find((bin) => bin.value === binFilterModel.value[0])?.label ?? "1 bin";
+  }
   return `${binFilterModel.value.length} bins`;
 });
 
@@ -130,14 +136,14 @@ const activeAreaFilterIds = computed(() => {
   if (areaFilterModel.value.length === 0) {
     return dryerAreas.value.map((area) => area.value);
   }
-  return areaFilterModel.value.map((area) => area.value);
+  return areaFilterModel.value;
 });
 
 async function refreshFilterBins(areaIds: number[]) {
   try {
-    await fetchFilterBinOptions(areaIds.length > 0 ? areaIds : [0]);
+    await fetchFilterBinOptions(areaIds.length > 0 ? areaIds : [0], true);
     binFilterModel.value = binFilterModel.value.filter((model) =>
-      filterBinOptions.value.some((bin) => bin.value === model.value)
+      filterBinOptions.value.some((bin) => bin.value === model)
     );
   } catch (error) {
     toast.add({
@@ -173,40 +179,81 @@ async function resetFilters() {
   filter_data.value.search = "";
   
   pagination_data.value.offset = 0;
+  await refreshFilterBins(initialAreaIds.length > 0 ? initialAreaIds : dryerAreas.value.map((area) => area.value));
   await fetch_lot_list();
 }
 
+const getLimitedDefaultAreaIds = () => {
+  const isLimited = sessionUser.value?.role === "OPERATOR" || sessionUser.value?.role === "CLIENT";
+  return isLimited && sessionUser.value?.areaIds ? sessionUser.value.areaIds : [];
+};
+
+const normalizeSelectValues = (value: unknown) => {
+  const values = Array.isArray(value) ? value : [];
+
+  return values.map((item) => {
+    if (item && typeof item === "object" && "value" in item) {
+      return (item as { value: unknown }).value;
+    }
+
+    return item;
+  });
+};
+
+const normalizeNumberValues = (value: unknown) => {
+  return normalizeSelectValues(value)
+    .map((item) => Number(item))
+    .filter((item) => Number.isInteger(item) && item > 0);
+};
+
+const normalizeStatusValues = (value: unknown) => {
+  const statusSet = new Set<string>(LOT_STATUSES);
+
+  return normalizeSelectValues(value)
+    .filter((item): item is LotStatus => typeof item === "string" && statusSet.has(item));
+};
+
 // Handle Filters Change
-async function handleAreaFilterChange(val: any[]) {
-  if (val.some((item) => item.value === ALL_AREA_FILTER_VALUE)) {
+async function handleAreaFilterChange(val: unknown) {
+  const values = normalizeSelectValues(val);
+
+  if (values.includes(ALL_AREA_FILTER_VALUE)) {
     areaFilterModel.value = [];
-    const isLimited = sessionUser.value?.role === "OPERATOR" || sessionUser.value?.role === "CLIENT";
-    const initialAreaIds = isLimited && sessionUser.value?.areaIds ? sessionUser.value.areaIds : [];
-    await set_area_ids(initialAreaIds);
+    await set_area_ids(getLimitedDefaultAreaIds());
     return;
   }
-  areaFilterModel.value = val;
-  await set_area_ids(val.map((item) => item.value));
+
+  const areaIds = normalizeNumberValues(val);
+  areaFilterModel.value = areaIds;
+  await set_area_ids(areaIds.length > 0 ? areaIds : getLimitedDefaultAreaIds());
 }
 
-async function handleStatusFilterChange(val: any[]) {
-  if (val.some((item) => item.value === ALL_STATUS_FILTER_VALUE)) {
+async function handleStatusFilterChange(val: unknown) {
+  const values = normalizeSelectValues(val);
+
+  if (values.includes(ALL_STATUS_FILTER_VALUE)) {
     statusFilterModel.value = [];
     await set_statuses([]);
     return;
   }
-  statusFilterModel.value = val;
-  await set_statuses(val.map((item) => item.value));
+
+  const statuses = normalizeStatusValues(val);
+  statusFilterModel.value = statuses;
+  await set_statuses(statuses);
 }
 
-async function handleBinFilterChange(val: any[]) {
-  if (val.some((item) => item.value === ALL_BIN_FILTER_VALUE)) {
+async function handleBinFilterChange(val: unknown) {
+  const values = normalizeSelectValues(val);
+
+  if (values.includes(ALL_BIN_FILTER_VALUE)) {
     binFilterModel.value = [];
     await set_bin_numbers([]);
     return;
   }
-  binFilterModel.value = val;
-  await set_bin_numbers(val.map((item) => item.value));
+
+  const binNumbers = normalizeNumberValues(val);
+  binFilterModel.value = binNumbers;
+  await set_bin_numbers(binNumbers);
 }
 
 // Pagination Page Size
@@ -393,12 +440,11 @@ onMounted(async () => {
     await fetch_dryer_area_options();
     
     // Set filter default agar terbatas areaIds jika limited role
-    const isLimited = sessionUser.value?.role === "OPERATOR" || sessionUser.value?.role === "CLIENT";
-    const initialAreaIds = isLimited && sessionUser.value?.areaIds ? sessionUser.value.areaIds : [];
+    const initialAreaIds = getLimitedDefaultAreaIds();
     
     filter_data.value.area_ids = initialAreaIds;
     
-    await refreshFilterBins(initialAreaIds);
+    await refreshFilterBins(initialAreaIds.length > 0 ? initialAreaIds : dryerAreas.value.map((area) => area.value));
     await fetch_lot_list();
   } catch (error) {
     toast.add({
