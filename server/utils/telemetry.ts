@@ -45,7 +45,7 @@ export interface BinWithChannel {
     } | null;
 }
 
-export function sliceFeedsIntoIntervals(
+export function sliceFeedsIntoIntervals( 
     feeds: FeedEntry[],
     startMs: number,
     endMs: number,
