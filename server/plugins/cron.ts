@@ -22,6 +22,8 @@ const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 interface FeedEntry {
     created_at?: string;
     createdAt?: string;
+    _isTop?: boolean;
+    _isBottom?: boolean;
     [key: string]: any;
 }
 
@@ -92,17 +94,22 @@ function averageFeeds(
     let sumRhBottom = 0, countRhBottom = 0;
 
     for (const feed of feeds) {
-        const tTop = parseNumber(feed[bin.fieldTempTop]);
-        if (tTop !== null && tTop >= 15 && tTop <= 70) { sumTempTop += tTop; countTempTop++; }
 
-        const rTop = parseNumber(feed[bin.fieldRhTop]);
-        if (rTop !== null && rTop >= 10 && rTop <= 99) { sumRhTop += rTop; countRhTop++; }
+        if (feed._isTop) {
+            const tTop = parseNumber(feed[bin.fieldTempTop]);
+            if (tTop !== null && tTop >= 15 && tTop <= 70) { sumTempTop += tTop; countTempTop++; }
 
-        const tBot = parseNumber(feed[bin.fieldTempBottom]);
-        if (tBot !== null && tBot >= 15 && tBot <= 70) { sumTempBottom += tBot; countTempBottom++; }
+            const rTop = parseNumber(feed[bin.fieldRhTop]);
+            if (rTop !== null && rTop >= 10 && rTop <= 99) { sumRhTop += rTop; countRhTop++; }
+        }
 
-        const rBot = parseNumber(feed[bin.fieldRhBottom]);
-        if (rBot !== null && rBot >= 10 && rBot <= 99) { sumRhBottom += rBot; countRhBottom++; }
+        if (feed._isBottom) {
+            const tBot = parseNumber(feed[bin.fieldTempBottom]);
+            if (tBot !== null && tBot >= 15 && tBot <= 70) { sumTempBottom += tBot; countTempBottom++; }
+
+            const rBot = parseNumber(feed[bin.fieldRhBottom]);
+            if (rBot !== null && rBot >= 10 && rBot <= 99) { sumRhBottom += rBot; countRhBottom++; }
+        }
     }
 
     return {
@@ -192,7 +199,13 @@ export default defineNitroPlugin((nitroApp) => {
                         );
                         
                         if (Array.isArray(feedResponse?.feeds)) {
-                            feeds.push(...feedResponse.feeds);
+                            const isTop = cid === bin.channelIdTop;
+                            const isBottom = cid === bin.channelIdBottom;
+                            feedResponse.feeds.forEach((f: FeedEntry) => {
+                                if (isTop) f._isTop = true;
+                                if (isBottom) f._isBottom = true;
+                                feeds.push(f);
+                            });
                         }
                         
                         // Rate limit protection antar channel jika ada lebih dari 1
