@@ -118,7 +118,7 @@ export default defineNitroPlugin((nitroApp) => {
     logger.info({ context: 'cron' }, "[cron] Menginisialisasi cron job telemetri Bin (Smart Gap Recovery)...");
 
     // Jalankan setiap 10 menit
-    const task = cron.schedule('*/10 * * * *', async () => {
+    const task = cron.schedule('*/5 * * * *', async () => {
         logger.info({ context: 'cron' }, "[cron] Menjalankan penarikan telemetri ThingSpeak...");
         let currentErrorMasterId: number | null = null;
 
