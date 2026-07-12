@@ -101,6 +101,12 @@ export function averageFeeds(
         }
     }
 
+    logger.info({ context: 'telemetry', binNumber: bin.binNumber, areaId: bin.areaId },
+        feeds.length > 0
+            ? `data telemetry ditemukan (${feeds.length} feed). Rata-rata: tempTop=${countTempTop > 0 ? (sumTempTop / countTempTop).toFixed(2) : 'null'}, rhTop=${countRhTop > 0 ? (sumRhTop / countRhTop).toFixed(2) : 'null'}, tempBottom=${countTempBottom > 0 ? (sumTempBottom / countTempBottom).toFixed(2) : 'null'}, rhBottom=${countRhBottom > 0 ? (sumRhBottom / countRhBottom).toFixed(2) : 'null'}`
+            : "tidak ada data telemetry ditemukan."
+    ); 
+
     return {
         tempTop: countTempTop > 0 ? Number((sumTempTop / countTempTop).toFixed(2)) : null,
         rhTop: countRhTop > 0 ? Number((sumRhTop / countRhTop).toFixed(2)) : null,

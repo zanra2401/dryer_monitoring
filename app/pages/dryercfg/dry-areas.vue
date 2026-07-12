@@ -8,7 +8,7 @@ import { useDryerList } from "~/composable/useDryerList";
 import { useDryerCRUD } from "~/composable/useDryerCRUD";
 import { useDryerAuth } from "~/composable/useDryerAuth";
 
-const isSyncing = ref(false);
+
 
 type DryerRow = {
   areaId: string;
@@ -119,18 +119,7 @@ onMounted(() => {
   fetch_dryer_list();
 });
 
-const forceSync = async () => {
-    isSyncing.value = true;
-    try {
-        await $fetch('/api/system/force_fetch', { method: 'POST' });
-        toast.add({ title: 'Sinkronisasi telemetri berhasil!', color: 'success' });
-        await fetch_dryer_list();
-    } catch (error: any) {
-        toast.add({ title: 'Gagal melakukan sinkronisasi manual', color: 'error' });
-    } finally {
-        isSyncing.value = false;
-    }
-};
+
 
 const openCreateModal = () => {
   create_state.value = true;
@@ -150,15 +139,7 @@ const openCreateModal = () => {
           </p>
         </div>
         <div class="flex gap-2">
-            <UButton
-              v-if="sessionUser?.role === 'ADMIN' || sessionUser?.role === 'MANAGER'"
-              icon="i-lucide-refresh-cw"
-              label="Tarik Data (Manual)"
-              color="primary"
-              variant="soft"
-              :loading="isSyncing"
-              @click="forceSync"
-            />
+
             <UButton
               v-if="sessionUser?.role === 'ADMIN'"
               icon="i-lucide-plus"
