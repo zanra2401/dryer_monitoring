@@ -6,7 +6,7 @@ import thinkspeaks from '~~/server/utils/thinkspeaks';
 import log from '~~/server/utils/log';
 
 // === KONFIGURASI ===
-const INTERVAL_MS = 10 * 60 * 1000; // 10 menit dalam milidetik
+const INTERVAL_MS = 5 * 60 * 1000; // 10 menit dalam milidetik
 const MAX_RECOVERY_MS = 24 * 60 * 60 * 1000; // Batas recovery maksimal: 24 jam
 const THINGSPEAK_DELAY_MS = 1500; // Delay antar-request ThingSpeak (rate limit protection)
 
@@ -120,6 +120,8 @@ export default defineNitroPlugin((nitroApp) => {
     // Jalankan setiap 10 menit
     const task = cron.schedule('*/10 * * * *', async () => {
         logger.info({ context: 'cron' }, "[cron] Menjalankan penarikan telemetri ThingSpeak...");
+        let currentErrorMasterId: number | null = null;
+
         try {
             // 1. Kueri seluruh Bin beserta channel-nya
             const allBins = await prisma.bin.findMany({
@@ -206,6 +208,20 @@ export default defineNitroPlugin((nitroApp) => {
                         logger.warn({ context: 'cron', binNumber: bin.binNumber, areaId: bin.areaId },
                             `[cron] Telemetri tidak ditemukan dari ThingSpeak untuk Bin ${bin.binNumber} Area ${bin.areaId}`);
 
+                        // Log error to notification system
+                        if (!currentErrorMasterId) {
+                            const newMaster = await prisma.fetchErrorMaster.create({ data: { isRead: false } });
+                            currentErrorMasterId = newMaster.errorId;
+                        }
+                        await prisma.fetchErrorDetail.create({
+                            data: {
+                                errorId: currentErrorMasterId,
+                                binNumber: bin.binNumber,
+                                areaId: bin.areaId,
+                                message: "ThingSpeak timeout atau tidak ada data dalam rentang waktu."
+                            }
+                        });
+
                         // Hanya buat entry kosong jika bukan recovery mode (recovery kosong = skip)
                         if (!isRecoveryMode) {
                             await prisma.binLog.create({
@@ -284,6 +300,20 @@ export default defineNitroPlugin((nitroApp) => {
                 } catch (binError: any) {
                     logger.error({ context: 'cron', binNumber: bin.binNumber, areaId: bin.areaId, error: binError.message },
                         `[cron] Gagal memproses telemetri untuk Bin ${bin.binNumber} Area ${bin.areaId}`);
+
+                    // Log internal error to notification system
+                    if (!currentErrorMasterId) {
+                        const newMaster = await prisma.fetchErrorMaster.create({ data: { isRead: false } });
+                        currentErrorMasterId = newMaster.errorId;
+                    }
+                    await prisma.fetchErrorDetail.create({
+                        data: {
+                            errorId: currentErrorMasterId,
+                            binNumber: bin.binNumber,
+                            areaId: bin.areaId,
+                            message: `Sistem Error: ${binError.message}`
+                        }
+                    });
                 }
             }
         } catch (error: any) {

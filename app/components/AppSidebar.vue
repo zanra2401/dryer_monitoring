@@ -9,6 +9,9 @@ const colorMode = useColorMode()
 const { user: sessionUser, logout } = useDryerAuth()
 const isClient = computed(() => sessionUser.value?.role === 'CLIENT')
 
+const { data: fetchErrorsData } = useFetch('/api/system/fetch_errors')
+const errorCount = computed(() => fetchErrorsData.value?.data?.length || 0)
+
 function getItems(state: 'collapsed' | 'expanded') {
   const role = sessionUser.value?.role
 
@@ -40,6 +43,15 @@ function getItems(state: 'collapsed' | 'expanded') {
       label: 'Users',
       icon: 'i-lucide-users',
       to: '/dryercfg/users',
+    })
+  }
+
+  if (role === 'ADMIN') {
+    baseItems.push({
+      label: 'System Logs',
+      icon: 'i-lucide-server-crash',
+      to: '/dryercfg/system-logs',
+      badge: errorCount.value > 0 ? errorCount.value : undefined,
     })
   }
 

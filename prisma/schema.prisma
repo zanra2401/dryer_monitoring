@@ -147,3 +147,25 @@ model LotMcLog {
 
   @@map("lot_mc_logs")
 }
+
+model FetchErrorMaster {
+  errorId   Int      @id @default(autoincrement()) @map("error_id")
+  createdAt DateTime @default(now()) @map("created_at")
+  isRead    Boolean  @default(false) @map("is_read")
+  
+  details   FetchErrorDetail[]
+
+  @@map("fetch_error_master")
+}
+
+model FetchErrorDetail {
+  detailId  Int    @id @default(autoincrement()) @map("detail_id")
+  errorId   Int    @map("error_id")
+  binNumber Int    @map("bin_number")
+  areaId    Int    @map("area_id")
+  message   String @db.Text
+  
+  master    FetchErrorMaster @relation(fields: [errorId], references: [errorId], onDelete: Cascade)
+
+  @@map("fetch_error_details")
+}
