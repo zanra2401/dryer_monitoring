@@ -20,6 +20,28 @@ export default defineEventHandler(async (event) => {
             });
         }
 
+        // Validasi: Pastikan tidak ada Bin aktif yang menggunakan channel ini
+        const activeBins = await prisma.bin.findMany({
+            where: {
+                areaId: area_id,
+                OR: [
+                    { channelIdTop: channel_id },
+                    { channelIdBottom: channel_id }
+                ],
+                NOT: {
+                    binStatus: 'EMPTY'
+                }
+            }
+        });
+
+        if (activeBins.length > 0) {
+            const activeBinNumbers = activeBins.map(b => b.binNumber).join(", ");
+            throw createError({
+                statusCode: 400,
+                statusMessage: `Gagal merefresh! Channel ini sedang digunakan oleh Bin yang aktif (Bin ${activeBinNumbers}). Kosongkan Bin tersebut terlebih dahulu.`
+            });
+        }
+
         const fetchedChannel = await thinkspeaks.get_channel(channel_id, channel.apiKey);
         
         if (!fetchedChannel) {

@@ -26,12 +26,19 @@
         channelIdTop: string | null
         channelIdBottom: string | null
         areaId: string
-        fieldTempTop: number
-        fieldTempBottom: number
-        fieldRhTop: number
-        fieldRhBottom: number
+        fieldTempTop: string | null
+        fieldTempBottom: string | null
+        fieldRhTop: string | null
+        fieldRhBottom: string | null
         binStatus: string
         occupiedBy: string | null
+        latestLog?: {
+            tempTop: number | null
+            rhTop: number | null
+            tempBottom: number | null
+            rhBottom: number | null
+            timestamp: string
+        } | null
     }
 
     const columns: TableColumn<Bin>[] = [
@@ -57,31 +64,27 @@
         }
     },
     {
-        accessorKey: 'fieldTempTop',
-        header: 'Field Temp Top',
+        id: 'tempTop',
+        header: 'Suhu Atas',
         cell: ({ row }) => {
-        return row.getValue('fieldTempTop');
+            const log = row.original.latestLog;
+            if (!log) return h('span', { class: 'text-gray-400' }, '-');
+            return h('div', { class: 'flex flex-col' }, [
+                h('span', { class: 'font-medium' }, log.tempTop !== null ? `${log.tempTop}°C` : '-'),
+                h('span', { class: 'text-xs text-gray-500' }, log.rhTop !== null ? `RH: ${log.rhTop}%` : 'RH: -')
+            ]);
         }
     },
     {
-        accessorKey: 'fieldTempBottom',
-        header: 'Field Temp Bottom',
+        id: 'tempBottom',
+        header: 'Suhu Bawah',
         cell: ({ row }) => {
-        return row.getValue('fieldTempBottom');
-        }
-    },
-    {
-        accessorKey: 'fieldRhTop',
-        header: 'Field Rh Top',
-        cell: ({ row }) => {
-        return row.getValue('fieldRhTop');
-        }
-    },
-    {
-        accessorKey: 'fieldRhBottom',
-        header: 'Field Rh Bottom',
-        cell: ({ row }) => {
-        return row.getValue('fieldRhBottom');
+            const log = row.original.latestLog;
+            if (!log) return h('span', { class: 'text-gray-400' }, '-');
+            return h('div', { class: 'flex flex-col' }, [
+                h('span', { class: 'font-medium' }, log.tempBottom !== null ? `${log.tempBottom}°C` : '-'),
+                h('span', { class: 'text-xs text-gray-500' }, log.rhBottom !== null ? `RH: ${log.rhBottom}%` : 'RH: -')
+            ]);
         }
     },
     {
@@ -129,6 +132,23 @@
 
     function getRowItems(row: Row<Bin>) {
         const items = [];
+        
+        items.push({
+            label: 'Field Konfigurasi',
+            type: 'label'
+        });
+        
+        items.push({
+            label: `Top: ${row.original.fieldTempTop || '-'} / ${row.original.fieldRhTop || '-'}`,
+            icon: 'i-lucide-info'
+        });
+        
+        items.push({
+            label: `Bot: ${row.original.fieldTempBottom || '-'} / ${row.original.fieldRhBottom || '-'}`,
+            icon: 'i-lucide-info'
+        });
+
+        items.push({ type: 'separator' });
         
         if (row.getValue('binStatus') !== 'IDLE' && row.getValue('occupiedBy')) {
             items.push({

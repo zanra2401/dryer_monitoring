@@ -48,7 +48,7 @@ const items = computed(() => {
 
 <template>
   <AppSidebar :loading="false">
-    <NuxtLink :to="`/dryercfg`">
+    <NuxtLink :to="`/dryercfg/dry-areas`">
       <UButton icon="i-lucide-move-left" variant="solid" size="md" color="neutral" class="cursor-pointer">Back</UButton>
     </NuxtLink>
     <div class="flex justify-between items-center mb-2 mt-4">

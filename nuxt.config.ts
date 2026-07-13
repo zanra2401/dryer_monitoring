@@ -2,12 +2,15 @@
 export default defineNuxtConfig({
   compatibilityDate: '2025-07-15',
   devtools: { enabled: true },
+  routeRules: {
+    "/": { redirect: "/login" },
+  },
   modules: [
     '@nuxt/ui',
     'nuxt-auth-utils',
   ],
   runtimeConfig: {
-    session: {
+    session: {  
       password: process.env.NUXT_SESSION_PASSWORD || 'dryer-monitoring-dev-session-secret-minimum-32-chars',
     },
     public: {},

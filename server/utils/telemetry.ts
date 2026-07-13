@@ -85,19 +85,27 @@ export function averageFeeds(
 
     for (const feed of feeds) {
         if (feed._isTop) {
-            const tTop = parseNumber(feed[bin.fieldTempTop]);
-            if (tTop !== null && tTop >= 15 && tTop <= 70) { sumTempTop += tTop; countTempTop++; }
+            if (bin.fieldTempTop) {
+                const tTop = parseNumber(feed[bin.fieldTempTop]);
+                if (tTop !== null && tTop >= 15 && tTop <= 70) { sumTempTop += tTop; countTempTop++; }
+            }
 
-            const rTop = parseNumber(feed[bin.fieldRhTop]);
-            if (rTop !== null && rTop >= 10 && rTop <= 99) { sumRhTop += rTop; countRhTop++; }
+            if (bin.fieldRhTop) {
+                const rTop = parseNumber(feed[bin.fieldRhTop]);
+                if (rTop !== null && rTop >= 10 && rTop <= 99) { sumRhTop += rTop; countRhTop++; }
+            }
         }
 
         if (feed._isBottom) {
-            const tBot = parseNumber(feed[bin.fieldTempBottom]);
-            if (tBot !== null && tBot >= 15 && tBot <= 70) { sumTempBottom += tBot; countTempBottom++; }
+            if (bin.fieldTempBottom) {
+                const tBot = parseNumber(feed[bin.fieldTempBottom]);
+                if (tBot !== null && tBot >= 15 && tBot <= 70) { sumTempBottom += tBot; countTempBottom++; }
+            }
 
-            const rBot = parseNumber(feed[bin.fieldRhBottom]);
-            if (rBot !== null && rBot >= 10 && rBot <= 99) { sumRhBottom += rBot; countRhBottom++; }
+            if (bin.fieldRhBottom) {
+                const rBot = parseNumber(feed[bin.fieldRhBottom]);
+                if (rBot !== null && rBot >= 10 && rBot <= 99) { sumRhBottom += rBot; countRhBottom++; }
+            }
         }
     }
 
@@ -144,8 +152,7 @@ export async function runTelemetryFetch(isManual: boolean = false) {
 
                 const lastLog = await prisma.binLog.findFirst({
                     where: { binNumber: bin.binNumber, areaId: bin.areaId },
-                    orderBy: { timestampThingspeak: 'desc' },
-                    select: { timestampThingspeak: true }
+                    orderBy: { timestampThingspeak: 'desc' }
                 });
 
                 let fetchStartMs: number;
@@ -218,42 +225,78 @@ export async function runTelemetryFetch(isManual: boolean = false) {
                             message: "ThingSpeak timeout atau tidak ada data dalam rentang waktu."
                         }
                     });
-
-                    if (!isRecoveryMode) {
-                        await prisma.binLog.create({
-                            data: {
-                                binNumber: bin.binNumber,
-                                areaId: bin.areaId,
-                                timestampThingspeak: now,
-                                statusBin: bin.binStatus,
-                                isEphemeral: currentIsEphemeral,
-                                tempTop: null,
-                                rhTop: null,
-                                tempBottom: null,
-                                rhBottom: null,
-                                remark: "SYSTEM AUTO-FAIL: ThingSpeak data not available."
-                            }
-                        });
-                    }
-                    continue;
                 }
 
                 const intervals = sliceFeedsIntoIntervals(feeds, fetchStartMs, nowMs, INTERVAL_MS);
                 let savedCount = 0;
 
+                const TOLERANCE_MS = 30 * 60 * 1000;
+                let lastKnownTempTop = lastLog?.tempTop ?? null;
+                let lastKnownTempTopMs = lastKnownTempTop !== null && lastLog ? new Date(lastLog.timestampThingspeak).getTime() : 0;
+                let lastKnownRhTop = lastLog?.rhTop ?? null;
+                let lastKnownRhTopMs = lastKnownRhTop !== null && lastLog ? new Date(lastLog.timestampThingspeak).getTime() : 0;
+                let lastKnownTempBottom = lastLog?.tempBottom ?? null;
+                let lastKnownTempBottomMs = lastKnownTempBottom !== null && lastLog ? new Date(lastLog.timestampThingspeak).getTime() : 0;
+                let lastKnownRhBottom = lastLog?.rhBottom ?? null;
+                let lastKnownRhBottomMs = lastKnownRhBottom !== null && lastLog ? new Date(lastLog.timestampThingspeak).getTime() : 0;
+
                 for (const interval of intervals) {
-                    if (interval.feeds.length === 0) continue;
-
                     const avg = averageFeeds(interval.feeds, bin as any);
+                    const intervalEndMs = interval.intervalEnd.getTime();
 
-                    if (avg.tempTop === null && avg.rhTop === null && avg.tempBottom === null && avg.rhBottom === null) {
-                        continue;
+                    const hasAnyValidData = avg.tempTop !== null || avg.rhTop !== null || avg.tempBottom !== null || avg.rhBottom !== null;
+                    let carriedForward = false;
+
+                    if (hasAnyValidData) {
+                        if (avg.tempTop !== null) {
+                            lastKnownTempTop = avg.tempTop;
+                            lastKnownTempTopMs = intervalEndMs;
+                        } else if (lastKnownTempTop !== null && (intervalEndMs - lastKnownTempTopMs) <= TOLERANCE_MS) {
+                            avg.tempTop = lastKnownTempTop;
+                            carriedForward = true;
+                        }
+
+                        if (avg.rhTop !== null) {
+                            lastKnownRhTop = avg.rhTop;
+                            lastKnownRhTopMs = intervalEndMs;
+                        } else if (lastKnownRhTop !== null && (intervalEndMs - lastKnownRhTopMs) <= TOLERANCE_MS) {
+                            avg.rhTop = lastKnownRhTop;
+                            carriedForward = true;
+                        }
+
+                        if (avg.tempBottom !== null) {
+                            lastKnownTempBottom = avg.tempBottom;
+                            lastKnownTempBottomMs = intervalEndMs;
+                        } else if (lastKnownTempBottom !== null && (intervalEndMs - lastKnownTempBottomMs) <= TOLERANCE_MS) {
+                            avg.tempBottom = lastKnownTempBottom;
+                            carriedForward = true;
+                        }
+
+                        if (avg.rhBottom !== null) {
+                            lastKnownRhBottom = avg.rhBottom;
+                            lastKnownRhBottomMs = intervalEndMs;
+                        } else if (lastKnownRhBottom !== null && (intervalEndMs - lastKnownRhBottomMs) <= TOLERANCE_MS) {
+                            avg.rhBottom = lastKnownRhBottom;
+                            carriedForward = true;
+                        }
                     }
 
+                    // Insert the log even if all are null, to explicitly mark the gap.
+
                     const isEphemeral = isRecoveryMode ? false : currentIsEphemeral;
-                    const remark = isRecoveryMode
-                        ? `SYSTEM RECOVERY: Data retroaktif. Interval ${interval.feeds.length} feed.`
-                        : `Perekaman otomatis (Rata-rata ${interval.feeds.length} feed).`;
+                    let remark = "";
+                    
+                    if (hasAnyValidData) {
+                        if (carriedForward) {
+                            remark = "Perekaman otomatis dengan data parsial (Toleransi 30 Menit).";
+                        } else {
+                            remark = isRecoveryMode
+                                ? `SYSTEM RECOVERY: Data retroaktif. Interval ${interval.feeds.length} feed.`
+                                : `Perekaman otomatis (Rata-rata ${interval.feeds.length} feed).`;
+                        }
+                    } else {
+                        remark = "SYSTEM AUTO-FAIL: Tidak ada data yang masuk di interval ini.";
+                    }
 
                     await prisma.binLog.create({
                         data: {
