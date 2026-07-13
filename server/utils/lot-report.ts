@@ -42,6 +42,7 @@ export type LotReportData = {
 type DecimalLike = number | string | { toString(): string } | null | undefined;
 
 const pad = (value: number) => `${value}`.padStart(2, "0");
+const REPORT_TIME_ZONE = "Asia/Jakarta";
 
 const asDate = (value: Date | string | null | undefined) => {
     if (!value) {
@@ -59,7 +60,17 @@ const formatDate = (value: Date | string | null | undefined) => {
         return "";
     }
 
-    return `${pad(date.getDate())}/${pad(date.getMonth() + 1)}/${date.getFullYear()}`;
+    const parts = new Intl.DateTimeFormat("en-GB", {
+        timeZone: REPORT_TIME_ZONE,
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+    }).formatToParts(date);
+    const day = parts.find((part) => part.type === "day")?.value ?? "";
+    const month = parts.find((part) => part.type === "month")?.value ?? "";
+    const year = parts.find((part) => part.type === "year")?.value ?? "";
+
+    return `${day}/${month}/${year}`;
 };
 
 const formatElapsedHour = (
@@ -109,7 +120,22 @@ const formatDateTime = (value: Date | string | null | undefined) => {
         return "";
     }
 
-    return `${formatDate(date)} ${pad(date.getHours())}:${pad(date.getMinutes())}`;
+    const parts = new Intl.DateTimeFormat("en-GB", {
+        timeZone: REPORT_TIME_ZONE,
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: false,
+    }).formatToParts(date);
+    const day = parts.find((part) => part.type === "day")?.value ?? "";
+    const month = parts.find((part) => part.type === "month")?.value ?? "";
+    const year = parts.find((part) => part.type === "year")?.value ?? "";
+    const hour = parts.find((part) => part.type === "hour")?.value ?? "";
+    const minute = parts.find((part) => part.type === "minute")?.value ?? "";
+
+    return `${day}/${month}/${year} ${hour}:${minute}`;
 };
 
 const toNumber = (value: DecimalLike) => {
@@ -129,7 +155,7 @@ const formatDecimal = (value: DecimalLike) => {
     }
 
     return new Intl.NumberFormat("en-US", {
-        minimumFractionDigits: 0,
+        minimumFractionDigits: 2,
         maximumFractionDigits: 2,
     }).format(parsed);
 };
