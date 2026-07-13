@@ -8,7 +8,10 @@ export default defineEventHandler(async (event) => {
         const result = await prisma.$transaction(async (prisma) => {
             const bins = await prisma.bin.findMany({
                 where: {
-                    channelId: channel_id,
+                    OR: [
+                        { channelIdTop: channel_id },
+                        { channelIdBottom: channel_id }
+                    ],
                     areaId: area_id,
                     NOT: {
                         binStatus: BinStatus.EMPTY
@@ -27,24 +30,25 @@ export default defineEventHandler(async (event) => {
                 });
             }
 
-            const binsCount = await prisma.bin.count({
-                where: {
-                    channelId: channel_id,
-                    areaId: area_id
-                }
-            });
-
             const deletedChannel = await prisma.channel.delete({
                 where: {
                     channelId: channel_id,
-                    areaId: area_id
                 }
             });
 
+            // Setelah channel dihapus, referensi di Bin akan diset NULL oleh onDelete: SetNull
+            // Kita hapus bin yang sekarang yatim piatu (kehilangan kedua channelnya)
+            const cleanupResult = await prisma.bin.deleteMany({
+                where: {
+                    areaId: area_id,
+                    channelIdTop: null,
+                    channelIdBottom: null
+                }
+            });
 
             return {
                 deletedChannel,
-                deletedBinsCount: binsCount
+                deletedBinsCount: cleanupResult.count
             };
         });
 

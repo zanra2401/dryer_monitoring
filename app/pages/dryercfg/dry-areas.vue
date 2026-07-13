@@ -8,6 +8,8 @@ import { useDryerList } from "~/composable/useDryerList";
 import { useDryerCRUD } from "~/composable/useDryerCRUD";
 import { useDryerAuth } from "~/composable/useDryerAuth";
 
+
+
 type DryerRow = {
   areaId: string;
   name: string;
@@ -117,6 +119,8 @@ onMounted(() => {
   fetch_dryer_list();
 });
 
+
+
 const openCreateModal = () => {
   create_state.value = true;
 };
@@ -134,14 +138,16 @@ const openCreateModal = () => {
             Review registered dryer areas and open each area workflow.
           </p>
         </div>
-        
-        <UButton
-          v-if="sessionUser?.role === 'ADMIN'"
-          icon="i-lucide-plus"
-          label="Tambah Area Dryer"
-          color="primary"
-          @click="openCreateModal"
-        />
+        <div class="flex gap-2">
+
+            <UButton
+              v-if="sessionUser?.role === 'ADMIN'"
+              icon="i-lucide-plus"
+              label="Tambah Area Dryer"
+              color="primary"
+              @click="openCreateModal"
+            />
+        </div>
       </div>
 
       <div class="rounded-lg border border-default bg-default">

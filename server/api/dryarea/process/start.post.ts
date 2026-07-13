@@ -38,8 +38,7 @@ export default defineEventHandler(async (event) => {
 
         // 2. Tarik Konfigurasi Bin SEBELUM membuka transaksi basis data
         const binConfig = await prisma.bin.findUnique({
-            where: { binNumber_areaId: { areaId: body.area_id, binNumber: body.bin_number } },
-            include: { channel: true }
+            where: { binNumber_areaId: { areaId: body.area_id, binNumber: body.bin_number } }
         });
 
         if (!binConfig) {
@@ -111,8 +110,13 @@ export default defineEventHandler(async (event) => {
             }
         }
         
+        if (error instanceof Prisma.PrismaClientValidationError) {
+            logger.error({ context: 'api', errorMessage: error.message }, "[api] Validasi Prisma gagal pada inisialisasi Lot.");
+            throw createError({ statusCode: 400, statusMessage: `Validasi basis data gagal: ${error.message}` });
+        }
+        
         if ((error as any).statusCode) throw error;
-        logger.error({ context: 'api', error }, "[api] Kegagalan sistemik yang tidak terprediksi pada proses inisialisasi Lot.");
+        logger.error({ context: 'api', error: error instanceof Error ? { message: error.message, stack: error.stack } : error }, "[api] Kegagalan sistemik yang tidak terprediksi pada proses inisialisasi Lot.");
         throw createError({ statusCode: 500, statusMessage: "Terjadi kesalahan komputasi internal pada peladen." });
     }
 });

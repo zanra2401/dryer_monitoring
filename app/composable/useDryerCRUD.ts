@@ -21,7 +21,7 @@ export const useDryerCRUD = (fetch_dryer: () => Promise<any>) => {
     });
 
     const edit_state = ref<boolean>(false);
-    const create_state = ref<boolean>(true);
+    const create_state = ref<boolean>(false);
 
     const update_edit_state = (area_id: number | null = null, name: string | null = null) => {
         if (area_id === null) {

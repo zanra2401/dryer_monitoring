@@ -44,12 +44,29 @@ export default defineEventHandler(async (event) => {
                 } 
             }
     
-            const result = await prisma.bin.createMany({
-                data: Object.values(bins),
-                skipDuplicates: true,
-            });
+            let updatedCount = 0;
+            for (const bin of Object.values(bins) as any[]) {
+                await prisma.bin.upsert({
+                    where: {
+                        binNumber_areaId: {
+                            binNumber: bin.binNumber,
+                            areaId: bin.areaId
+                        }
+                    },
+                    update: {
+                        ...(bin.channelIdTop ? { channelIdTop: bin.channelIdTop } : {}),
+                        ...(bin.channelIdBottom ? { channelIdBottom: bin.channelIdBottom } : {}),
+                        ...(bin.fieldTempTop ? { fieldTempTop: bin.fieldTempTop } : {}),
+                        ...(bin.fieldRhTop ? { fieldRhTop: bin.fieldRhTop } : {}),
+                        ...(bin.fieldTempBottom ? { fieldTempBottom: bin.fieldTempBottom } : {}),
+                        ...(bin.fieldRhBottom ? { fieldRhBottom: bin.fieldRhBottom } : {}),
+                    },
+                    create: bin
+                });
+                updatedCount++;
+            }
 
-            return result.count;
+            return updatedCount;
         });
 
         return { success: true, data: `${result} bins successfully saved to database` };

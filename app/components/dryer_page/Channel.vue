@@ -123,14 +123,23 @@
             {
                 label: 'Hapus',
                 icon: 'i-lucide-trash-2',
-                onSelect() {
+                async onSelect() {
                     if (window.confirm(`Apakah Anda yakin ingin menghapus channel ID: ${row.getValue('channelId')}? Semua bin yang terhubung akan ikut terpengaruh.`)) {
-                        delete_channel(parseInt(props.areaId), row.getValue('channelId'), toast);
+                        const res = await delete_channel(parseInt(props.areaId), row.getValue('channelId'), toast);
+                        if (res) window.location.reload();
                     }
                 }
             },
         ]
         }
+
+    const handleEditSave = async () => {
+        const res = await update_channel(parseInt(props.areaId), toast);
+        if (res) {
+            change_edit_state(false);
+            window.location.reload();
+        }
+    };
 
     await fetch_channel_list(parseInt(props.areaId), toast);
 </script>
@@ -144,7 +153,7 @@
         </div>
     </div>
 
-    <UModal v-model:open="edit_state" title="Edit Channel" @close="change_edit_state(false)" @confirm="update_channel(parseInt(props.areaId), toast)">
+    <UModal v-model:open="edit_state" title="Edit Channel" @close="change_edit_state(false)" @confirm="handleEditSave">
         <template #body>
             <div>
                 <UFormField label="Channel ID">
@@ -156,7 +165,7 @@
             </div>
         </template>
         <template #footer>
-            <UButton color="primary" @click="update_channel(parseInt(props.areaId), toast)">Save</UButton>
+            <UButton color="primary" @click="handleEditSave">Save</UButton>
         </template>
     </UModal>
 </template>

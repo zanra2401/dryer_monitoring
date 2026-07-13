@@ -13,6 +13,13 @@
     const { user: sessionUser } = useDryerAuth();
 
     const { api_keys, post_channels, channels, change_create_state, create_state } = useCRUDChannel();
+    const handleAdd = async () => {
+        const result = await post_channels(parseInt(props.areaId), toast);
+        if (result) {
+            change_create_state(false);
+            window.location.reload();
+        }
+    };
 </script>
 
 <template>
@@ -32,7 +39,7 @@
             </div>
         </template>
         <template #footer>
-            <UButton color="primary" @click="() => {post_channels(parseInt(areaId), toast)}">Add</UButton>
+            <UButton color="primary" @click="handleAdd">Add</UButton>
         </template>
     </UModal>
 </template>

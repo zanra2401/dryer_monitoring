@@ -53,7 +53,7 @@
                 </UButton>
             </NuxtLink>
         </div>
-        <div v-if="bins.data && bins.data.length > 0" class="grid min-h-screen p-2 sm:p-4 grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+        <div v-if="bins.data && bins.data.length > 0" class="grid content-start p-2 sm:p-4 grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
         <NuxtLink
             v-for="(data, idx) in bins.data"
             :key="data.binNumber"
