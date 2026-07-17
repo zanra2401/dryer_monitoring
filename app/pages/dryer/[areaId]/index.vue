@@ -60,8 +60,7 @@
             :to="`/dryer/${areaId}/bin/${data.binNumber}/${data.occupiedBy ?? 'start'}`"
             class="flex flex-col border p-0 cursor-pointer transition-colors rounded-sm   aspect-square hover:shadow-md shadow-sm"
             :class="[
-                // Perbaikan Fatal 1: Mengakses properti status, bukan seluruh objek
-                getCardClassByStatus(data.binStatus) 
+                data.isAlertTemperature ? 'border-red-500 bg-red-200 text-red-950 dark:border-red-600 dark:bg-red-900/40 dark:text-red-100' : getCardClassByStatus(data.binStatus) 
             ]"
         >
             <div class="p-1.5 border-b flex items-center justify-between text-xs font-bold bg-white/80 dark:bg-gray-900/80">
@@ -80,8 +79,9 @@
                         <UIcon v-if="data.binStatus === 'UPAIR'" name="i-lucide-arrow-up" class="w-3 h-3 text-green-600 dark:text-green-400" />
                         <UIcon v-else-if="data.binStatus === 'DOWNAIR'" name="i-lucide-arrow-down" class="w-3 h-3 text-amber-600 dark:text-amber-400" />
                         <UIcon v-else-if="data.binStatus === 'DRIER'" name="i-lucide-flame" class="w-3 h-3 text-red-600 dark:text-red-400" />
+                        <UIcon v-else-if="data.binStatus === 'WAITING_TO_SHELLING'" name="i-lucide-check-circle" class="w-3 h-3 text-green-600 dark:text-green-400" />
                         <UIcon v-else name="i-lucide-circle" class="w-3 h-3 text-gray-500 dark:text-gray-400" />
-                        {{ data.binStatus || 'IDLE' }}
+                        {{ data.binStatus === 'WAITING_TO_SHELLING' ? 'WTS' : (data.binStatus || 'IDLE') }}
                     </span>
                 </div>
     

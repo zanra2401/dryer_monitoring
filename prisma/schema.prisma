@@ -16,6 +16,7 @@ enum BinStatus {
   EMPTY
   UPAIR
   DOWNAIR
+  WAITING_TO_SHELLING
 }
 
 enum LotStatus {

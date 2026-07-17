@@ -5,6 +5,9 @@ import { logger } from "~~/server/utils/pino";
 import { requireAuthUser } from "~~/server/utils/auth";
 import { isLimitedAreaRole } from "~~/server/utils/rbac";
 
+const LOWER_TEMP_THRESHOLD = 38;
+const UPPER_TEMP_THRESHOLD = 43;
+
 // 1. Validasi Input Keamanan Tinggi
 const querySchema = z.object({
     area_id: z.coerce.number().min(1, "Parameter area_id tidak valid"),
@@ -23,9 +26,8 @@ export default defineEventHandler(async (event) => {
             });
         }
 
-        // 2. Eksekusi Pembacaan Paralel Tersinkronisasi (Concurrent Reads)
-        // Array transaction jauh lebih efisien untuk operasi baca daripada interactive callback
-        const [area, bins, activeLots] = await prisma.$transaction([
+        // 2. Eksekusi Pembacaan Paralel Tersinkronisasi
+        const [area, bins] = await prisma.$transaction([
             prisma.dryerArea.findUnique({
                 where: { areaId: area_id }
             }),
@@ -39,15 +41,6 @@ export default defineEventHandler(async (event) => {
                         take: 1
                     }
                 },
-            }),
-            prisma.lot.findMany({
-                where: { areaId: area_id, status: { not: LotStatus.COMPLETED } },
-                include: {
-                    mcLogs: {
-                        orderBy: { createdAt: 'desc' },
-                        take: 1
-                    }
-                }
             })
         ]);
 
@@ -57,6 +50,18 @@ export default defineEventHandler(async (event) => {
                 statusMessage: "Area Dryer tidak ditemukan.",
             });
         }
+
+        const occupiedLotNumbers = bins.map(b => b.occupiedBy).filter(Boolean) as string[];
+        
+        const activeLots = occupiedLotNumbers.length > 0 ? await prisma.lot.findMany({
+            where: { lotNumber: { in: occupiedLotNumbers } },
+            include: {
+                mcLogs: {
+                    orderBy: { createdAt: 'desc' },
+                    take: 1
+                }
+            }
+        }) : [];
 
         // 4. Pemetaan Objek Presisi Tinggi
         const binWithLot = bins.map((bin) => {
@@ -69,8 +74,22 @@ export default defineEventHandler(async (event) => {
             // Pastikan binLogs tidak ikut terekspos berlebihan di level root object
             const { binLogs, ...binData } = bin;
 
+            let isAlertTemperature = false;
+            if (latestLog) {
+                if (binData.binStatus === 'UPAIR' && latestLog.tempBottom !== null) {
+                    if (latestLog.tempBottom < LOWER_TEMP_THRESHOLD || latestLog.tempBottom > UPPER_TEMP_THRESHOLD) {
+                        isAlertTemperature = true;
+                    }
+                } else if (binData.binStatus === 'DOWNAIR' && latestLog.tempTop !== null) {
+                    if (latestLog.tempTop < LOWER_TEMP_THRESHOLD || latestLog.tempTop > UPPER_TEMP_THRESHOLD) {
+                        isAlertTemperature = true;
+                    }
+                }
+            }
+
             return {
                 ...binData,
+                isAlertTemperature,
                 // Menggunakan Optional Chaining dan Nullish Coalescing (??) untuk efisiensi sintaks
                 occupiedBy: occupiedLot?.lotNumber ?? null,
                 netToBin: occupiedLot?.netToBin ?? null,

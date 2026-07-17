@@ -62,7 +62,7 @@ export default defineEventHandler(async (event) => {
                     occupiedBy: updateLot.lotNumber,
                     NOT: { binStatus: BinStatus.EMPTY },
                 },
-                data: { binStatus: BinStatus.EMPTY, occupiedBy: null, },
+                data: { binStatus: BinStatus.WAITING_TO_SHELLING },
             });
 
             return updateLot; // Sekarang objek ini memuat binNumber

@@ -32,6 +32,7 @@
         fieldRhBottom: string | null
         binStatus: string
         occupiedBy: string | null
+        isAlertTemperature?: boolean
         latestLog?: {
             tempTop: number | null
             rhTop: number | null
@@ -69,8 +70,9 @@
         cell: ({ row }) => {
             const log = row.original.latestLog;
             if (!log) return h('span', { class: 'text-gray-400' }, '-');
+            const isAlert = row.original.isAlertTemperature && row.original.binStatus === 'DOWNAIR';
             return h('div', { class: 'flex flex-col' }, [
-                h('span', { class: 'font-medium' }, log.tempTop !== null ? `${log.tempTop}°C` : '-'),
+                h('span', { class: `font-medium ${isAlert ? 'text-red-500 font-bold' : ''}` }, log.tempTop !== null ? `${log.tempTop}°C` : '-'),
                 h('span', { class: 'text-xs text-gray-500' }, log.rhTop !== null ? `RH: ${log.rhTop}%` : 'RH: -')
             ]);
         }
@@ -81,8 +83,9 @@
         cell: ({ row }) => {
             const log = row.original.latestLog;
             if (!log) return h('span', { class: 'text-gray-400' }, '-');
+            const isAlert = row.original.isAlertTemperature && row.original.binStatus === 'UPAIR';
             return h('div', { class: 'flex flex-col' }, [
-                h('span', { class: 'font-medium' }, log.tempBottom !== null ? `${log.tempBottom}°C` : '-'),
+                h('span', { class: `font-medium ${isAlert ? 'text-red-500 font-bold' : ''}` }, log.tempBottom !== null ? `${log.tempBottom}°C` : '-'),
                 h('span', { class: 'text-xs text-gray-500' }, log.rhBottom !== null ? `RH: ${log.rhBottom}%` : 'RH: -')
             ]);
         }
@@ -91,7 +94,17 @@
         accessorKey: 'binStatus',
         header: 'Bin Status',
         cell: ({ row }) => {
-        return row.getValue('binStatus');
+            const status = row.getValue('binStatus') as string;
+            const displayStatus = status === 'WAITING_TO_SHELLING' ? 'WTS' : status;
+            const isAlert = row.original.isAlertTemperature;
+            
+            if (isAlert) {
+                return h('span', { class: 'text-red-600 font-bold flex items-center gap-1' }, [
+                    h('span', { class: 'i-lucide-triangle-alert w-4 h-4' }),
+                    displayStatus
+                ]);
+            }
+            return displayStatus;
         }
     },
     {
