@@ -20,7 +20,14 @@ const rows = computed(() => {
       rhTop: "",
       rhBottom: "",
       mc: "",
-      remarks: "",
+      status: "",
+      tempTopValue: null,
+      tempBottomValue: null,
+      rhTopValue: null,
+      rhBottomValue: null,
+      mcValue: null,
+      hourValue: null,
+      minuteValue: null,
     });
   }
 
@@ -47,7 +54,9 @@ const rows = computed(() => {
 
       <tbody>
         <tr>
-          <td colspan="11" class="blank-row" />
+          <td colspan="11" class="report-area">
+            {{ report.dryerAreaName || "" }}
+          </td>
         </tr>
 
         <tr>
@@ -95,10 +104,10 @@ const rows = computed(() => {
             : {{ report.mcStart || "" }}
           </td>
           <td class="summary-label">
-            Total Drying
+            Hour
           </td>
           <td class="summary-value">
-            : {{ report.totalDrying || "" }}
+            : {{ report.hour || "" }}
           </td>
         </tr>
 
@@ -194,7 +203,7 @@ const rows = computed(() => {
             MC (%)
           </td>
           <td colspan="2" rowspan="2" class="table-head">
-            Remaks
+            Status
           </td>
           <td rowspan="2" class="table-head-spacer" />
         </tr>
@@ -223,7 +232,7 @@ const rows = computed(() => {
           <td class="body-cell body-cell-small" />
           <td class="body-cell body-cell-small" />
           <td class="body-cell" />
-          <td colspan="2" class="body-cell remarks-cell" />
+          <td colspan="2" class="body-cell status-cell" />
           <td class="body-spacer" />
         </tr>
 
@@ -252,8 +261,8 @@ const rows = computed(() => {
           <td class="body-cell body-cell-sensor">
             {{ row.mc }}
           </td>
-          <td colspan="2" class="body-cell remarks-cell">
-            {{ row.remarks }}
+          <td colspan="2" class="body-cell status-cell">
+            {{ row.status }}
           </td>
           <td class="body-spacer" />
         </tr>
@@ -308,6 +317,12 @@ const rows = computed(() => {
   height: 23.45pt !important;
   overflow: visible !important;
   font: 700 16pt/23.45pt Calibri, sans-serif;
+  text-align: center;
+}
+
+.report-area {
+  height: 14.45pt;
+  font: 700 9pt/14.45pt Calibri, sans-serif;
   text-align: center;
 }
 
@@ -391,7 +406,7 @@ const rows = computed(() => {
   padding-right: 3px;
 }
 
-.remarks-cell {
+.status-cell {
   text-align: center;
   white-space: nowrap;
   font-size: 5.9pt;

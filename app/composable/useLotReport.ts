@@ -7,7 +7,14 @@ export type LotReportLogRow = {
     rhTop: string;
     rhBottom: string;
     mc: string;
-    remarks: string;
+    status: string;
+    tempTopValue: number | null;
+    tempBottomValue: number | null;
+    rhTopValue: number | null;
+    rhBottomValue: number | null;
+    mcValue: number | null;
+    hourValue: number | null;
+    minuteValue: number | null;
 };
 
 export type LotReportData = {
@@ -26,12 +33,11 @@ export type LotReportData = {
     mcStart: string;
     mcDown: string;
     mcEnd: string;
-    totalDrying: string;
+    hour: string;
     dryDown: string;
     dryingRate: string;
     rows: LotReportLogRow[];
     totalLogCount: number;
-    overflowLogCount: number;
 };
 
 type LotReportResponse = {

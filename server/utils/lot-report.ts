@@ -1,8 +1,6 @@
 import { prisma } from "~~/server/utils/prisma";
 import { getLotSnapshotLogTimeline } from "~~/server/utils/lot-log-snapshot";
 
-export const REPORT_MAX_LOG_ROWS = 39;
-
 export type LotReportLogRow = {
     date: string;
     hour: string;
@@ -12,7 +10,14 @@ export type LotReportLogRow = {
     rhTop: string;
     rhBottom: string;
     mc: string;
-    remarks: string;
+    status: string;
+    tempTopValue: number | null;
+    tempBottomValue: number | null;
+    rhTopValue: number | null;
+    rhBottomValue: number | null;
+    mcValue: number | null;
+    hourValue: number | null;
+    minuteValue: number | null;
 };
 
 export type LotReportData = {
@@ -31,12 +36,11 @@ export type LotReportData = {
     mcStart: string;
     mcDown: string;
     mcEnd: string;
-    totalDrying: string;
+    hour: string;
     dryDown: string;
     dryingRate: string;
     rows: LotReportLogRow[];
     totalLogCount: number;
-    overflowLogCount: number;
 };
 
 type DecimalLike = number | string | { toString(): string } | null | undefined;
@@ -53,64 +57,43 @@ const asDate = (value: Date | string | null | undefined) => {
     return Number.isNaN(date.getTime()) ? null : date;
 };
 
-const formatDate = (value: Date | string | null | undefined) => {
-    const date = asDate(value);
+const getElapsedParts = (
+    startValue: Date | string | null | undefined,
+    currentValue: Date | string | null | undefined,
+) => {
+    const start = asDate(startValue);
+    const current = asDate(currentValue);
 
-    if (!date) {
-        return "";
+    if (!start || !current) {
+        return null;
     }
 
-    const parts = new Intl.DateTimeFormat("en-GB", {
-        timeZone: REPORT_TIME_ZONE,
-        day: "2-digit",
-        month: "2-digit",
-        year: "numeric",
-    }).formatToParts(date);
-    const day = parts.find((part) => part.type === "day")?.value ?? "";
-    const month = parts.find((part) => part.type === "month")?.value ?? "";
-    const year = parts.find((part) => part.type === "year")?.value ?? "";
+    const totalMinutes = Math.floor((current.getTime() - start.getTime()) / 60000);
 
-    return `${day}/${month}/${year}`;
+    if (!Number.isFinite(totalMinutes) || totalMinutes < 0) {
+        return null;
+    }
+
+    return {
+        hour: Math.floor(totalMinutes / 60),
+        minute: totalMinutes % 60,
+    };
 };
 
 const formatElapsedHour = (
     startValue: Date | string | null | undefined,
     currentValue: Date | string | null | undefined,
 ) => {
-    const start = asDate(startValue);
-    const current = asDate(currentValue);
-
-    if (!start || !current) {
-        return "";
-    }
-
-    const totalMinutes = Math.floor((current.getTime() - start.getTime()) / 60000);
-
-    if (!Number.isFinite(totalMinutes) || totalMinutes < 0) {
-        return "";
-    }
-
-    return pad(Math.floor(totalMinutes / 60));
+    const parts = getElapsedParts(startValue, currentValue);
+    return parts ? pad(parts.hour) : "";
 };
 
 const formatElapsedMinute = (
     startValue: Date | string | null | undefined,
     currentValue: Date | string | null | undefined,
 ) => {
-    const start = asDate(startValue);
-    const current = asDate(currentValue);
-
-    if (!start || !current) {
-        return "";
-    }
-
-    const totalMinutes = Math.floor((current.getTime() - start.getTime()) / 60000);
-
-    if (!Number.isFinite(totalMinutes) || totalMinutes < 0) {
-        return "";
-    }
-
-    return pad(totalMinutes % 60);
+    const parts = getElapsedParts(startValue, currentValue);
+    return parts ? pad(parts.minute) : "";
 };
 
 const formatDateTime = (value: Date | string | null | undefined) => {
@@ -160,48 +143,46 @@ const formatDecimal = (value: DecimalLike) => {
     }).format(parsed);
 };
 
-const formatDuration = (startValue: Date | string | null | undefined, endValue: Date | string | null | undefined) => {
+const getRoundedHour = (startValue: Date | string | null | undefined, endValue: Date | string | null | undefined) => {
     const start = asDate(startValue);
     const end = asDate(endValue);
 
     if (!start || !end) {
-        return "";
+        return null;
     }
 
     const totalMinutes = Math.floor((end.getTime() - start.getTime()) / 60000);
 
     if (!Number.isFinite(totalMinutes) || totalMinutes <= 0) {
-        return "";
+        return null;
     }
 
-    const days = Math.floor(totalMinutes / 1440);
-    const hours = Math.floor((totalMinutes % 1440) / 60);
+    const hours = Math.floor(totalMinutes / 60);
     const minutes = totalMinutes % 60;
+    const rounded = hours + (minutes >= 31 ? 1 : 0);
 
-    const parts: string[] = [];
-
-    if (days > 0) {
-        parts.push(`${days}d`);
-    }
-
-    if (hours > 0 || days > 0) {
-        parts.push(`${hours}h`);
-    }
-
-    parts.push(`${minutes}m`);
-
-    return parts.join(" ");
+    return Math.max(rounded, 1);
 };
 
-const formatDryDown = (startMc: DecimalLike, endMc: DecimalLike) => {
+const formatRoundedHour = (startValue: Date | string | null | undefined, endValue: Date | string | null | undefined) => {
+    const roundedHour = getRoundedHour(startValue, endValue);
+    return roundedHour === null ? "" : `${roundedHour} Hour`;
+};
+
+const getDryDown = (startMc: DecimalLike, endMc: DecimalLike) => {
     const start = toNumber(startMc);
     const end = toNumber(endMc);
 
     if (start === null || end === null) {
-        return "";
+        return null;
     }
 
-    return formatDecimal(end - start);
+    return Math.abs(start - end);
+};
+
+const formatDryDown = (startMc: DecimalLike, endMc: DecimalLike) => {
+    const dryDown = getDryDown(startMc, endMc);
+    return dryDown === null ? "" : formatDecimal(dryDown);
 };
 
 const formatDryingRate = (
@@ -210,26 +191,35 @@ const formatDryingRate = (
     startMc: DecimalLike,
     endMc: DecimalLike,
 ) => {
-    const start = asDate(startValue);
-    const end = asDate(endValue);
-    const initial = toNumber(startMc);
-    const final = toNumber(endMc);
+    const roundedHour = getRoundedHour(startValue, endValue);
+    const dryDown = getDryDown(startMc, endMc);
 
-    if (!start || !end || initial === null || final === null) {
+    if (roundedHour === null || dryDown === null) {
         return "";
     }
 
-    const durationHours = (end.getTime() - start.getTime()) / 3600000;
-    const dryDown = final - initial;
-
-    if (!Number.isFinite(durationHours) || durationHours <= 0 || !Number.isFinite(dryDown) || dryDown === 0) {
+    if (!Number.isFinite(roundedHour) || roundedHour <= 0 || !Number.isFinite(dryDown) || dryDown === 0) {
         return "";
     }
 
     return new Intl.NumberFormat("en-US", {
-        minimumFractionDigits: 0,
-        maximumFractionDigits: 2,
-    }).format(durationHours / dryDown);
+        minimumFractionDigits: 1,
+        maximumFractionDigits: 1,
+    }).format(dryDown / roundedHour);
+};
+
+const formatStatus = (status: string | null | undefined) => {
+    const normalized = String(status ?? "").replace(/[\s_-]+/g, "").toUpperCase();
+
+    if (normalized === "UPAIR") {
+        return "Up Air";
+    }
+
+    if (normalized === "DOWNAIR" || normalized === "DOWNAIR") {
+        return "Down Air";
+    }
+
+    return status ?? "";
 };
 
 export const getLotReportData = async (lotId: number): Promise<LotReportData | null> => {
@@ -244,7 +234,9 @@ export const getLotReportData = async (lotId: number): Promise<LotReportData | n
     }
 
     const timeline = await getLotSnapshotLogTimeline(lotId);
-    const allLogs = timeline ? timeline.logs : [];
+    const allLogs = timeline ? [...timeline.logs].sort((a, b) => {
+        return a.timestampThingspeak.getTime() - b.timestampThingspeak.getTime();
+    }) : [];
 
     const dryerArea = await prisma.dryerArea.findUnique({
         where: {
@@ -255,9 +247,8 @@ export const getLotReportData = async (lotId: number): Promise<LotReportData | n
         },
     });
 
-    const latestMcLog = allLogs.find((log) => log.mc !== null);
+    const latestMcLog = [...allLogs].reverse().find((log) => log.mc !== null);
     const resolvedEndMc = lot.endMC ?? latestMcLog?.mc ?? null;
-    const visibleLogs = allLogs.slice(0, REPORT_MAX_LOG_ROWS);
 
     return {
         lotId: lot.lotId,
@@ -275,21 +266,31 @@ export const getLotReportData = async (lotId: number): Promise<LotReportData | n
         mcStart: formatDecimal(lot.initialMc),
         mcDown: formatDecimal(lot.downMC),
         mcEnd: formatDecimal(resolvedEndMc),
-        totalDrying: formatDuration(lot.startTime, lot.endTime),
+        hour: formatRoundedHour(lot.startTime, lot.endTime),
         dryDown: formatDryDown(lot.initialMc, resolvedEndMc),
         dryingRate: formatDryingRate(lot.startTime, lot.endTime, lot.initialMc, resolvedEndMc),
-        rows: visibleLogs.map((log) => ({
-            date: formatDateTime(log.timestampThingspeak),
-            hour: formatElapsedHour(lot.startTime, log.timestampThingspeak),
-            minute: formatElapsedMinute(lot.startTime, log.timestampThingspeak),
-            tempTop: formatDecimal(log.tempTop),
-            tempBottom: formatDecimal(log.tempBottom),
-            rhTop: formatDecimal(log.rhTop),
-            rhBottom: formatDecimal(log.rhBottom),
-            mc: formatDecimal(log.mc),
-            remarks: log.remark ?? log.checkerName ?? "",
-        })),
+        rows: allLogs.map((log) => {
+            const elapsed = getElapsedParts(lot.startTime, log.timestampThingspeak);
+
+            return {
+                date: formatDateTime(log.timestampThingspeak),
+                hour: formatElapsedHour(lot.startTime, log.timestampThingspeak),
+                minute: formatElapsedMinute(lot.startTime, log.timestampThingspeak),
+                tempTop: formatDecimal(log.tempTop),
+                tempBottom: formatDecimal(log.tempBottom),
+                rhTop: formatDecimal(log.rhTop),
+                rhBottom: formatDecimal(log.rhBottom),
+                mc: formatDecimal(log.mc),
+                status: formatStatus(log.statusBin),
+                tempTopValue: toNumber(log.tempTop),
+                tempBottomValue: toNumber(log.tempBottom),
+                rhTopValue: toNumber(log.rhTop),
+                rhBottomValue: toNumber(log.rhBottom),
+                mcValue: toNumber(log.mc),
+                hourValue: elapsed?.hour ?? null,
+                minuteValue: elapsed?.minute ?? null,
+            };
+        }),
         totalLogCount: allLogs.length,
-        overflowLogCount: Math.max(allLogs.length - REPORT_MAX_LOG_ROWS, 0),
     };
 };
