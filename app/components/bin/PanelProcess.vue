@@ -44,6 +44,11 @@
               lotState.value.data.lot.status = 'DOWNAIR'
               lotState.value.data.lot.downAirAt = safeIsoString
           }
+          const { data: adminLotState } = useNuxtData(`admin-lot-${props.lotNumber}`)
+          if (adminLotState.value && adminLotState.value.data && adminLotState.value.data.lot) {
+              adminLotState.value.data.lot.status = 'DOWNAIR'
+              adminLotState.value.data.lot.downAirAt = safeIsoString
+          }
 
           await $fetch(`/api/dryarea/process/down_air`, {
             method: 'PUT',
@@ -56,6 +61,8 @@
           // Memicu re-fetch di komponen induk (sinkronisasi memastikan data server konsisten)
           await refreshNuxtData(`lot-${props.lotNumber}`)
           await refreshNuxtData(`report-${props.lotNumber}`)
+          await refreshNuxtData(`admin-lot-${props.lotNumber}`)
+          await refreshNuxtData(`admin-report-${props.lotNumber}`)
 
           toast.add({
             title: 'Berhasil Set Down',
@@ -68,6 +75,11 @@
           if (lotState.value && lotState.value.data && lotState.value.data.lot) {
               lotState.value.data.lot.status = 'COMPLETED'
               lotState.value.data.lot.endTime = safeIsoString
+          }
+          const { data: adminLotState } = useNuxtData(`admin-lot-${props.lotNumber}`)
+          if (adminLotState.value && adminLotState.value.data && adminLotState.value.data.lot) {
+              adminLotState.value.data.lot.status = 'COMPLETED'
+              adminLotState.value.data.lot.endTime = safeIsoString
           }
 
           await $fetch(`/api/dryarea/process/end`, {
@@ -82,9 +94,11 @@
               title: 'Berhasil Set Stop',
               color: 'success'
           })
-
-          // Redirect ke halaman Bin setelah Lot selesai
-          await navigateTo(`/dryer/${props.lot.areaId}/bin/${props.binNumber}/start`)
+          
+          await refreshNuxtData(`lot-${props.lotNumber}`)
+          await refreshNuxtData(`report-${props.lotNumber}`)
+          await refreshNuxtData(`admin-lot-${props.lotNumber}`)
+          await refreshNuxtData(`admin-report-${props.lotNumber}`)
         }
 
     } catch (error) {
@@ -96,6 +110,7 @@
         })
         // Jika gagal, tarik ulang dari server untuk me-rollback optimistic update
         await refreshNuxtData(`lot-${props.lotNumber}`)
+        await refreshNuxtData(`admin-lot-${props.lotNumber}`)
     }
     }
     const formatCompactDateTime = (isoString?: string | null | undefined) => {
@@ -158,6 +173,11 @@
                 lotState.value.data.lot.status = 'UPAIR'
                 lotState.value.data.lot.downAirAt = null
             }
+            const { data: adminLotState } = useNuxtData(`admin-lot-${props.lotNumber}`)
+            if (adminLotState.value && adminLotState.value.data && adminLotState.value.data.lot) {
+                adminLotState.value.data.lot.status = 'UPAIR'
+                adminLotState.value.data.lot.downAirAt = null
+            }
 
             await $fetch(`/api/dryarea/process/undo_downair`, {
                 method: 'PUT',
@@ -168,6 +188,8 @@
 
             await refreshNuxtData(`lot-${props.lotNumber}`)
             await refreshNuxtData(`report-${props.lotNumber}`)
+            await refreshNuxtData(`admin-lot-${props.lotNumber}`)
+            await refreshNuxtData(`admin-report-${props.lotNumber}`)
 
             toast.add({
                 title: 'Berhasil Undo Down',
@@ -181,6 +203,80 @@
             })
             // Rollback optimistic update if failed
             await refreshNuxtData(`lot-${props.lotNumber}`)
+            await refreshNuxtData(`admin-lot-${props.lotNumber}`)
+        }
+    }
+    const emptyBin = async () => {
+        try {
+            await $fetch(`/api/dryarea/process/empty`, {
+                method: 'PUT',
+                body: {
+                    bin_number: parseInt(props.binNumber),
+                    area_id: props.lot.areaId,
+                    lot_number: props.lotNumber
+                }
+            })
+
+            toast.add({
+                title: 'Bin berhasil dikosongkan',
+                color: 'success'
+            })
+            
+            // Redirect to Area page or refresh Nuxt data
+            await navigateTo(`/dryercfg/${props.lot.areaId}`)
+
+        } catch (error: any) {
+            console.error('Gagal mengosongkan bin:', error)
+            toast.add({
+                title: 'Gagal',
+                description: error.data?.statusMessage || 'Terjadi kesalahan sistem.',
+                color: 'error'
+            })
+        }
+    }
+
+    const undo_stop = async () => {
+        try {
+            // Optimistic UI Update untuk Undo Stop
+            const { data: lotState } = useNuxtData(`lot-${props.lotNumber}`)
+            if (lotState.value && lotState.value.data && lotState.value.data.lot) {
+                lotState.value.data.lot.status = 'DOWNAIR'
+                lotState.value.data.lot.endTime = null
+                lotState.value.data.lot.endMC = null
+            }
+            const { data: adminLotState } = useNuxtData(`admin-lot-${props.lotNumber}`)
+            if (adminLotState.value && adminLotState.value.data && adminLotState.value.data.lot) {
+                adminLotState.value.data.lot.status = 'DOWNAIR'
+                adminLotState.value.data.lot.endTime = null
+                adminLotState.value.data.lot.endMC = null
+            }
+
+            await $fetch(`/api/dryarea/process/undo_stop`, {
+                method: 'PUT',
+                body: {
+                    lot_id: props.lot.lotId
+                }
+            })
+
+            await refreshNuxtData(`lot-${props.lotNumber}`)
+            await refreshNuxtData(`report-${props.lotNumber}`)
+            await refreshNuxtData(`admin-lot-${props.lotNumber}`)
+            await refreshNuxtData(`admin-report-${props.lotNumber}`)
+
+            toast.add({
+                title: 'Berhasil Undo Stop',
+                color: 'success'
+            })
+        } catch (error: any) {
+            console.error('Terjadi kegagalan transmisi data:', error)
+            toast.add({
+                title: 'Gagal Undo Stop',
+                description: error.data?.statusMessage || 'Terjadi kesalahan sistem.',
+                color: 'error'
+            })
+            // Rollback optimistic update if failed
+            await refreshNuxtData(`lot-${props.lotNumber}`)
+            await refreshNuxtData(`admin-lot-${props.lotNumber}`)
         }
     }
 </script>
@@ -250,6 +346,25 @@
         @click="openControlModal('stop')"
       >
         Set Stop
+      </UButton>
+
+      <UButton 
+        v-if="lot.endTime"
+        color="error" 
+        class="rounded-none"
+        @click="undo_stop()"
+      >
+        Undo Stop
+      </UButton>
+
+      <UButton 
+        v-if="lot.endTime"
+        color="success" 
+        icon="i-lucide-check-circle"
+        class="rounded-none"
+        @click="emptyBin()"
+      >
+        Kosongkan Bin
       </UButton>
     </div>
 
