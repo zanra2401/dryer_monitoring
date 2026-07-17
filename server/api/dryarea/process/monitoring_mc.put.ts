@@ -13,7 +13,7 @@ const mcUpdateSchema = z.object({
 
 export default defineEventHandler(async (event) => {
     try {
-        const user = await requireAuthRole(event, ["ADMIN", "OPERATOR"]);
+        const user = await requireAuthRole(event, ["ADMIN", "OPERATOR", "MANAGER"]);
         const body = await readBody(event);
         const { lot_id, target_time, mc, remark } = mcUpdateSchema.parse(body);
 

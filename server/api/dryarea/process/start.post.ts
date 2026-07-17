@@ -21,7 +21,7 @@ const startDryingSchema = z.object({
 
 export default defineEventHandler(async (event) => {
     try {
-        const user = await requireAuthRole(event, ["ADMIN", "OPERATOR"]);
+        const user = await requireAuthRole(event, ["ADMIN", "OPERATOR", "MANAGER"]);
         const rawBody = await readBody(event);
         
         // Eksekusi Validasi Zod (Akan otomatis melempar galat ke blok catch jika format salah)

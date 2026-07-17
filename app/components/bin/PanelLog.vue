@@ -12,7 +12,7 @@ import { useDryerAuth } from '~/composable/useDryerAuth';
 const UBadge = resolveComponent('UBadge')
 const toast = useToast();
 const { user: sessionUser } = useDryerAuth();
-const isClient = computed(() => sessionUser.value?.role === 'CLIENT');
+const isReadOnly = computed(() => sessionUser.value?.role === 'CLIENT');
 
 export interface Log {
   // logId dihapus karena data ini adalah hasil komputasi interval 30-menit, bukan baris tabel mentah
@@ -141,7 +141,7 @@ const selectedRowData = ref<Log | null>(null)
 // Dalam TanStack Table, 'row' yang diklik mengandung metadata kompleks.
 // Anda HARUS menggunakan referensi `row.original` untuk mendapatkan entitas data aslinya.
 const handleRowSelect = (e: Event, row: TableRow<Log>) => {
-  if (isClient.value) return; // Client is read-only
+  if (isReadOnly.value) return; // Client is read-only
   console.log(row) // Debug: Pastikan data asli berhasil diekstraksi
   selectedRowData.value = { ...row.original } 
   isModalOpen.value = true
@@ -219,9 +219,9 @@ const paginatedLogs = computed(() => {
       :key="`log-table-page-${page}`"
       :data="paginatedLogs" 
       :columns="columns"
-      :class="[!isClient ? 'cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800' : '']"
+      :class="[!isReadOnly ? 'cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800' : '']"
       class="transition-colors"
-      @select="(e: Event, row: TableRow<Log>) => !isClient && handleRowSelect(e, row)"
+      @select="(e: Event, row: TableRow<Log>) => !isReadOnly && handleRowSelect(e, row)"
     />
   </UCard>
   <div class="w-full flex justify-center items-center mb-6">
@@ -229,7 +229,7 @@ const paginatedLogs = computed(() => {
   </div>
 
   <OperatorEntryModal 
-    v-if="!isClient"
+    v-if="!isReadOnly"
     v-model="isModalOpen" 
     :selected-data="selectedRowData"
     @save="saveOperatorData"

@@ -73,7 +73,6 @@ const navItems = computed(() => {
     { label: 'Lots Config', icon: 'i-lucide-package-search', to: '/dryercfg' },
     { label: 'Dry Area', icon: 'i-lucide-inbox', to: '/dryercfg/dry-areas' },
     { label: 'Users', icon: 'i-lucide-users', to: '/dryercfg/users' },
-    { label: 'Dryers Monitor', icon: 'i-lucide-factory', to: '/dryer' },
   ];
 });
 </script>

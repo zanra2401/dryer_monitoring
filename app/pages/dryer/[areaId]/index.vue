@@ -1,6 +1,6 @@
 <script setup lang="ts">
     import GridLoader from '~/components/GridLoader.vue';
-    import Header from '~/components/Header.vue';
+    import DryerPageShell from '~/components/DryerPageShell.vue';
     import { useDryerAuth } from '~/composable/useDryerAuth';
     
     const route = useRoute();
@@ -28,11 +28,11 @@
     }
 </script>
 <template>
+    <DryerPageShell :loading="bins == null">
     <div v-if="bins == null" class="w-full h-screen flex justify-center items-center">
         <GridLoader />
     </div>  
     <div v-else>
-        <Header />
         <div class="flex items-center justify-between p-2">
             <div class="flex items-center">
                 <NuxtLink class="p-2 flex items-center" to="/dryer">
@@ -119,4 +119,5 @@
             <p class="text-sm text-gray-500 dark:text-gray-400 max-w-sm">Area pengeringan ini belum memiliki bin yang terdaftar atau aktif. Hubungi administrator untuk menambahkan konfigurasi bin baru.</p>
         </div>
     </div>
+    </DryerPageShell>
 </template> 

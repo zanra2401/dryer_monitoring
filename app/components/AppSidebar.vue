@@ -38,6 +38,14 @@ function getItems(state: 'collapsed' | 'expanded') {
     },
   ]
 
+  if (role === 'MANAGER') {
+    baseItems.push({
+      label: 'Dryers Monitor',
+      icon: 'i-lucide-factory',
+      to: '/dryer',
+    })
+  }
+
   if (role !== 'MANAGER') {
     baseItems.push({
       label: 'Users',

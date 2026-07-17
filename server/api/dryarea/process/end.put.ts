@@ -13,7 +13,7 @@ const endDryingSchema = z.object({
 
 export default defineEventHandler(async (event) => {
     try {
-        const user = await requireAuthRole(event, ["ADMIN", "OPERATOR"]);
+        const user = await requireAuthRole(event, ["ADMIN", "OPERATOR", "MANAGER"]);
         const rawBody = await readBody(event);
         const { lot_id, time } = endDryingSchema.parse(rawBody);
         const endTimeStr = new Date(time).toISOString();

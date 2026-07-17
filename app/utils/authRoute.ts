@@ -24,12 +24,17 @@ export const isAllowedRouteForRole = (role: Role | null | undefined, path: strin
         return false;
     }
 
-    if (role === "ADMIN" || role === "MANAGER") {
-        // MANAGER cannot access user management
-        if (role === "MANAGER" && isPathWithin(path, "/dryercfg/users")) {
+    if (role === "ADMIN") {
+        return ADMIN_ROUTES.some((prefix) => isPathWithin(path, prefix));
+    }
+
+    if (role === "MANAGER") {
+        if (isPathWithin(path, "/dryercfg/users")) {
             return false;
         }
-        return ADMIN_ROUTES.some((prefix) => isPathWithin(path, prefix));
+
+        return ADMIN_ROUTES.some((prefix) => isPathWithin(path, prefix))
+            || OPERATOR_ROUTES.some((prefix) => isPathWithin(path, prefix));
     }
 
     if (role === "OPERATOR") {

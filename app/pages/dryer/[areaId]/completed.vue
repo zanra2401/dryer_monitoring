@@ -1,7 +1,7 @@
 <script setup lang="ts">
     import { ref, h, computed, resolveComponent } from 'vue'
     import GridLoader from '~/components/GridLoader.vue';
-    import Header from '~/components/Header.vue';
+    import DryerPageShell from '~/components/DryerPageShell.vue';
 
     import { useDryerAuth } from '~/composable/useDryerAuth';
 
@@ -129,11 +129,11 @@
 </script>
 
 <template>
+    <DryerPageShell :loading="lotsResponse == null">
     <div v-if="lotsResponse == null" class="w-full h-screen flex justify-center items-center">
         <GridLoader />
     </div>
     <div v-else>
-        <Header />
         <div class="flex items-center justify-between p-2">
             <div class="flex items-center">
                 <NuxtLink :to="`/dryer/${areaId}`" class="p-2 flex items-center">
@@ -164,4 +164,5 @@
             </div>
         </div>
     </div>
+    </DryerPageShell>
 </template>

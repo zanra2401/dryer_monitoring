@@ -13,7 +13,7 @@ const schema = z.object({
 
 export default defineEventHandler(async (event) => {
     try {
-        const user = await requireAuthRole(event, ["ADMIN", "OPERATOR"]);
+        const user = await requireAuthRole(event, ["ADMIN", "OPERATOR", "MANAGER"]);
         const body = await readBody(event);
         const { time, lot_id } = schema.parse(body);
 

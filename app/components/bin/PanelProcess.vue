@@ -11,7 +11,7 @@
     }>();
     const router = useRouter();
     const { user: sessionUser } = useDryerAuth();
-    const isClient = computed(() => sessionUser.value?.role === 'CLIENT');
+    const isReadOnly = computed(() => sessionUser.value?.role === 'CLIENT');
 
     // State untuk mengelola modal operasi kendali
     const isControlModalOpen = ref(false)
@@ -227,7 +227,7 @@
       </div>
     </template>
 
-    <div class="mb-5 flex gap-2" v-if="!isClient">
+    <div class="mb-5 flex gap-2" v-if="!isReadOnly">
       <UButton v-if="lot.downAirAt == null"
         color="warning" 
         class="rounded-none"
