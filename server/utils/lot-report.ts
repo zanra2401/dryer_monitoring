@@ -205,7 +205,7 @@ const formatDryingRate = (
     return new Intl.NumberFormat("en-US", {
         minimumFractionDigits: 1,
         maximumFractionDigits: 1,
-    }).format(dryDown / roundedHour);
+    }).format(roundedHour / dryDown);
 };
 
 const formatStatus = (status: string | null | undefined) => {
