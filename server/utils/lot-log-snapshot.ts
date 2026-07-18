@@ -143,14 +143,24 @@ export async function getLotSnapshotLogTimeline(lotId: number) {
 
     const logs: LotSnapshotLogRow[] = [];
     let currentMs = startMs;
+    const latestBinLog = binLogs[binLogs.length - 1] ?? null;
+    const latestMcLog = mcLogs[mcLogs.length - 1] ?? null;
+    const latestActualMs = Math.max(
+        latestBinLog?.timestampThingspeak.getTime() ?? Number.NEGATIVE_INFINITY,
+        latestMcLog?.createdAt.getTime() ?? Number.NEGATIVE_INFINITY,
+    );
+    const latestIntervalKey = Number.isFinite(latestActualMs) ? getIntervalKey(new Date(latestActualMs)) : null;
+    const nextLogTimestamp = new Date(latestIntervalKey === null ? startMs : latestIntervalKey + INTERVAL_MS);
 
     while (currentMs <= endMs) {
         const slotBinLogs = binLogMap.get(currentMs) ?? [];
         const latestBinLog = slotBinLogs[slotBinLogs.length - 1] ?? null;
         const latestMcLog = mcLogMap.get(currentMs) ?? null;
 
-        let statusBin = "UPAIR";
-        if (lot.downAirAt) {
+        let statusBin = latestBinLog?.statusBin ?? "UPAIR";
+        if (!latestBinLog && lot.status === "COMPLETED" && lot.endTime && currentMs >= new Date(lot.endTime).getTime()) {
+            statusBin = "COMPLETED";
+        } else if (!latestBinLog && lot.downAirAt) {
             const downAirMs = new Date(lot.downAirAt).getTime();
             statusBin = currentMs >= downAirMs ? "DOWNAIR" : "UPAIR";
         }
@@ -182,5 +192,6 @@ export async function getLotSnapshotLogTimeline(lotId: number) {
     return {
         lot,
         logs,
+        nextLogTimestamp,
     };
 }

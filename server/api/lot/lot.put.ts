@@ -12,6 +12,7 @@ const bodySchema = z.object({
     status: z.enum(["UPAIR", "DOWNAIR", "COMPLETED"]).optional(),
     down_air_at: z.coerce.date().optional().nullable(),
     down_mc: z.coerce.number().optional().nullable(),
+    created_by: z.coerce.number().int().positive().optional().nullable(),
     bin_number: z.coerce.number().int().positive().optional(),
     area_id: z.coerce.number().int().positive().optional(),
     start_time: z.coerce.date().optional(),
@@ -71,6 +72,34 @@ export default defineEventHandler(async (event) => {
             }
         }
 
+        if (body.created_by !== undefined && body.created_by !== null) {
+            const selectedUser = await prisma.user.findUnique({
+                where: { userId: body.created_by },
+                select: {
+                    userId: true,
+                    role: true,
+                    canAccess: {
+                        where: {
+                            areaId: nextAreaId,
+                        },
+                        select: {
+                            areaId: true,
+                        },
+                    },
+                },
+            });
+
+            if (!selectedUser) {
+                setResponseStatus(event, 404);
+                return { error: "User not found" };
+            }
+
+            if (selectedUser.role !== "OPERATOR" || selectedUser.canAccess.length === 0) {
+                setResponseStatus(event, 400);
+                return { error: "Created by user must be an operator with access to this dryer area" };
+            }
+        }
+
         const activeLotConflict = await prisma.lot.findFirst({
             where: {
                 lotId: {
@@ -113,6 +142,7 @@ export default defineEventHandler(async (event) => {
                     ...(body.status !== undefined ? { status: body.status } : {}),
                     ...(body.down_air_at !== undefined ? { downAirAt: body.down_air_at } : {}),
                     ...(body.down_mc !== undefined ? { downMC: body.down_mc } : {}),
+                    ...(body.created_by !== undefined ? { createdBy: body.created_by } : {}),
                     ...(body.bin_number !== undefined ? { binNumber: body.bin_number } : {}),
                     ...(body.area_id !== undefined ? { areaId: body.area_id } : {}),
                     ...(body.start_time !== undefined ? { startTime: body.start_time } : {}),

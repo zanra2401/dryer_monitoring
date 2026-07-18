@@ -8,6 +8,7 @@ import { useBinOptions } from "~/composable/useBinOptions";
 import { useDryerAreaOptions } from "~/composable/useDryerAreaOptions";
 import { useLotCRUD } from "~/composable/useLotCRUD";
 import { useDryerAuth } from "~/composable/useDryerAuth";
+import { useAreaOperatorOptions } from "~/composable/useAreaOperatorOptions";
 import {
   LOT_PAGE_SIZE_OPTIONS,
   LOT_STATUSES,
@@ -67,6 +68,12 @@ const {
 } = useBinOptions();
 
 const {
+  options: createOperatorOptions,
+  loading: createOperatorsLoading,
+  fetch_operator_options: fetchCreateOperatorOptions,
+} = useAreaOperatorOptions();
+
+const {
   create_data,
   loading: crudLoading,
   create_lot,
@@ -122,15 +129,15 @@ const statusFilterItems = [
   })),
 ];
 
-const lotStatusItems = LOT_STATUSES.map((status) => ({
-  label: statusLabels[status],
-  value: status,
-}));
-
 const pageSizeItems = LOT_PAGE_SIZE_OPTIONS.map((size) => ({
   label: `${size}`,
   value: size,
 }));
+
+const createOperatorSelectItems = computed(() => [
+  { label: "-", value: null },
+  ...createOperatorOptions.value,
+]);
 
 const binFilterItems = computed(() => [
   { label: "ALL", value: ALL_BIN_FILTER_VALUE },
@@ -199,6 +206,13 @@ const createBinNumberModel = computed<number | undefined>({
   get: () => create_data.value.bin_number ?? undefined,
   set: (value) => {
     create_data.value.bin_number = value ?? null;
+  },
+});
+
+const createCreatedByModel = computed<number | null>({
+  get: () => create_data.value.created_by,
+  set: (value) => {
+    create_data.value.created_by = value ?? null;
   },
 });
 
@@ -415,12 +429,16 @@ const resetFilters = async () => {
 const openCreateModal = async () => {
   reset_create_data();
   createBinOptions.value = [];
+  createOperatorOptions.value = [];
   isCreateConfirmOpen.value = false;
 
   const selectedAreaId = selectedAreaIds.value[0];
   if (selectedAreaIds.value.length === 1 && selectedAreaId !== undefined) {
     create_data.value.area_id = selectedAreaId;
-    await fetchCreateBinOptions([selectedAreaId]);
+    await Promise.all([
+      fetchCreateBinOptions([selectedAreaId]),
+      fetchCreateOperatorOptions(selectedAreaId),
+    ]);
   }
 
   isCreateOpen.value = true;
@@ -503,15 +521,24 @@ watch(
   async (areaId) => {
     if (!areaId) {
       create_data.value.bin_number = null;
+      create_data.value.created_by = null;
       createBinOptions.value = [];
+      createOperatorOptions.value = [];
       return;
     }
 
     try {
-      await fetchCreateBinOptions([areaId]);
+      await Promise.all([
+        fetchCreateBinOptions([areaId]),
+        fetchCreateOperatorOptions(areaId),
+      ]);
 
       if (!createBinOptions.value.some((option) => option.value === create_data.value.bin_number)) {
         create_data.value.bin_number = null;
+      }
+
+      if (create_data.value.created_by !== null && !createOperatorOptions.value.some((option) => option.value === create_data.value.created_by)) {
+        create_data.value.created_by = null;
       }
     } catch (error) {
       toast.add({
@@ -841,19 +868,9 @@ onMounted(async () => {
             <UFormField label="Lot Number" required>
               <UInput v-model="create_data.lot_number" autocomplete="off" class="w-full" />
             </UFormField>
-
-            <UFormField label="Status" required>
-              <USelect
-                v-model="create_data.status"
-                :items="lotStatusItems"
-                value-key="value"
-                label-key="label"
-                class="w-full"
-              />
-            </UFormField>
           </div>
 
-          <div class="grid gap-4 md:grid-cols-2">
+          <div class="grid gap-4 md:grid-cols-3">
             <UFormField label="Dryer Area" required>
               <USelect
                 v-model="createAreaIdModel"
@@ -875,6 +892,19 @@ onMounted(async () => {
                 placeholder="Select bin"
                 class="w-full"
                 :loading="createBinsLoading"
+                :disabled="!create_data.area_id"
+              />
+            </UFormField>
+
+            <UFormField label="Created By">
+              <USelect
+                v-model="createCreatedByModel"
+                :items="createOperatorSelectItems"
+                value-key="value"
+                label-key="label"
+                placeholder="Select operator"
+                class="w-full"
+                :loading="createOperatorsLoading"
                 :disabled="!create_data.area_id"
               />
             </UFormField>

@@ -111,7 +111,7 @@ model Lot {
   endTime      DateTime? @map("end_time")
   endMC        Float?    @map("end_mc")
   depth        Float?    @map("depth")
-
+    
   user         User?     @relation("CreatedLots", fields: [createdBy], references: [userId])
   mcLogs       LotMcLog[]
 

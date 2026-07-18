@@ -18,6 +18,7 @@ import {
 import { LOT_STATUSES, type LotRow, type LotStatus } from "~/composable/useLotList";
 import { useLotCRUD } from "~/composable/useLotCRUD";
 import { useDryerAuth } from "~/composable/useDryerAuth";
+import { useAreaOperatorOptions } from "~/composable/useAreaOperatorOptions";
 
 const { user: sessionUser } = useDryerAuth();
 const isClient = computed(() => sessionUser.value?.role === "CLIENT");
@@ -51,6 +52,12 @@ const {
 } = useBinOptions();
 
 const {
+  options: detailOperatorOptions,
+  loading: detailOperatorsLoading,
+  fetch_operator_options: fetchDetailOperatorOptions,
+} = useAreaOperatorOptions();
+
+const {
   update_data,
   loading: lotCrudLoading,
   fetch_lot_detail,
@@ -70,6 +77,13 @@ const updateBinNumberModel = computed<number | undefined>({
   get: () => update_data.value.bin_number ?? undefined,
   set: (value) => {
     update_data.value.bin_number = value ?? null;
+  },
+});
+
+const updateCreatedByModel = computed<number | null>({
+  get: () => update_data.value.created_by,
+  set: (value) => {
+    update_data.value.created_by = value ?? null;
   },
 });
 
@@ -155,8 +169,10 @@ const logPageSizeItems = LOG_PAGE_SIZE_OPTIONS.map((size) => ({
 
 const logTableData = computed(() => logCurrentData.value?.data ?? []);
 const logTotalCount = computed(() => logCurrentData.value?.totalCount ?? 0);
-const isEditingStandaloneMcLog = computed(() => updateLogData.value.is_standalone_mc_log);
-const telemetryFieldHint = "Sensor telemetry follows bin logs and is read-only in lot detail.";
+const operatorSelectItems = computed(() => [
+  { label: "-", value: null },
+  ...detailOperatorOptions.value,
+]);
 
 const isInitialLoading = computed(() => initialLoading.value && lot.value === null);
 
@@ -295,7 +311,7 @@ const requestLotUpdateConfirmation = () => {
 
 const openCreateLogModal = () => {
   reset_create_data(lotId.value);
-  createLogData.value.timestamp_thingspeak = toDateTimeLocalInput(new Date());
+  createLogData.value.timestamp_thingspeak = toDateTimeLocalInput(logCurrentData.value?.nextLogTimestamp ?? lot.value?.startTime ?? new Date());
   createLogData.value.status_bin = lot.value?.status ?? "UPAIR";
   createLogData.value.is_standalone_mc_log = true;
   isCreateLogConfirmOpen.value = false;
@@ -317,6 +333,7 @@ const openDeleteLogModal = (log: LogRow) => {
 const handleCreateLog = async () => {
   try {
     await create_log();
+    await refreshLotDetail();
     isCreateLogOpen.value = false;
     toast.add({
       title: "Log created",
@@ -337,6 +354,7 @@ const handleCreateLog = async () => {
 const handleUpdateLog = async () => {
   try {
     await update_log();
+    await refreshLotDetail();
     isEditLogOpen.value = false;
     selectedLog.value = null;
     toast.add({
@@ -475,15 +493,24 @@ watch(
   async (areaId) => {
     if (!areaId) {
       detailBinOptions.value = [];
+      detailOperatorOptions.value = [];
       update_data.value.bin_number = null;
+      update_data.value.created_by = null;
       return;
     }
 
     try {
-      await fetchDetailBinOptions([areaId]);
+      await Promise.all([
+        fetchDetailBinOptions([areaId]),
+        fetchDetailOperatorOptions(areaId),
+      ]);
 
       if (!detailBinOptions.value.some((option) => option.value === update_data.value.bin_number)) {
         update_data.value.bin_number = null;
+      }
+
+      if (update_data.value.created_by !== null && !detailOperatorOptions.value.some((option) => option.value === update_data.value.created_by)) {
+        update_data.value.created_by = null;
       }
     } catch (error) {
       toast.add({
@@ -741,10 +768,10 @@ onMounted(async () => {
 
             <div class="rounded-lg border border-default p-3">
               <p class="text-xs uppercase tracking-wide text-muted">
-                Created By
+                Status
               </p>
               <p class="mt-1 text-sm font-medium text-highlighted">
-                {{ lot.createdBy ? `User #${lot.createdBy}` : "-" }}
+                {{ lot ? statusLabels[lot.status] : "-" }}
               </p>
             </div>
 
@@ -764,17 +791,6 @@ onMounted(async () => {
                 <UInput v-model="update_data.lot_number" :disabled="isReadOnly" class="w-full" />
               </UFormField>
 
-              <UFormField label="Status" required>
-                <USelect
-                  v-model="update_data.status"
-                  :disabled="isReadOnly"
-                  :items="lotStatusItems"
-                  value-key="value"
-                  label-key="label"
-                  class="w-full"
-                />
-              </UFormField>
-
               <UFormField label="Dryer Area" required>
                 <USelect
                   v-model="updateAreaIdModel"
@@ -784,6 +800,19 @@ onMounted(async () => {
                   label-key="label"
                   class="w-full"
                   :loading="dryerAreasLoading"
+                />
+              </UFormField>
+
+              <UFormField label="Created By">
+                <USelect
+                  v-model="updateCreatedByModel"
+                  :disabled="isReadOnly || !update_data.area_id"
+                  :items="operatorSelectItems"
+                  value-key="value"
+                  label-key="label"
+                  placeholder="Select operator"
+                  class="w-full"
+                  :loading="detailOperatorsLoading"
                 />
               </UFormField>
 
@@ -924,25 +953,31 @@ onMounted(async () => {
             </UFormField>
 
             <UFormField label="Status Bin">
-              <UInput v-model="createLogData.status_bin" class="w-full" disabled />
+              <USelect
+                v-model="createLogData.status_bin"
+                :items="lotStatusItems"
+                value-key="value"
+                label-key="label"
+                class="w-full"
+              />
             </UFormField>
           </div>
 
           <div class="grid gap-4 md:grid-cols-2">
             <UFormField label="Temp Top">
-              <UInputNumber v-model="createLogData.temp_top" v-bind="numberInputProps" :step="0.01" class="w-full" disabled />
+              <UInputNumber v-model="createLogData.temp_top" v-bind="numberInputProps" :step="0.01" class="w-full" />
             </UFormField>
 
             <UFormField label="RH Top">
-              <UInputNumber v-model="createLogData.rh_top" v-bind="numberInputProps" :step="0.01" class="w-full" disabled />
+              <UInputNumber v-model="createLogData.rh_top" v-bind="numberInputProps" :step="0.01" class="w-full" />
             </UFormField>
 
             <UFormField label="Temp Bottom">
-              <UInputNumber v-model="createLogData.temp_bottom" v-bind="numberInputProps" :step="0.01" class="w-full" disabled />
+              <UInputNumber v-model="createLogData.temp_bottom" v-bind="numberInputProps" :step="0.01" class="w-full" />
             </UFormField>
 
             <UFormField label="RH Bottom">
-              <UInputNumber v-model="createLogData.rh_bottom" v-bind="numberInputProps" :step="0.01" class="w-full" disabled />
+              <UInputNumber v-model="createLogData.rh_bottom" v-bind="numberInputProps" :step="0.01" class="w-full" />
             </UFormField>
 
             <UFormField label="MC" required>
@@ -958,9 +993,6 @@ onMounted(async () => {
             </UFormField>
           </div>
 
-          <p class="text-sm text-muted">
-            {{ telemetryFieldHint }}
-          </p>
         </form>
       </template>
 
@@ -1019,29 +1051,35 @@ onMounted(async () => {
         <form id="edit-log-form" class="space-y-4" @submit.prevent="handleUpdateLog">
           <div class="grid gap-4 md:grid-cols-2">
             <UFormField label="Timestamp" required>
-              <UInput v-model="updateLogData.timestamp_thingspeak" type="datetime-local" class="w-full" :disabled="!isEditingStandaloneMcLog" />
+              <UInput v-model="updateLogData.timestamp_thingspeak" type="datetime-local" class="w-full" />
             </UFormField>
 
             <UFormField label="Status Bin">
-              <UInput v-model="updateLogData.status_bin" class="w-full" disabled />
+              <USelect
+                v-model="updateLogData.status_bin"
+                :items="lotStatusItems"
+                value-key="value"
+                label-key="label"
+                class="w-full"
+              />
             </UFormField>
           </div>
 
           <div class="grid gap-4 md:grid-cols-2">
             <UFormField label="Temp Top">
-              <UInputNumber v-model="updateLogData.temp_top" v-bind="numberInputProps" :step="0.01" class="w-full" disabled />
+              <UInputNumber v-model="updateLogData.temp_top" v-bind="numberInputProps" :step="0.01" class="w-full" />
             </UFormField>
 
             <UFormField label="RH Top">
-              <UInputNumber v-model="updateLogData.rh_top" v-bind="numberInputProps" :step="0.01" class="w-full" disabled />
+              <UInputNumber v-model="updateLogData.rh_top" v-bind="numberInputProps" :step="0.01" class="w-full" />
             </UFormField>
 
             <UFormField label="Temp Bottom">
-              <UInputNumber v-model="updateLogData.temp_bottom" v-bind="numberInputProps" :step="0.01" class="w-full" disabled />
+              <UInputNumber v-model="updateLogData.temp_bottom" v-bind="numberInputProps" :step="0.01" class="w-full" />
             </UFormField>
 
             <UFormField label="RH Bottom">
-              <UInputNumber v-model="updateLogData.rh_bottom" v-bind="numberInputProps" :step="0.01" class="w-full" disabled />
+              <UInputNumber v-model="updateLogData.rh_bottom" v-bind="numberInputProps" :step="0.01" class="w-full" />
             </UFormField>
 
             <UFormField label="MC">
@@ -1057,9 +1095,6 @@ onMounted(async () => {
             </UFormField>
           </div>
 
-          <p class="text-sm text-muted">
-            {{ telemetryFieldHint }}
-          </p>
         </form>
       </template>
 

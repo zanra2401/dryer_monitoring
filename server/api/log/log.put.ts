@@ -1,6 +1,7 @@
 import { prisma } from "~~/server/utils/prisma";
 import { findStandaloneMcLog, resolveLinkedMcLog, toStandaloneMcLogId } from "~~/server/utils/lot-log";
 import { isSyntheticLogId, parseSyntheticLogId } from "~~/server/utils/lot-log-snapshot";
+import { normalizeLotStatusFromLog, syncLotStatusFromLog } from "~~/server/utils/lot-log-status-sync";
 import { ZodError, z } from "zod";
 
 const bodySchema = z.object({
@@ -31,6 +32,7 @@ export default defineEventHandler(async (event) => {
                     binNumber: true,
                     areaId: true,
                     status: true,
+                    lotNumber: true,
                     startTime: true,
                     endTime: true,
                     downAirAt: true,
@@ -43,6 +45,7 @@ export default defineEventHandler(async (event) => {
             }
 
             const nextMs = timestamp.getTime() + 30 * 60 * 1000;
+            const targetTimestamp = body.timestamp_thingspeak ?? timestamp;
             let mcLog = await prisma.lotMcLog.findFirst({
                 where: {
                     lotId,
@@ -63,11 +66,12 @@ export default defineEventHandler(async (event) => {
                 } else {
                     mcLog = await prisma.lotMcLog.update({
                         where: { lotMcLogId: mcLog.lotMcLogId },
-                        data: {
-                            ...(body.mc !== undefined ? { mc: body.mc } : {}),
-                            ...(body.checker_name !== undefined ? { checkerName: body.checker_name } : {}),
-                            ...(body.remark !== undefined ? { remark: body.remark } : {}),
-                        }
+                            data: {
+                                ...(body.mc !== undefined ? { mc: body.mc } : {}),
+                                ...(body.timestamp_thingspeak !== undefined ? { createdAt: targetTimestamp } : {}),
+                                ...(body.checker_name !== undefined ? { checkerName: body.checker_name } : {}),
+                                ...(body.remark !== undefined ? { remark: body.remark } : {}),
+                            }
                     });
                 }
             } else if (body.mc !== undefined && body.mc !== null) {
@@ -77,24 +81,66 @@ export default defineEventHandler(async (event) => {
                         mc: body.mc,
                         checkerName: body.checker_name ?? null,
                         remark: body.remark ?? null,
-                        createdAt: timestamp
+                        createdAt: targetTimestamp
                     }
                 });
             }
 
-            const [latestBinLog] = await Promise.all([
-                prisma.binLog.findFirst({
-                    where: {
-                        binNumber: lot.binNumber,
-                        areaId: lot.areaId,
-                        timestampThingspeak: {
-                            gte: timestamp,
-                            lt: new Date(nextMs)
-                        }
-                    },
-                    orderBy: { timestampThingspeak: 'desc' }
-                })
-            ]);
+            let latestBinLog = await prisma.binLog.findFirst({
+                where: {
+                    binNumber: lot.binNumber,
+                    areaId: lot.areaId,
+                    timestampThingspeak: {
+                        gte: timestamp,
+                        lt: new Date(nextMs)
+                    }
+                },
+                orderBy: { timestampThingspeak: 'desc' }
+            });
+
+            const shouldWriteBinLog = body.timestamp_thingspeak !== undefined
+                || body.status_bin !== undefined
+                || body.temp_top !== undefined
+                || body.rh_top !== undefined
+                || body.temp_bottom !== undefined
+                || body.rh_bottom !== undefined
+                || body.remark !== undefined;
+
+            if (shouldWriteBinLog) {
+                const nextStatusBin = body.status_bin !== undefined
+                    ? normalizeLotStatusFromLog(body.status_bin)
+                    : normalizeLotStatusFromLog(latestBinLog?.statusBin ?? lot.status);
+
+                if (!nextStatusBin) {
+                    setResponseStatus(event, 400);
+                    return { error: "Invalid status_bin" };
+                }
+
+                const binLogData = {
+                    timestampThingspeak: targetTimestamp,
+                    statusBin: nextStatusBin,
+                    tempTop: body.temp_top !== undefined ? body.temp_top : latestBinLog?.tempTop ?? null,
+                    rhTop: body.rh_top !== undefined ? body.rh_top : latestBinLog?.rhTop ?? null,
+                    tempBottom: body.temp_bottom !== undefined ? body.temp_bottom : latestBinLog?.tempBottom ?? null,
+                    rhBottom: body.rh_bottom !== undefined ? body.rh_bottom : latestBinLog?.rhBottom ?? null,
+                    remark: body.remark !== undefined ? body.remark : latestBinLog?.remark ?? null,
+                };
+
+                latestBinLog = latestBinLog
+                    ? await prisma.binLog.update({
+                        where: { binLogId: latestBinLog.binLogId },
+                        data: binLogData,
+                    })
+                    : await prisma.binLog.create({
+                        data: {
+                            binNumber: lot.binNumber,
+                            areaId: lot.areaId,
+                            ...binLogData,
+                        },
+                    });
+
+                await prisma.$transaction((tx) => syncLotStatusFromLog(tx, lot, nextStatusBin, targetTimestamp, body.mc));
+            }
 
             let statusBin = "UPAIR";
             if (lot.status === "DRIED" && lot.endTime && timestamp.getTime() >= new Date(lot.endTime).getTime()) {
@@ -108,8 +154,8 @@ export default defineEventHandler(async (event) => {
                 logId: body.log_id,
                 lotId,
                 isStandaloneMcLog: false,
-                timestampThingspeak: timestamp,
-                statusBin,
+                timestampThingspeak: targetTimestamp,
+                statusBin: latestBinLog?.statusBin ?? statusBin,
                 tempTop: latestBinLog?.tempTop ?? null,
                 rhTop: latestBinLog?.rhTop ?? null,
                 tempBottom: latestBinLog?.tempBottom ?? null,
@@ -128,9 +174,17 @@ export default defineEventHandler(async (event) => {
                     },
                     select: {
                         lotId: true,
+                        lotNumber: true,
+                        binNumber: true,
+                        areaId: true,
                         status: true,
                     },
                 });
+
+                if (!standaloneLot) {
+                    setResponseStatus(event, 404);
+                    return { error: "Lot not found" };
+                }
 
                 const updatedMcLog = await prisma.lotMcLog.update({
                     where: {
@@ -144,16 +198,68 @@ export default defineEventHandler(async (event) => {
                     },
                 });
 
+                let manualBinLog = await prisma.binLog.findFirst({
+                    where: {
+                        binNumber: standaloneLot.binNumber,
+                        areaId: standaloneLot.areaId,
+                        timestampThingspeak: updatedMcLog.createdAt,
+                    },
+                    orderBy: { binLogId: "desc" },
+                });
+                const shouldWriteBinLog = body.status_bin !== undefined
+                    || body.temp_top !== undefined
+                    || body.rh_top !== undefined
+                    || body.temp_bottom !== undefined
+                    || body.rh_bottom !== undefined
+                    || body.remark !== undefined
+                    || body.timestamp_thingspeak !== undefined;
+
+                if (shouldWriteBinLog) {
+                    const nextStatusBin = body.status_bin !== undefined
+                        ? normalizeLotStatusFromLog(body.status_bin)
+                        : normalizeLotStatusFromLog(manualBinLog?.statusBin ?? standaloneLot.status);
+
+                    if (!nextStatusBin) {
+                        setResponseStatus(event, 400);
+                        return { error: "Invalid status_bin" };
+                    }
+
+                    const binLogData = {
+                        timestampThingspeak: updatedMcLog.createdAt,
+                        statusBin: nextStatusBin,
+                        tempTop: body.temp_top !== undefined ? body.temp_top : manualBinLog?.tempTop ?? null,
+                        rhTop: body.rh_top !== undefined ? body.rh_top : manualBinLog?.rhTop ?? null,
+                        tempBottom: body.temp_bottom !== undefined ? body.temp_bottom : manualBinLog?.tempBottom ?? null,
+                        rhBottom: body.rh_bottom !== undefined ? body.rh_bottom : manualBinLog?.rhBottom ?? null,
+                        remark: body.remark !== undefined ? body.remark : manualBinLog?.remark ?? null,
+                    };
+
+                    manualBinLog = manualBinLog
+                        ? await prisma.binLog.update({
+                            where: { binLogId: manualBinLog.binLogId },
+                            data: binLogData,
+                        })
+                        : await prisma.binLog.create({
+                            data: {
+                                binNumber: standaloneLot.binNumber,
+                                areaId: standaloneLot.areaId,
+                                ...binLogData,
+                            },
+                        });
+
+                    await prisma.$transaction((tx) => syncLotStatusFromLog(tx, standaloneLot, nextStatusBin, updatedMcLog.createdAt, updatedMcLog.mc));
+                }
+
                 result = {
                     logId: toStandaloneMcLogId(updatedMcLog.lotMcLogId),
-                    lotId: standaloneLot?.lotId ?? standaloneMcLog.lotId,
+                    lotId: standaloneLot.lotId,
                     isStandaloneMcLog: true,
                     timestampThingspeak: updatedMcLog.createdAt,
-                    statusBin: standaloneLot?.status ?? "UPAIR",
-                    tempTop: null,
-                    rhTop: null,
-                    tempBottom: null,
-                    rhBottom: null,
+                    statusBin: manualBinLog?.statusBin ?? standaloneLot.status,
+                    tempTop: manualBinLog?.tempTop ?? null,
+                    rhTop: manualBinLog?.rhTop ?? null,
+                    tempBottom: manualBinLog?.tempBottom ?? null,
+                    rhBottom: manualBinLog?.rhBottom ?? null,
                     mc: updatedMcLog.mc,
                     checkerName: updatedMcLog.checkerName,
                     remark: updatedMcLog.remark,
@@ -171,17 +277,30 @@ export default defineEventHandler(async (event) => {
                     return { error: "This telemetry log is outside the current lot scope" };
                 }
 
-                if (
-                    body.timestamp_thingspeak !== undefined
-                    || body.status_bin !== undefined
-                    || body.temp_top !== undefined
-                    || body.rh_top !== undefined
-                    || body.temp_bottom !== undefined
-                    || body.rh_bottom !== undefined
-                ) {
+                const targetTimestamp = body.timestamp_thingspeak ?? resolved.binLog.timestampThingspeak;
+                const nextStatusBin = body.status_bin !== undefined
+                    ? normalizeLotStatusFromLog(body.status_bin)
+                    : normalizeLotStatusFromLog(resolved.binLog.statusBin);
+
+                if (!nextStatusBin) {
                     setResponseStatus(event, 400);
-                    return { error: "Telemetry fields cannot be edited manually" };
+                    return { error: "Invalid status_bin" };
                 }
+
+                const updatedBinLog = await prisma.binLog.update({
+                    where: {
+                        binLogId: resolved.binLog.binLogId,
+                    },
+                    data: {
+                        ...(body.timestamp_thingspeak !== undefined ? { timestampThingspeak: targetTimestamp } : {}),
+                        ...(body.status_bin !== undefined ? { statusBin: nextStatusBin } : {}),
+                        ...(body.temp_top !== undefined ? { tempTop: body.temp_top } : {}),
+                        ...(body.rh_top !== undefined ? { rhTop: body.rh_top } : {}),
+                        ...(body.temp_bottom !== undefined ? { tempBottom: body.temp_bottom } : {}),
+                        ...(body.rh_bottom !== undefined ? { rhBottom: body.rh_bottom } : {}),
+                        ...(body.remark !== undefined ? { remark: body.remark } : {}),
+                    },
+                });
 
                 let updatedMcLog = resolved.mcLog;
                 if (updatedMcLog) {
@@ -199,6 +318,7 @@ export default defineEventHandler(async (event) => {
                             },
                             data: {
                                 ...(body.mc !== undefined ? { mc: body.mc } : {}),
+                                ...(body.timestamp_thingspeak !== undefined ? { createdAt: targetTimestamp } : {}),
                                 ...(body.checker_name !== undefined ? { checkerName: body.checker_name } : {}),
                                 ...(body.remark !== undefined ? { remark: body.remark } : {}),
                             },
@@ -211,24 +331,26 @@ export default defineEventHandler(async (event) => {
                             mc: body.mc,
                             checkerName: body.checker_name ?? null,
                             remark: body.remark ?? null,
-                            createdAt: resolved.binLog.timestampThingspeak,
+                            createdAt: targetTimestamp,
                         },
                     });
                 }
 
+                await prisma.$transaction((tx) => syncLotStatusFromLog(tx, resolved.lot, nextStatusBin, targetTimestamp, body.mc));
+
                 result = {
-                    logId: resolved.binLog.binLogId,
+                    logId: updatedBinLog.binLogId,
                     lotId: resolved.lot.lotId,
                     isStandaloneMcLog: false,
-                    timestampThingspeak: resolved.binLog.timestampThingspeak,
-                    statusBin: resolved.binLog.statusBin,
-                    tempTop: resolved.binLog.tempTop,
-                    rhTop: resolved.binLog.rhTop,
-                    tempBottom: resolved.binLog.tempBottom,
-                    rhBottom: resolved.binLog.rhBottom,
+                    timestampThingspeak: updatedBinLog.timestampThingspeak,
+                    statusBin: updatedBinLog.statusBin,
+                    tempTop: updatedBinLog.tempTop,
+                    rhTop: updatedBinLog.rhTop,
+                    tempBottom: updatedBinLog.tempBottom,
+                    rhBottom: updatedBinLog.rhBottom,
                     mc: updatedMcLog?.mc ?? null,
                     checkerName: updatedMcLog?.checkerName ?? null,
-                    remark: updatedMcLog?.remark ?? resolved.binLog.remark,
+                    remark: updatedMcLog?.remark ?? updatedBinLog.remark,
                 };
             }
         }

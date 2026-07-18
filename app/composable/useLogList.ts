@@ -22,6 +22,7 @@ type LogListResponse = {
     success: boolean;
     data: LogRow[];
     totalCount: number;
+    nextLogTimestamp?: string;
 };
 
 export const useLogList = () => {

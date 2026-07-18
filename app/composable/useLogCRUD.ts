@@ -133,16 +133,16 @@ export const useLogCRUD = (refreshLogData: () => Promise<unknown> = async () => 
                 throw new Error("Lot is required");
             }
 
-            if (parsed.mc === null) {
-                throw new Error("MC is required");
-            }
-
             const result = await $fetch("/api/log/log", {
                 method: "POST",
                 body: {
                     lot_id: parsed.lot_id,
                     timestamp_thingspeak: toApiDate(parsed.timestamp_thingspeak),
                     status_bin: parsed.status_bin.trim(),
+                    temp_top: parsed.temp_top,
+                    rh_top: parsed.rh_top,
+                    temp_bottom: parsed.temp_bottom,
+                    rh_bottom: parsed.rh_bottom,
                     mc: parsed.mc,
                     checker_name: normalizeOptionalText(parsed.checker_name),
                     remark: normalizeOptionalText(parsed.remark),
@@ -178,6 +178,10 @@ export const useLogCRUD = (refreshLogData: () => Promise<unknown> = async () => 
                     log_id: logId,
                     timestamp_thingspeak: toApiDate(parsed.timestamp_thingspeak),
                     status_bin: parsed.status_bin.trim(),
+                    temp_top: parsed.temp_top,
+                    rh_top: parsed.rh_top,
+                    temp_bottom: parsed.temp_bottom,
+                    rh_bottom: parsed.rh_bottom,
                     mc: parsed.mc,
                     checker_name: normalizeOptionalText(parsed.checker_name),
                     remark: normalizeOptionalText(parsed.remark),

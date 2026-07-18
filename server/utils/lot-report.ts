@@ -143,6 +143,15 @@ const formatDecimal = (value: DecimalLike) => {
     }).format(parsed);
 };
 
+const formatTruncatedOneDecimal = (value: number) => {
+    const truncated = Math.trunc(value * 10) / 10;
+
+    return new Intl.NumberFormat("en-US", {
+        minimumFractionDigits: 1,
+        maximumFractionDigits: 1,
+    }).format(truncated);
+};
+
 const getRoundedHour = (startValue: Date | string | null | undefined, endValue: Date | string | null | undefined) => {
     const start = asDate(startValue);
     const end = asDate(endValue);
@@ -202,10 +211,7 @@ const formatDryingRate = (
         return "";
     }
 
-    return new Intl.NumberFormat("en-US", {
-        minimumFractionDigits: 1,
-        maximumFractionDigits: 1,
-    }).format(roundedHour / dryDown);
+    return formatTruncatedOneDecimal(roundedHour / dryDown);
 };
 
 const formatStatus = (status: string | null | undefined) => {

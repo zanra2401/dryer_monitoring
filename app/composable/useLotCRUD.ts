@@ -11,6 +11,7 @@ type LotFormData = {
     status: LotStatus;
     down_air_at: string;
     down_mc: number | null;
+    created_by: number | null;
     area_id: number | null;
     bin_number: number | null;
     start_time: string;
@@ -33,6 +34,7 @@ const lotFormSchema = z.object({
     status: z.enum(LOT_STATUSES),
     down_air_at: z.string(),
     down_mc: z.number().nullable(),
+    created_by: z.number().int().positive().nullable(),
     area_id: z.number().int().positive("Dryer area is required").nullable(),
     bin_number: z.number().int().positive("Bin is required").nullable(),
     start_time: z.string().trim().min(1, "Start time is required"),
@@ -42,6 +44,10 @@ const lotFormSchema = z.object({
 });
 
 const getApiErrorMessage = (error: unknown) => {
+    if (error instanceof z.ZodError) {
+        return error.issues[0]?.message ?? "Invalid lot data";
+    }
+
     if (typeof error === "object" && error !== null) {
         const maybeError = error as {
             data?: { error?: string; message?: string };
@@ -94,6 +100,7 @@ const makeEmptyForm = (): LotFormData => ({
     status: "UPAIR",
     down_air_at: "",
     down_mc: null,
+    created_by: null,
     area_id: null,
     bin_number: null,
     start_time: "",
@@ -127,6 +134,7 @@ export const useLotCRUD = (refreshLotData: () => Promise<unknown> = async () => 
             status: lot.status,
             down_air_at: toDateTimeLocal(lot.downAirAt),
             down_mc: lot.downMC === null ? null : Number(lot.downMC),
+            created_by: lot.createdBy,
             area_id: lot.areaId,
             bin_number: lot.binNumber,
             start_time: toDateTimeLocal(lot.startTime),
@@ -180,9 +188,9 @@ export const useLotCRUD = (refreshLotData: () => Promise<unknown> = async () => 
                     quality: normalizeOptionalText(parsed.quality),
                     net_to_bin: parsed.net_to_bin,
                     initial_mc: parsed.initial_mc,
-                    status: parsed.status,
                     down_air_at: parsed.down_air_at ? toApiDate(parsed.down_air_at) : null,
                     down_mc: parsed.down_mc,
+                    created_by: parsed.created_by,
                     area_id: parsed.area_id,
                     bin_number: parsed.bin_number,
                     start_time: toApiDate(parsed.start_time),
@@ -232,9 +240,9 @@ export const useLotCRUD = (refreshLotData: () => Promise<unknown> = async () => 
                     quality: normalizeOptionalText(parsed.quality),
                     net_to_bin: parsed.net_to_bin,
                     initial_mc: parsed.initial_mc,
-                    status: parsed.status,
                     down_air_at: parsed.down_air_at ? toApiDate(parsed.down_air_at) : null,
                     down_mc: parsed.down_mc,
+                    created_by: parsed.created_by,
                     area_id: parsed.area_id,
                     bin_number: parsed.bin_number,
                     start_time: toApiDate(parsed.start_time),

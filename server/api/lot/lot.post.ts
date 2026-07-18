@@ -14,7 +14,9 @@ const bodySchema = z.object({
     created_by: z.coerce.number().int().positive().optional().nullable(),
     bin_number: z.coerce.number().int().positive(),
     area_id: z.coerce.number().int().positive(),
-    start_time: z.coerce.date().optional(),
+    start_time: z.coerce.date({
+        error: "Start time is required",
+    }),
     end_time: z.coerce.date().optional().nullable(),
     end_mc: z.coerce.number().optional().nullable(),
     depth: z.coerce.number().optional().nullable(),
@@ -34,6 +36,18 @@ export default defineEventHandler(async (event) => {
             body.created_by
                 ? prisma.user.findUnique({
                     where: { userId: body.created_by },
+                    select: {
+                        userId: true,
+                        role: true,
+                        canAccess: {
+                            where: {
+                                areaId: body.area_id,
+                            },
+                            select: {
+                                areaId: true,
+                            },
+                        },
+                    },
                 })
                 : Promise.resolve(null),
             prisma.bin.findUnique({
@@ -62,6 +76,11 @@ export default defineEventHandler(async (event) => {
         if (body.created_by && !user) {
             setResponseStatus(event, 404);
             return { error: "User not found" };
+        }
+
+        if (body.created_by && (user?.role !== "OPERATOR" || user.canAccess.length === 0)) {
+            setResponseStatus(event, 400);
+            return { error: "Created by user must be an operator with access to this dryer area" };
         }
 
         if (!bin) {
@@ -93,10 +112,10 @@ export default defineEventHandler(async (event) => {
                     status: lotStatus,
                     downAirAt: body.down_air_at ?? null,
                     downMC: body.down_mc ?? null,
-                    createdBy: body.created_by ?? (sessionUser.userId > 0 ? sessionUser.userId : null),
+                    createdBy: body.created_by ?? null,
                     binNumber: body.bin_number,
                     areaId: body.area_id,
-                    startTime: body.start_time ?? new Date(),
+                    startTime: body.start_time,
                     endTime: body.end_time ?? null,
                     endMC: body.end_mc ?? null,
                     depth: body.depth ?? null,
@@ -125,7 +144,7 @@ export default defineEventHandler(async (event) => {
          
         if (error instanceof ZodError) {
             setResponseStatus(event, 400);
-            return { error: "Invalid request body" };
+            return { error: error.issues[0]?.message ?? "Invalid request body" };
         }
         if ((error as any).statusCode) throw error;
         setResponseStatus(event, 500);
