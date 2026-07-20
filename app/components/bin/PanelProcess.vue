@@ -63,6 +63,7 @@
           await refreshNuxtData(`report-${props.lotNumber}`)
           await refreshNuxtData(`admin-lot-${props.lotNumber}`)
           await refreshNuxtData(`admin-report-${props.lotNumber}`)
+          await refreshNuxtData(`bins-area-${props.lot.areaId}`)
 
           toast.add({
             title: 'Berhasil Set Down',
@@ -99,6 +100,7 @@
           await refreshNuxtData(`report-${props.lotNumber}`)
           await refreshNuxtData(`admin-lot-${props.lotNumber}`)
           await refreshNuxtData(`admin-report-${props.lotNumber}`)
+          await refreshNuxtData(`bins-area-${props.lot.areaId}`)
         }
 
     } catch (error) {
@@ -190,6 +192,7 @@
             await refreshNuxtData(`report-${props.lotNumber}`)
             await refreshNuxtData(`admin-lot-${props.lotNumber}`)
             await refreshNuxtData(`admin-report-${props.lotNumber}`)
+            await refreshNuxtData(`bins-area-${props.lot.areaId}`)
 
             toast.add({
                 title: 'Berhasil Undo Down',
@@ -204,6 +207,7 @@
             // Rollback optimistic update if failed
             await refreshNuxtData(`lot-${props.lotNumber}`)
             await refreshNuxtData(`admin-lot-${props.lotNumber}`)
+            await refreshNuxtData(`bins-area-${props.lot.areaId}`)
         }
     }
     const emptyBin = async () => {
@@ -262,6 +266,7 @@
             await refreshNuxtData(`report-${props.lotNumber}`)
             await refreshNuxtData(`admin-lot-${props.lotNumber}`)
             await refreshNuxtData(`admin-report-${props.lotNumber}`)
+            await refreshNuxtData(`bins-area-${props.lot.areaId}`)
 
             toast.add({
                 title: 'Berhasil Undo Stop',
@@ -277,6 +282,7 @@
             // Rollback optimistic update if failed
             await refreshNuxtData(`lot-${props.lotNumber}`)
             await refreshNuxtData(`admin-lot-${props.lotNumber}`)
+            await refreshNuxtData(`bins-area-${props.lot.areaId}`)
         }
     }
 </script>

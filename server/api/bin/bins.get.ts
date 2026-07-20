@@ -77,7 +77,7 @@ export default defineEventHandler(async (event) => {
 
         // 4. Pemetaan Objek Presisi Tinggi
         const binWithLot = bins.map((bin) => {
-            const occupiedLot = activeLots.find((lot) => lot.binNumber === bin.binNumber);
+            const occupiedLot = activeLots.find((lot) => lot.lotNumber === bin.occupiedBy);
             
             // Ekstrak log terakhir dari relasi array
             const latestLog = bin.binLogs?.[0] || null;
