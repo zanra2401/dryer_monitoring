@@ -94,8 +94,13 @@
                     </div>
                 </div>
     
-                <div class="truncate text-[11px] font-mono mt-auto pt-1 border-t border-inherit/30">
-                    {{ data.startTime ? Math.floor((Date.now() - new Date(data.startTime).getTime()) / (1000 * 60 * 60)) + ' Hrs' : '-' }}                
+                <div class="text-[11px] font-mono mt-auto pt-1 border-t border-inherit/30 flex items-center justify-between gap-2">
+                    <span class="truncate">
+                        {{ data.startTime ? Math.floor((Date.now() - new Date(data.startTime).getTime()) / (1000 * 60 * 60)) + ' Hrs' : '-' }}
+                    </span>
+                    <span class="shrink-0">
+                        MC {{ data.displayMc !== null && data.displayMc !== undefined ? Number(data.displayMc).toFixed(2) : '-' }}
+                    </span>
                 </div>
             </div>
 

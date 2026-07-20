@@ -7,6 +7,18 @@ import { isLimitedAreaRole } from "~~/server/utils/rbac";
 
 const LOWER_TEMP_THRESHOLD = 38;
 const UPPER_TEMP_THRESHOLD = 43;
+const INTERVAL_MS = 30 * 60 * 1000;
+
+const getIntervalKey = (timestamp: Date, startTime: Date) => {
+    const startMs = startTime.getTime();
+    const timestampMs = timestamp.getTime();
+
+    if (timestampMs < startMs) {
+        return null;
+    }
+
+    return startMs + Math.floor((timestampMs - startMs) / INTERVAL_MS) * INTERVAL_MS;
+};
 
 // 1. Validasi Input Keamanan Tinggi
 const querySchema = z.object({
@@ -70,6 +82,14 @@ export default defineEventHandler(async (event) => {
             // Ekstrak log terakhir dari relasi array
             const latestLog = bin.binLogs?.[0] || null;
             const latestMcLog = occupiedLot?.mcLogs?.[0] || null;
+            const startTime = occupiedLot?.startTime ? new Date(occupiedLot.startTime) : null;
+            const latestSensorSlot = latestLog && startTime ? getIntervalKey(latestLog.timestampThingspeak, startTime) : null;
+            const latestMcSlot = latestMcLog && startTime ? getIntervalKey(latestMcLog.createdAt, startTime) : null;
+            const displayMc = latestMcLog
+                ? latestSensorSlot !== null && latestMcSlot !== null && latestSensorSlot > latestMcSlot
+                    ? null
+                    : latestMcLog.mc
+                : null;
 
             // Pastikan binLogs tidak ikut terekspos berlebihan di level root object
             const { binLogs, ...binData } = bin;
@@ -107,8 +127,9 @@ export default defineEventHandler(async (event) => {
                     rhTop: latestLog.rhTop,
                     tempBottom: latestLog.tempBottom,
                     rhBottom: latestLog.rhBottom,   
-                    mc: latestMcLog?.mc ?? null
+                    mc: displayMc
                 } : null,
+                displayMc,
             };
         });
 
