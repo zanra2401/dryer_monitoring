@@ -115,6 +115,17 @@ const columns = [
     }
   },
   { 
+    accessorKey: 'remark', 
+    header: 'Remark',
+    cell: ({ row }: { row: any }) => {
+      const remark = row.getValue('remark');
+      if (remark) {
+        return h('span', { class: 'text-xs truncate max-w-[150px] inline-block' }, remark);
+      }
+      return h('span', { class: 'text-xs text-gray-400 dark:text-gray-500 italic' }, '-');
+    }
+  },
+  { 
     accessorKey: 'statusBin', 
     header: 'Status Bin',
     cell: ({ row }: { row: any }) => {
@@ -158,7 +169,7 @@ const saveOperatorData = async (updatedLog: Log) => {
       lot_id: props.lotId,
       target_time: updatedLog.time || new Date().toISOString(),
       mc: Number(updatedLog.mc),
-      remark: updatedLog.remark || ''
+      remark: updatedLog.remark || null
     };
 
     try {

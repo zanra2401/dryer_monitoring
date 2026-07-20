@@ -45,6 +45,7 @@ export default defineEventHandler(async (event) => {
             tempBottom: log.tempBottom,
             rhBottom: log.rhBottom,
             mc: log.mc,
+            remark: log.remark,
             statusBin: log.statusBin,
             dataPoints: log.dataPoints,
         })) ?? [];

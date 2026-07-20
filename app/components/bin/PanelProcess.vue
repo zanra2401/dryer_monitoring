@@ -319,6 +319,13 @@
             <span class="text-xs sm:text-sm font-medium text-gray-500 dark:text-gray-400">Kualitas:</span>
             <UBadge color="gray" variant="solid" size="sm" class="rounded text-[10px] sm:text-xs">{{ lot.quality }}</UBadge>
           </div>
+
+          <div class="hidden sm:block w-1 h-1 rounded-full bg-gray-300 dark:bg-gray-600"></div>
+          
+          <div class="flex items-center gap-1.5">
+            <span class="text-xs sm:text-sm font-medium text-gray-500 dark:text-gray-400">Created By:</span>
+            <span class="text-xs sm:text-sm font-bold text-gray-900 dark:text-white">{{ lot.user?.fullName || '-' }}</span>
+          </div>
         </div>
       </div>
     </template>

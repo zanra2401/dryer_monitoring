@@ -8,7 +8,7 @@ const mcUpdateSchema = z.object({
     lot_id: z.number().int().positive("ID Lot harus bernilai positif"),
     target_time: z.string().datetime("Format waktu harus ISO-8601"),
     mc: z.number().positive("Kadar air (MC) harus bernilai positif"),
-    remark: z.string().optional()
+    remark: z.string().nullable().optional()
 });
 
 export default defineEventHandler(async (event) => {

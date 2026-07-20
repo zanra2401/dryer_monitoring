@@ -7,6 +7,11 @@ export default defineEventHandler(async (event) => {
                 where: {
                     lotNumber: lot_number as string,
                 },
+                include: {
+                    user: {
+                        select: { fullName: true }
+                    }
+                }
             });
 
             if (!lot) {

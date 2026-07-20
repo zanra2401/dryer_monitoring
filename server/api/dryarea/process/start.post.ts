@@ -62,7 +62,8 @@ export default defineEventHandler(async (event) => {
                     startTime: startDate,
                     areaId: body.area_id,
                     binNumber: body.bin_number,
-                    status: "UPAIR"
+                    status: "UPAIR",
+                    createdBy: user.userId
                 },
                 select: { lotId: true },
             });  

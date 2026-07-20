@@ -31,7 +31,7 @@ export default defineEventHandler(async (event) => {
         const offset = query.offset ?? 0;
         const totalCount = timeline.logs.length;
         const result = timeline.logs.slice(offset, offset + limit);
-
+        console.log(result);
         return { success: true, data: result, totalCount };
     } catch (error) {
          

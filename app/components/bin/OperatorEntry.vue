@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, watch, computed } from 'vue'
 import type { Log } from './PanelLog.vue';
+
 const props = defineProps<{
   modelValue: boolean
   selectedData: Log | null
@@ -22,6 +23,7 @@ const inputMc = ref<number | null>(null)
 const inputRemark = ref<string>('')
 
 watch(() => props.selectedData, (newData) => {
+  console.log(newData);
   if (newData) {
     inputMc.value = newData.mc
     inputRemark.value = newData.remark || ''

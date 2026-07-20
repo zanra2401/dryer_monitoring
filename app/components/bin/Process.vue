@@ -54,6 +54,9 @@ export interface LotLog {
     downAirAt: string | null,
     status: string,
     depth: number | null,
+    user?: {
+        fullName: string
+    } | null
 }
 
 const props = defineProps<{
