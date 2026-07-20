@@ -85,16 +85,9 @@ export default defineEventHandler(async (event) => {
             const startTime = occupiedLot?.startTime ? new Date(occupiedLot.startTime) : null;
             const latestSensorSlot = latestLog && startTime ? getIntervalKey(latestLog.timestampThingspeak, startTime) : null;
             const latestMcSlot = latestMcLog && startTime ? getIntervalKey(latestMcLog.createdAt, startTime) : null;
-            let displayMc = null;
-            if (latestMcLog) {
-                if (bin.binStatus === 'WAITING_TO_SHELLING') {
-                    displayMc = latestMcLog.mc;
-                } else if (latestSensorSlot !== null && latestMcSlot !== null && latestSensorSlot > latestMcSlot) {
-                    displayMc = null;
-                } else {
-                    displayMc = latestMcLog.mc;
-                }
-            }
+            
+            // Mengambil MC terakhir dari data lot, tanpa bergantung pada sinkronisasi dengan log sensor terakhir.
+            const displayMc = latestMcLog ? latestMcLog.mc : null;
 
             // Pastikan binLogs tidak ikut terekspos berlebihan di level root object
             const { binLogs, ...binData } = bin;
